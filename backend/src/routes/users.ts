@@ -470,6 +470,7 @@ router.patch(
               data: {
                 code: user.applyOrgCode,
                 name: user.applyOrgName,
+                type: 'HR', // 默认类型
                 isVerified: true,
               },
             });
