@@ -1,0 +1,38 @@
+{
+  "name": "internship-certification-blockchain",
+  "version": "1.0.0",
+  "description": "高校实习证明上链系统 - 基于区块链的不可篡改证明存储与核验平台",
+  "private": true,
+  "scripts": {
+    "setup": "bash scripts/setup.sh",
+    "dev": "bash scripts/start-dev.sh",
+    "install:all": "pnpm -r install",
+    "blockchain:node": "cd blockchain && pnpm node",
+    "blockchain:deploy": "cd blockchain && pnpm deploy:local",
+    "blockchain:test": "cd blockchain && pnpm test",
+    "backend:dev": "cd backend && pnpm dev",
+    "backend:build": "cd backend && pnpm build",
+    "backend:migrate": "cd backend && pnpm prisma:migrate",
+    "backend:seed": "cd backend && pnpm prisma:seed",
+    "frontend:dev": "cd frontend && pnpm dev",
+    "frontend:build": "cd frontend && pnpm build",
+    "batch:upchain": "npx tsx scripts/batch-upchain.ts",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
+  "keywords": [
+    "blockchain",
+    "ethereum",
+    "internship",
+    "certification",
+    "solidity",
+    "react",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
