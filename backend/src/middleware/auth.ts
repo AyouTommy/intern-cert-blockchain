@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+
+// Define Role type matching the values used in the database
+export type Role = 'ADMIN' | 'UNIVERSITY' | 'COMPANY' | 'STUDENT';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -63,7 +66,7 @@ export const authenticate = async (
     (req as AuthRequest).user = {
       id: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role as Role,
       universityId: user.universityId || undefined,
       companyId: user.companyId || undefined,
     };
@@ -86,7 +89,7 @@ export const authenticate = async (
   }
 };
 
-export const authorize = (...roles: Role[]) => {
+export const authorize = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const authReq = req as AuthRequest;
     
