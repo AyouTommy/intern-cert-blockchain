@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import toast from 'react-hot-toast'
 
 // 动态获取API地址
@@ -11,13 +11,70 @@ const getApiBaseUrl = () => {
   return '/api'
 }
 
+// 冷启动提示 toast ID，用于更新同一个 toast
+let coldStartToastId: string | undefined
+
 const api = axios.create({
   baseURL: getApiBaseUrl(),
-  timeout: 30000,
+  timeout: 60000, // 增加到 60 秒以应对 Render 冷启动
   headers: {
     'Content-Type': 'application/json',
   },
 })
+
+// 重试配置
+const MAX_RETRIES = 2
+const RETRY_DELAY = 3000
+
+// 重试请求的函数
+const retryRequest = async (error: AxiosError, retryCount: number = 0): Promise<unknown> => {
+  const config = error.config
+  if (!config) return Promise.reject(error)
+
+  // 只对网络错误和 503 错误重试
+  const shouldRetry = 
+    !error.response || // 网络错误
+    error.response.status === 503 || // 服务不可用（冷启动）
+    error.code === 'ECONNABORTED' // 超时
+
+  if (shouldRetry && retryCount < MAX_RETRIES) {
+    // 显示冷启动提示
+    if (retryCount === 0) {
+      coldStartToastId = toast.loading(
+        '🚀 服务器正在启动中，请稍候...\n（免费服务器休眠后需要约 30-50 秒唤醒）',
+        { duration: 60000, id: coldStartToastId }
+      )
+    } else {
+      toast.loading(
+        `🔄 正在重试 (${retryCount + 1}/${MAX_RETRIES})...`,
+        { id: coldStartToastId }
+      )
+    }
+
+    // 等待后重试
+    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+    
+    try {
+      const response = await api.request(config)
+      // 成功后关闭提示
+      if (coldStartToastId) {
+        toast.success('✅ 服务器已启动！', { id: coldStartToastId })
+        coldStartToastId = undefined
+      }
+      return response
+    } catch (retryError) {
+      return retryRequest(retryError as AxiosError, retryCount + 1)
+    }
+  }
+
+  // 重试次数用尽，关闭冷启动提示
+  if (coldStartToastId) {
+    toast.dismiss(coldStartToastId)
+    coldStartToastId = undefined
+  }
+
+  return Promise.reject(error)
+}
 
 // Request interceptor
 api.interceptors.request.use(
@@ -32,10 +89,31 @@ api.interceptors.request.use(
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
+    // 如果有冷启动提示还在显示，关闭它
+    if (coldStartToastId) {
+      toast.success('✅ 服务器已启动！', { id: coldStartToastId })
+      coldStartToastId = undefined
+    }
     return response
   },
-  (error) => {
-    const message = error.response?.data?.message || error.message || '请求失败'
+  async (error: AxiosError) => {
+    // 检查是否需要重试（冷启动场景）
+    const shouldRetry = 
+      !error.response || // 网络错误
+      error.response.status === 503 || // 服务不可用
+      error.code === 'ECONNABORTED' // 超时
+
+    if (shouldRetry) {
+      try {
+        return await retryRequest(error)
+      } catch {
+        // 重试失败，继续正常错误处理
+      }
+    }
+
+    const message = error.response?.data && typeof error.response.data === 'object' && 'message' in error.response.data 
+      ? (error.response.data as { message: string }).message 
+      : error.message || '请求失败'
     
     if (error.response?.status === 401) {
       // Token expired or invalid
@@ -46,8 +124,12 @@ api.interceptors.response.use(
       toast.error('权限不足')
     } else if (error.response?.status === 404) {
       toast.error('资源不存在')
-    } else if (error.response?.status >= 500) {
+    } else if (error.response?.status === 503) {
+      toast.error('服务器正在启动中，请稍后刷新页面重试')
+    } else if (error.response?.status && error.response.status >= 500) {
       toast.error('服务器错误，请稍后重试')
+    } else if (error.code === 'ECONNABORTED') {
+      toast.error('请求超时，服务器可能正在启动，请刷新页面重试')
     } else {
       toast.error(message)
     }
