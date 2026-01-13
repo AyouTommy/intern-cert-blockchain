@@ -36,7 +36,7 @@ interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (data: RegisterData) => Promise<void>
+  register: (data: RegisterData) => Promise<RegisterResult>
   logout: () => void
   fetchUser: () => Promise<void>
   updateUser: (data: Partial<User>) => Promise<void>
@@ -50,6 +50,13 @@ interface RegisterData {
   studentId?: string
   universityId?: string
   companyId?: string
+  applyOrgName?: string
+  applyOrgCode?: string
+  applyReason?: string
+}
+
+interface RegisterResult {
+  pendingApproval?: boolean
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -65,14 +72,14 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await api.post('/auth/login', { email, password })
           const { user, token } = response.data.data
-          
+
           set({
             user,
             token,
             isAuthenticated: true,
             isLoading: false,
           })
-          
+
           api.defaults.headers.common['Authorization'] = `Bearer ${token}`
         } catch (error) {
           set({ isLoading: false })
@@ -80,20 +87,29 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      register: async (data: RegisterData) => {
+      register: async (data: RegisterData): Promise<RegisterResult> => {
         set({ isLoading: true })
         try {
           const response = await api.post('/auth/register', data)
-          const { user, token } = response.data.data
-          
+          const responseData = response.data.data
+
+          // 检查是否需要等待审核（高校/企业/第三方机构）
+          if (responseData.pendingApproval) {
+            set({ isLoading: false })
+            return { pendingApproval: true }
+          }
+
+          const { user, token } = responseData
+
           set({
             user,
             token,
             isAuthenticated: true,
             isLoading: false,
           })
-          
+
           api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+          return { pendingApproval: false }
         } catch (error) {
           set({ isLoading: false })
           throw error
