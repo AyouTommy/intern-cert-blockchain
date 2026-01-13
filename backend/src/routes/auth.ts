@@ -15,7 +15,7 @@ router.post(
     body('email').isEmail().withMessage('请输入有效的邮箱'),
     body('password').isLength({ min: 6 }).withMessage('密码至少6个字符'),
     body('name').notEmpty().withMessage('请输入姓名'),
-    body('role').isIn(['STUDENT', 'UNIVERSITY', 'COMPANY']).withMessage('无效的角色'),
+    body('role').isIn(['STUDENT', 'UNIVERSITY', 'COMPANY', 'THIRD_PARTY']).withMessage('无效的角色'),
   ],
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -28,11 +28,11 @@ router.post(
       }
 
       const prisma = (req as any).prisma as PrismaClient;
-      const { 
-        email, password, name, role, 
+      const {
+        email, password, name, role,
         studentId, universityId, companyId,
         // 机构申请信息
-        applyOrgName, applyOrgCode, applyReason 
+        applyOrgName, applyOrgCode, applyReason
       } = req.body;
 
       // 检查邮箱是否已存在
@@ -57,15 +57,33 @@ router.post(
 
       // 根据角色处理不同的注册流程
       if (role === 'STUDENT') {
+        // 学生注册需要验证学号在白名单中
+        if (!studentId) {
+          throw new AppError('学生注册必须提供学号', 400);
+        }
+
+        // 检查学号是否在白名单中
+        const whitelistEntry = await prisma.studentWhitelist.findUnique({
+          where: { studentId },
+        });
+
+        if (!whitelistEntry) {
+          throw new AppError('学号不在系统白名单中，请联系管理员', 400);
+        }
+
+        if (whitelistEntry.isUsed) {
+          throw new AppError('该学号已被注册使用', 400);
+        }
+
         // 学生直接激活
         userData.approvalStatus = 'APPROVED';
         userData.isActive = true;
-      } else if (role === 'UNIVERSITY' || role === 'COMPANY') {
-        // 高校/企业用户需要审核
+      } else if (role === 'UNIVERSITY' || role === 'COMPANY' || role === 'THIRD_PARTY') {
+        // 高校/企业/第三方机构用户需要审核
         if (!applyOrgName || !applyOrgCode) {
           throw new AppError('请填写机构名称和代码', 400);
         }
-        
+
         userData.approvalStatus = 'PENDING';
         userData.isActive = false; // 待审核时不可登录
         userData.applyOrgName = applyOrgName;
@@ -94,29 +112,50 @@ router.post(
         },
       });
 
-      // 如果是学生，创建学生档案
+      // 如果是学生，创建学生档案并更新白名单
       if (role === 'STUDENT' && studentId) {
+        // 获取白名单中的学生信息
+        const whitelistEntry = await prisma.studentWhitelist.findUnique({
+          where: { studentId },
+        });
+
         await prisma.studentProfile.create({
           data: {
             studentId,
             userId: user.id,
+            major: whitelistEntry?.major,
+            department: whitelistEntry?.department,
+            enrollmentYear: whitelistEntry?.enrollmentYear,
+            graduationYear: whitelistEntry?.graduationYear,
+          },
+        });
+
+        // 标记白名单已使用
+        await prisma.studentWhitelist.update({
+          where: { studentId },
+          data: {
+            isUsed: true,
+            usedAt: new Date(),
+            usedByUserId: user.id,
           },
         });
       }
 
-      // 高校/企业用户需要等待审核，不返回token
-      if (role === 'UNIVERSITY' || role === 'COMPANY') {
+      // 高校/企业/第三方机构用户需要等待审核，不返回token
+      if (role === 'UNIVERSITY' || role === 'COMPANY' || role === 'THIRD_PARTY') {
         // 通知管理员有新的审核申请
         const admins = await prisma.user.findMany({
           where: { role: 'ADMIN' },
           select: { id: true },
         });
 
+        const orgTypeLabel = role === 'UNIVERSITY' ? '高校' : (role === 'COMPANY' ? '企业' : '第三方机构');
+
         for (const admin of admins) {
           await prisma.notification.create({
             data: {
               userId: admin.id,
-              title: '新的机构用户申请',
+              title: `新的${orgTypeLabel}用户申请`,
               content: `${name} 申请成为 ${applyOrgName} 的管理员，请前往审核。`,
               type: 'APPROVAL_REQUEST',
             },

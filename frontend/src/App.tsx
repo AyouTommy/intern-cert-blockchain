@@ -19,26 +19,28 @@ import CompaniesPage from './pages/CompaniesPage'
 import UsersPage from './pages/UsersPage'
 import SettingsPage from './pages/SettingsPage'
 import NotFoundPage from './pages/NotFoundPage'
+import WhitelistPage from './pages/WhitelistPage'
+import ApplicationsPage from './pages/ApplicationsPage'
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
-  
+
   return <>{children}</>
 }
 
 // Admin Route Component
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore()
-  
+
   if (user?.role !== 'ADMIN') {
     return <Navigate to="/dashboard" replace />
   }
-  
+
   return <>{children}</>
 }
 
@@ -47,13 +49,13 @@ function App() {
     <Routes>
       {/* Public Routes */}
       <Route path="/verify/:code" element={<PublicVerifyPage />} />
-      
+
       {/* Auth Routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Route>
-      
+
       {/* Protected Routes */}
       <Route element={
         <ProtectedRoute>
@@ -69,15 +71,21 @@ function App() {
         <Route path="/universities" element={<UniversitiesPage />} />
         <Route path="/companies" element={<CompaniesPage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        
+        <Route path="/applications" element={<ApplicationsPage />} />
+
         {/* Admin Only Routes */}
         <Route path="/users" element={
           <AdminRoute>
             <UsersPage />
           </AdminRoute>
         } />
+        <Route path="/whitelist" element={
+          <AdminRoute>
+            <WhitelistPage />
+          </AdminRoute>
+        } />
       </Route>
-      
+
       {/* 404 */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

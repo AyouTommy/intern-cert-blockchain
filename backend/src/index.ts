@@ -13,6 +13,8 @@ import verifyRoutes from './routes/verify';
 import statsRoutes from './routes/stats';
 import templateRoutes from './routes/templates';
 import attachmentRoutes from './routes/attachments';
+import whitelistRoutes from './routes/whitelist';
+import applicationRoutes from './routes/applications';
 
 // 中间件导入
 import { errorHandler } from './middleware/errorHandler';
@@ -44,8 +46,8 @@ app.use((req, res, next) => {
 
 // 健康检查
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
     service: 'Internship Certification API'
   });
@@ -61,12 +63,14 @@ app.use('/api/verify', verifyRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/attachments', attachmentRoutes);
+app.use('/api/whitelist', whitelistRoutes);
+app.use('/api/applications', applicationRoutes);
 
 // 404处理
 app.use((req, res) => {
-  res.status(404).json({ 
-    success: false, 
-    message: 'API endpoint not found' 
+  res.status(404).json({
+    success: false,
+    message: 'API endpoint not found'
   });
 });
 

@@ -9,48 +9,50 @@ datasource db {
 
 // 用户表
 model User {
-  id              String    @id @default(uuid())
-  email           String    @unique
-  password        String
-  name            String
-  role            String    @default("STUDENT")
-  walletAddress   String?   @unique
-  phone           String?
-  avatar          String?
-  isActive        Boolean   @default(true)
-  emailVerified   Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  name          String
+  role          String   @default("STUDENT")
+  walletAddress String?  @unique
+  phone         String?
+  avatar        String?
+  isActive      Boolean  @default(true)
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // 审核状态 (用于高校/企业用户注册审核)
-  approvalStatus  String    @default("PENDING") // PENDING, APPROVED, REJECTED
-  approvedAt      DateTime?
-  approvedBy      String?
-  rejectReason    String?   @db.Text
-  
+  approvalStatus String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedAt     DateTime?
+  approvedBy     String?
+  rejectReason   String?   @db.Text
+
   // 申请的机构信息 (注册时填写，审核通过后关联到正式机构)
-  applyOrgName    String?   // 申请的机构名称
-  applyOrgType    String?   // UNIVERSITY 或 COMPANY
-  applyOrgCode    String?   // 机构代码
-  applyReason     String?   @db.Text // 申请理由
+  applyOrgName String? // 申请的机构名称
+  applyOrgType String? // UNIVERSITY 或 COMPANY
+  applyOrgCode String? // 机构代码
+  applyReason  String? @db.Text // 申请理由
 
   // 关联
-  university      University? @relation(fields: [universityId], references: [id])
+  university      University?    @relation(fields: [universityId], references: [id])
   universityId    String?
-  company         Company?    @relation(fields: [companyId], references: [id])
+  company         Company?       @relation(fields: [companyId], references: [id])
   companyId       String?
-  
+  thirdPartyOrg   ThirdPartyOrg? @relation("ThirdPartyUsers", fields: [thirdPartyOrgId], references: [id])
+  thirdPartyOrgId String?
+
   // 学生信息
-  studentProfile  StudentProfile?
-  
+  studentProfile StudentProfile?
+
   // 发出的证明
   issuedCertificates Certificate[] @relation("IssuedBy")
-  
+
   // 操作日志
-  auditLogs       AuditLog[]
-  
+  auditLogs AuditLog[]
+
   // 通知
-  notifications   Notification[]
+  notifications Notification[]
 
   @@index([email])
   @@index([role])
@@ -59,45 +61,48 @@ model User {
 
 // 学生档案
 model StudentProfile {
-  id              String    @id @default(uuid())
-  studentId       String    @unique
-  grade           String?
-  major           String?
-  department      String?
-  enrollmentYear  Int?
-  graduationYear  Int?
-  
-  user            User      @relation(fields: [userId], references: [id])
-  userId          String    @unique
-  
-  certificates    Certificate[]
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String  @id @default(uuid())
+  studentId      String  @unique
+  grade          String?
+  major          String?
+  department     String?
+  enrollmentYear Int?
+  graduationYear Int?
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @unique
+
+  certificates Certificate[]
+  applications InternshipApplication[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([studentId])
 }
 
 // 高校表
 model University {
-  id              String    @id @default(uuid())
-  code            String    @unique
-  name            String
-  englishName     String?
-  province        String?
-  city            String?
-  address         String?
-  logo            String?
-  website         String?
-  walletAddress   String?
-  isVerified      Boolean   @default(false)
-  
-  users           User[]
-  certificates    Certificate[]
-  templates       CertificateTemplate[]
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id            String  @id @default(uuid())
+  code          String  @unique
+  name          String
+  englishName   String?
+  province      String?
+  city          String?
+  address       String?
+  logo          String?
+  website       String?
+  walletAddress String?
+  isVerified    Boolean @default(false)
+
+  users        User[]
+  certificates Certificate[]
+  templates    CertificateTemplate[]
+  whitelists   StudentWhitelist[]
+  applications InternshipApplication[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([code])
   @@index([name])
@@ -105,28 +110,29 @@ model University {
 
 // 企业表
 model Company {
-  id              String    @id @default(uuid())
-  code            String    @unique
-  name            String
-  englishName     String?
-  industry        String?
-  scale           String?
-  province        String?
-  city            String?
-  address         String?
-  logo            String?
-  website         String?
-  contactPerson   String?
-  contactPhone    String?
-  contactEmail    String?
-  walletAddress   String?
-  isVerified      Boolean   @default(false)
-  
-  users           User[]
-  certificates    Certificate[]
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id            String  @id @default(uuid())
+  code          String  @unique
+  name          String
+  englishName   String?
+  industry      String?
+  scale         String?
+  province      String?
+  city          String?
+  address       String?
+  logo          String?
+  website       String?
+  contactPerson String?
+  contactPhone  String?
+  contactEmail  String?
+  walletAddress String?
+  isVerified    Boolean @default(false)
+
+  users        User[]
+  certificates Certificate[]
+  applications InternshipApplication[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([code])
   @@index([name])
@@ -134,78 +140,81 @@ model Company {
 
 // 证明模板
 model CertificateTemplate {
-  id              String    @id @default(uuid())
-  name            String
-  description     String?   @db.Text
-  content         String    @db.Text
-  fields          String    @db.Text
-  isDefault       Boolean   @default(false)
-  
-  university      University @relation(fields: [universityId], references: [id])
-  universityId    String
-  
-  certificates    Certificate[]
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id          String  @id @default(uuid())
+  name        String
+  description String? @db.Text
+  content     String  @db.Text
+  fields      String  @db.Text
+  isDefault   Boolean @default(false)
+
+  university   University @relation(fields: [universityId], references: [id])
+  universityId String
+
+  certificates Certificate[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // 实习证明
 model Certificate {
-  id              String    @id @default(uuid())
-  certNumber      String    @unique
-  
+  id         String @id @default(uuid())
+  certNumber String @unique
+
   // 关联
-  student         StudentProfile @relation(fields: [studentId], references: [id])
-  studentId       String
-  university      University     @relation(fields: [universityId], references: [id])
-  universityId    String
-  company         Company        @relation(fields: [companyId], references: [id])
-  companyId       String
-  issuer          User           @relation("IssuedBy", fields: [issuerId], references: [id])
-  issuerId        String
-  template        CertificateTemplate? @relation(fields: [templateId], references: [id])
-  templateId      String?
-  
+  student      StudentProfile       @relation(fields: [studentId], references: [id])
+  studentId    String
+  university   University           @relation(fields: [universityId], references: [id])
+  universityId String
+  company      Company              @relation(fields: [companyId], references: [id])
+  companyId    String
+  issuer       User                 @relation("IssuedBy", fields: [issuerId], references: [id])
+  issuerId     String
+  template     CertificateTemplate? @relation(fields: [templateId], references: [id])
+  templateId   String?
+
   // 实习信息
-  position        String
-  department      String?
-  startDate       DateTime
-  endDate         DateTime
-  description     String?   @db.Text
-  evaluation      String?   @db.Text
-  
+  position    String
+  department  String?
+  startDate   DateTime
+  endDate     DateTime
+  description String?  @db.Text
+  evaluation  String?  @db.Text
+
   // 证明内容
-  content         String?   @db.Text
-  
+  content String? @db.Text
+
   // 区块链信息
-  status          String    @default("PENDING")
-  certHash        String?   @unique
-  txHash          String?
-  blockNumber     Int?
-  chainId         Int?
-  ipfsHash        String?
-  
+  status      String  @default("PENDING")
+  certHash    String? @unique
+  txHash      String?
+  blockNumber Int?
+  chainId     Int?
+  ipfsHash    String?
+
   // 核验信息
-  verifyCode      String    @unique
-  verifyUrl       String?   @db.Text
-  qrCode          String?   @db.Text
-  
+  verifyCode String  @unique
+  verifyUrl  String? @db.Text
+  qrCode     String? @db.Text
+
   // 撤销信息
-  revokedAt       DateTime?
-  revokeReason    String?
-  revokedBy       String?
-  
+  revokedAt    DateTime?
+  revokeReason String?
+  revokedBy    String?
+
   // 时间戳
-  issuedAt        DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  issuedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   // 核验记录
-  verifications   Verification[]
-  
+  verifications Verification[]
+
   // 附件
-  attachments     Attachment[]
+  attachments Attachment[]
+
+  // 关联的申请
+  application InternshipApplication?
 
   @@index([certNumber])
   @@index([status])
@@ -215,42 +224,42 @@ model Certificate {
 
 // 证明附件
 model Attachment {
-  id              String    @id @default(uuid())
-  certificate     Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
-  certificateId   String
-  
+  id            String      @id @default(uuid())
+  certificate   Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+  certificateId String
+
   // 文件信息
-  fileName        String
-  originalName    String
-  fileSize        Int
-  mimeType        String
-  filePath        String    @db.Text
-  fileHash        String?   // 文件内容哈希，用于验证完整性
-  
+  fileName     String
+  originalName String
+  fileSize     Int
+  mimeType     String
+  filePath     String  @db.Text
+  fileHash     String? // 文件内容哈希，用于验证完整性
+
   // 文件类型分类
-  category        String    @default("OTHER") // REPORT, CONTRACT, EVALUATION, PHOTO, OTHER
-  description     String?   @db.Text
-  
+  category    String  @default("OTHER") // REPORT, CONTRACT, EVALUATION, PHOTO, OTHER
+  description String? @db.Text
+
   // 上传者
-  uploadedBy      String?
-  
-  createdAt       DateTime  @default(now())
-  
+  uploadedBy String?
+
+  createdAt DateTime @default(now())
+
   @@index([certificateId])
   @@index([category])
 }
 
 // 核验记录
 model Verification {
-  id              String    @id @default(uuid())
-  certificate     Certificate @relation(fields: [certificateId], references: [id])
-  certificateId   String
-  
-  verifierIp      String?
-  verifierAgent   String?
-  isValid         Boolean
-  
-  createdAt       DateTime  @default(now())
+  id            String      @id @default(uuid())
+  certificate   Certificate @relation(fields: [certificateId], references: [id])
+  certificateId String
+
+  verifierIp    String?
+  verifierAgent String?
+  isValid       Boolean
+
+  createdAt DateTime @default(now())
 
   @@index([certificateId])
   @@index([createdAt])
@@ -258,19 +267,19 @@ model Verification {
 
 // 审计日志
 model AuditLog {
-  id              String    @id @default(uuid())
-  user            User?     @relation(fields: [userId], references: [id])
-  userId          String?
-  
-  action          String
-  entityType      String
-  entityId        String?
-  oldValue        String?   @db.Text
-  newValue        String?   @db.Text
-  ipAddress       String?
-  userAgent       String?   @db.Text
-  
-  createdAt       DateTime  @default(now())
+  id     String  @id @default(uuid())
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
+
+  action     String
+  entityType String
+  entityId   String?
+  oldValue   String? @db.Text
+  newValue   String? @db.Text
+  ipAddress  String?
+  userAgent  String? @db.Text
+
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([action])
@@ -280,17 +289,17 @@ model AuditLog {
 
 // 通知
 model Notification {
-  id              String    @id @default(uuid())
-  user            User      @relation(fields: [userId], references: [id])
-  userId          String
-  
-  title           String
-  content         String    @db.Text
-  type            String
-  isRead          Boolean   @default(false)
-  link            String?
-  
-  createdAt       DateTime  @default(now())
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  title   String
+  content String  @db.Text
+  type    String
+  isRead  Boolean @default(false)
+  link    String?
+
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([isRead])
@@ -299,13 +308,137 @@ model Notification {
 
 // 系统配置
 model SystemConfig {
-  id              String    @id @default(uuid())
-  key             String    @unique
-  value           String
-  description     String?
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id          String  @id @default(uuid())
+  key         String  @unique
+  value       String
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([key])
+}
+
+// 学生白名单 - 系统管理员预先上传的学生信息，用于注册验证
+model StudentWhitelist {
+  id             String  @id @default(uuid())
+  studentId      String  @unique // 学号
+  name           String // 姓名
+  major          String? // 专业
+  department     String? // 院系
+  enrollmentYear Int? // 入学年份
+  graduationYear Int? // 预计毕业年份
+  idCard         String? // 身份证号（可选，用于额外验证）
+
+  // 关联高校
+  university   University? @relation(fields: [universityId], references: [id])
+  universityId String?
+
+  // 使用状态
+  isUsed       Boolean   @default(false) // 是否已被注册使用
+  usedAt       DateTime? // 注册使用时间
+  usedByUserId String? // 关联的用户ID
+
+  // 上传信息
+  uploadedBy String? // 上传者ID
+  batchId    String? // 批次ID，用于批量管理
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([universityId])
+  @@index([isUsed])
+  @@index([batchId])
+}
+
+// 第三方机构 - HR/用人单位/背景调查机构
+model ThirdPartyOrg {
+  id              String  @id @default(uuid())
+  code            String  @unique // 机构代码
+  name            String // 机构名称
+  type            String // HR, RECRUITER, BACKGROUND_CHECK
+  industry        String? // 所属行业
+  province        String?
+  city            String?
+  address         String?
+  logo            String?
+  website         String?
+  contactPerson   String?
+  contactPhone    String?
+  contactEmail    String?
+  businessLicense String? // 营业执照号
+  description     String? @db.Text
+  isVerified      Boolean @default(false)
+
+  // 关联用户
+  users User[] @relation("ThirdPartyUsers")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+  @@index([name])
+  @@index([type])
+}
+
+// 实习申请 - 学生发起，企业评价，高校审核
+model InternshipApplication {
+  id            String @id @default(uuid())
+  applicationNo String @unique // 申请编号
+
+  // 关联
+  student      StudentProfile @relation(fields: [studentId], references: [id])
+  studentId    String
+  university   University     @relation(fields: [universityId], references: [id])
+  universityId String
+  company      Company        @relation(fields: [companyId], references: [id])
+  companyId    String
+
+  // 实习信息
+  position    String // 实习岗位
+  department  String? // 实习部门
+  startDate   DateTime // 开始日期
+  endDate     DateTime // 结束日期
+  description String?  @db.Text // 实习内容描述
+
+  // 申请状态
+  // DRAFT: 草稿
+  // SUBMITTED: 已提交（待企业评价）
+  // COMPANY_REVIEWING: 企业评价中
+  // COMPANY_APPROVED: 企业已签章（待高校审核）
+  // UNIVERSITY_REVIEWING: 高校审核中
+  // APPROVED: 已通过（待上链/已上链）
+  // REJECTED: 已拒绝
+  // WITHDRAWN: 已撤回
+  status String @default("DRAFT")
+
+  // 企业评价
+  companyScore        Int? // 企业评分 (1-100)
+  companyEvaluation   String?   @db.Text // 企业评语
+  companySignature    String?   @db.Text // 企业数字签章（签名数据）
+  companySignedAt     DateTime? // 企业签章时间
+  companySignedBy     String? // 企业签章人ID
+  companyRejectReason String?   @db.Text // 企业拒绝原因
+
+  // 高校审核
+  universityApproval     String?   @db.Text // 高校审批意见
+  universityApprovedAt   DateTime? // 高校审批时间
+  universityApprovedBy   String? // 高校审批人ID
+  universityRejectReason String?   @db.Text // 高校拒绝原因
+
+  // 关联生成的证书
+  certificate   Certificate? @relation(fields: [certificateId], references: [id])
+  certificateId String?      @unique
+
+  // 时间戳
+  submittedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([applicationNo])
+  @@index([studentId])
+  @@index([companyId])
+  @@index([universityId])
+  @@index([status])
 }
