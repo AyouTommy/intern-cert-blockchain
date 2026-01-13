@@ -328,7 +328,7 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
           certHash,
           txHash: result.txHash,
           blockNumber: result.blockNumber,
-          chainId: 31337,
+          chainId: blockchainService.getChainId(),
           issuedAt: new Date(),
         },
       });
@@ -482,7 +482,7 @@ router.post(
               certHash: certHashes[i],
               txHash: result.txHash,
               blockNumber: result.blockNumber,
-              chainId: 31337,
+              chainId: blockchainService.getChainId(),
               issuedAt: new Date(),
             },
           });

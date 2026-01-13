@@ -18,8 +18,12 @@ class BlockchainService {
     const rpcUrl = process.env.BLOCKCHAIN_RPC_URL || 'http://127.0.0.1:8545';
     this.provider = new ethers.JsonRpcProvider(rpcUrl);
     
-    const privateKey = process.env.SIGNER_PRIVATE_KEY || 
+    let privateKey = process.env.SIGNER_PRIVATE_KEY || 
       '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'; // Hardhat默认私钥
+    // 确保私钥有 0x 前缀
+    if (privateKey && !privateKey.startsWith('0x')) {
+      privateKey = '0x' + privateKey;
+    }
     this.signer = new ethers.Wallet(privateKey, this.provider);
     
     this.loadContract();
@@ -58,6 +62,11 @@ class BlockchainService {
   // 获取合约地址
   getContractAddress(): string | null {
     return this.contractConfig?.address || null;
+  }
+
+  // 获取 chainId
+  getChainId(): number {
+    return this.contractConfig?.chainId || 31337;
   }
 
   // 生成证明哈希
