@@ -84,7 +84,10 @@ async function main() {
   const adminPassword = await bcrypt.hash('admin123', 12);
   const admin = await prisma.user.upsert({
     where: { email: 'admin@example.com' },
-    update: {},
+    update: {
+      approvalStatus: 'APPROVED',
+      isActive: true,
+    },
     create: {
       email: 'admin@example.com',
       password: adminPassword,
@@ -92,6 +95,7 @@ async function main() {
       role: 'ADMIN',
       isActive: true,
       emailVerified: true,
+      approvalStatus: 'APPROVED',
     },
   });
 
@@ -103,7 +107,10 @@ async function main() {
   const uniPassword = await bcrypt.hash('university123', 12);
   const uniUser = await prisma.user.upsert({
     where: { email: 'university@pku.edu.cn' },
-    update: {},
+    update: {
+      approvalStatus: 'APPROVED',
+      isActive: true,
+    },
     create: {
       email: 'university@pku.edu.cn',
       password: uniPassword,
@@ -112,6 +119,7 @@ async function main() {
       universityId: university1.id,
       isActive: true,
       emailVerified: true,
+      approvalStatus: 'APPROVED',
     },
   });
 
@@ -123,7 +131,10 @@ async function main() {
   const compPassword = await bcrypt.hash('company123', 12);
   const compUser = await prisma.user.upsert({
     where: { email: 'hr@alibaba.com' },
-    update: {},
+    update: {
+      approvalStatus: 'APPROVED',
+      isActive: true,
+    },
     create: {
       email: 'hr@alibaba.com',
       password: compPassword,
@@ -132,6 +143,7 @@ async function main() {
       companyId: company1.id,
       isActive: true,
       emailVerified: true,
+      approvalStatus: 'APPROVED',
     },
   });
 
@@ -143,7 +155,10 @@ async function main() {
   const stuPassword = await bcrypt.hash('student123', 12);
   const student = await prisma.user.upsert({
     where: { email: 'student@pku.edu.cn' },
-    update: {},
+    update: {
+      approvalStatus: 'APPROVED',
+      isActive: true,
+    },
     create: {
       email: 'student@pku.edu.cn',
       password: stuPassword,
@@ -151,6 +166,7 @@ async function main() {
       role: 'STUDENT',
       isActive: true,
       emailVerified: true,
+      approvalStatus: 'APPROVED',
     },
   });
 
