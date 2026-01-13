@@ -301,7 +301,7 @@ router.get(
       const pendingUsers = await prisma.user.findMany({
         where: {
           approvalStatus: 'PENDING',
-          role: { in: ['UNIVERSITY', 'COMPANY'] },
+          role: { in: ['UNIVERSITY', 'COMPANY', 'THIRD_PARTY'] },
         },
         orderBy: { createdAt: 'desc' },
         select: {
@@ -310,6 +310,7 @@ router.get(
           name: true,
           role: true,
           phone: true,
+          approvalStatus: true,
           applyOrgName: true,
           applyOrgType: true,
           applyOrgCode: true,
@@ -320,8 +321,212 @@ router.get(
 
       res.json({
         success: true,
-        data: pendingUsers,
+        data: { users: pendingUsers },
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 简化的待审批列表端点（兼容前端调用）
+router.get(
+  '/pending',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const authReq = req as AuthRequest;
+      const prisma = authReq.prisma;
+
+      const pendingUsers = await prisma.user.findMany({
+        where: {
+          approvalStatus: 'PENDING',
+          role: { in: ['UNIVERSITY', 'COMPANY', 'THIRD_PARTY'] },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          phone: true,
+          approvalStatus: true,
+          applyOrgName: true,
+          applyOrgType: true,
+          applyOrgCode: true,
+          applyReason: true,
+          createdAt: true,
+        },
+      });
+
+      res.json({
+        success: true,
+        data: { users: pendingUsers },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 重置用户密码（管理员）
+router.patch(
+  '/:id/reset-password',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const authReq = req as AuthRequest;
+      const prisma = authReq.prisma;
+      const { id } = req.params;
+      const { password } = req.body;
+
+      if (!password || password.length < 6) {
+        throw new AppError('密码至少需要6个字符', 400);
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 12);
+
+      await prisma.user.update({
+        where: { id },
+        data: { password: hashedPassword },
+      });
+
+      res.json({
+        success: true,
+        message: '密码已重置',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 审批用户注册（统一端点）
+router.patch(
+  '/:id/approval',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const authReq = req as AuthRequest;
+      const prisma = authReq.prisma;
+      const { id } = req.params;
+      const { approved, rejectReason } = req.body;
+
+      const user = await prisma.user.findUnique({
+        where: { id },
+      });
+
+      if (!user) {
+        throw new AppError('用户不存在', 404);
+      }
+
+      if (user.approvalStatus !== 'PENDING') {
+        throw new AppError('该用户不在待审核状态', 400);
+      }
+
+      if (approved) {
+        // 审核通过
+        let universityId = null;
+        let companyId = null;
+        let thirdPartyOrgId = null;
+
+        // 如果需要创建机构
+        if (user.applyOrgName && user.applyOrgCode) {
+          if (user.role === 'UNIVERSITY') {
+            let university = await prisma.university.findUnique({
+              where: { code: user.applyOrgCode },
+            });
+            if (!university) {
+              university = await prisma.university.create({
+                data: {
+                  code: user.applyOrgCode,
+                  name: user.applyOrgName,
+                  isVerified: true,
+                },
+              });
+            }
+            universityId = university.id;
+          } else if (user.role === 'COMPANY') {
+            let company = await prisma.company.findUnique({
+              where: { code: user.applyOrgCode },
+            });
+            if (!company) {
+              company = await prisma.company.create({
+                data: {
+                  code: user.applyOrgCode,
+                  name: user.applyOrgName,
+                  isVerified: true,
+                },
+              });
+            }
+            companyId = company.id;
+          } else if (user.role === 'THIRD_PARTY') {
+            // 创建第三方机构
+            // @ts-ignore - ThirdPartyOrg will be available after prisma generate
+            const thirdPartyOrg = await prisma.thirdPartyOrg.create({
+              data: {
+                code: user.applyOrgCode,
+                name: user.applyOrgName,
+                isVerified: true,
+              },
+            });
+            thirdPartyOrgId = thirdPartyOrg.id;
+          }
+        }
+
+        await prisma.user.update({
+          where: { id },
+          data: {
+            approvalStatus: 'APPROVED',
+            approvedAt: new Date(),
+            approvedBy: authReq.user!.id,
+            isActive: true,
+            universityId,
+            companyId,
+            thirdPartyOrgId,
+          },
+        });
+
+        await prisma.notification.create({
+          data: {
+            userId: id,
+            title: '账户审核通过',
+            content: `您的账户申请已通过审核，现在可以正常使用系统功能。`,
+            type: 'APPROVAL',
+          },
+        });
+
+        res.json({
+          success: true,
+          message: '审核已通过',
+        });
+      } else {
+        await prisma.user.update({
+          where: { id },
+          data: {
+            approvalStatus: 'REJECTED',
+            rejectReason: rejectReason || '不符合条件',
+            isActive: false,
+          },
+        });
+
+        await prisma.notification.create({
+          data: {
+            userId: id,
+            title: '账户审核未通过',
+            content: `您的申请未通过审核。原因：${rejectReason || '不符合条件'}`,
+            type: 'APPROVAL',
+          },
+        });
+
+        res.json({
+          success: true,
+          message: '已拒绝该申请',
+        });
+      }
     } catch (error) {
       next(error);
     }

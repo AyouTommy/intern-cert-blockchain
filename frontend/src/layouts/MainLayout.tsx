@@ -14,16 +14,22 @@ import {
   XMarkIcon,
   ChevronDownIcon,
   PlusIcon,
+  ClipboardDocumentListIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../stores/authStore'
 import clsx from 'clsx'
 
 const navigation = [
-  { name: '控制台', href: '/dashboard', icon: HomeIcon, roles: ['ADMIN', 'UNIVERSITY', 'COMPANY', 'STUDENT'] },
+  { name: '控制台', href: '/dashboard', icon: HomeIcon, roles: ['ADMIN', 'UNIVERSITY', 'COMPANY', 'STUDENT', 'THIRD_PARTY'] },
+  { name: '我的申请', href: '/applications', icon: ClipboardDocumentListIcon, roles: ['STUDENT'] },
+  { name: '申请评价', href: '/applications', icon: ClipboardDocumentListIcon, roles: ['COMPANY'] },
+  { name: '申请审核', href: '/applications', icon: ClipboardDocumentListIcon, roles: ['UNIVERSITY', 'ADMIN'] },
   { name: '实习证明', href: '/certificates', icon: DocumentTextIcon, roles: ['ADMIN', 'UNIVERSITY', 'COMPANY', 'STUDENT'] },
-  { name: '证明核验', href: '/verify', icon: ShieldCheckIcon, roles: ['ADMIN', 'UNIVERSITY', 'COMPANY', 'STUDENT'] },
+  { name: '证明核验', href: '/verify', icon: ShieldCheckIcon, roles: ['ADMIN', 'UNIVERSITY', 'COMPANY', 'STUDENT', 'THIRD_PARTY'] },
   { name: '高校管理', href: '/universities', icon: BuildingOfficeIcon, roles: ['ADMIN'] },
   { name: '企业管理', href: '/companies', icon: BuildingOffice2Icon, roles: ['ADMIN'] },
+  { name: '学生白名单', href: '/whitelist', icon: UserGroupIcon, roles: ['ADMIN'] },
   { name: '用户管理', href: '/users', icon: UsersIcon, roles: ['ADMIN'] },
   { name: '系统设置', href: '/settings', icon: Cog6ToothIcon, roles: ['ADMIN', 'UNIVERSITY', 'COMPANY'] },
 ]
@@ -49,6 +55,7 @@ export default function MainLayout() {
       UNIVERSITY: '高校管理员',
       COMPANY: '企业用户',
       STUDENT: '学生',
+      THIRD_PARTY: '第三方机构',
     }
     return labels[role] || role
   }
@@ -59,6 +66,7 @@ export default function MainLayout() {
       UNIVERSITY: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
       COMPANY: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
       STUDENT: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+      THIRD_PARTY: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
     }
     return classes[role] || 'bg-dark-700 text-dark-300'
   }
@@ -104,7 +112,7 @@ export default function MainLayout() {
           <Logo />
         </div>
         <Navigation items={filteredNavigation} />
-        
+
         {/* Quick Actions */}
         {(user?.role === 'ADMIN' || user?.role === 'UNIVERSITY' || user?.role === 'COMPANY') && (
           <div className="px-4 py-4 border-t border-dark-800">
