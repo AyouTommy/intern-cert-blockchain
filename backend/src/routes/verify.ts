@@ -50,13 +50,30 @@ router.get(
         });
       }
 
+      // 检查是否已撤销
+      if (certificate.status === 'REVOKED') {
+        return res.status(200).json({
+          success: true,
+          isValid: false,
+          message: '该证明已被撤销',
+          data: {
+            certNumber: certificate.certNumber,
+            status: certificate.status,
+            revocation: {
+              revokedAt: certificate.revokedAt,
+              reason: certificate.revokeReason,
+            },
+          },
+        });
+      }
+
       // 记录验证
       await prisma.verification.create({
         data: {
           certificateId: certificate.id,
           verifierIp: req.ip,
           verifierAgent: req.get('user-agent'),
-          isValid: certificate.status === 'ACTIVE',
+          isValid: certificate.status === 'ACTIVE' || certificate.status === 'PENDING',
         },
       });
 
@@ -79,7 +96,8 @@ router.get(
         }
       }
 
-      const isValid = certificate.status === 'ACTIVE';
+      // PENDING 和 ACTIVE 状态都视为有效（待上链和已上链）
+      const isValid = certificate.status === 'ACTIVE' || certificate.status === 'PENDING';
 
       res.json({
         success: true,
