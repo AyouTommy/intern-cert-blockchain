@@ -137,7 +137,7 @@ router.post(
       const token = jwt.sign(
         { id: user.id, email: user.email, role: user.role },
         process.env.JWT_SECRET || 'default-secret',
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        { expiresIn: '7d' }
       );
 
       res.status(201).json({
@@ -221,7 +221,7 @@ router.post(
           companyId: user.companyId,
         },
         process.env.JWT_SECRET || 'default-secret',
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        { expiresIn: '7d' }
       );
 
       // 记录登录日志

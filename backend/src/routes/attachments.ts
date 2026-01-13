@@ -70,8 +70,9 @@ router.post(
   '/:certificateId',
   authenticate,
   upload.array('files', 5),
-  async (req: AuthRequest, res: Response) => {
+  async (req: Request, res: Response) => {
     try {
+      const authReq = req as AuthRequest;
       const prisma: PrismaClient = (req as any).prisma;
       const { certificateId } = req.params;
       const { category = 'OTHER', description } = req.body;
@@ -108,7 +109,7 @@ router.post(
               fileHash,
               category,
               description,
-              uploadedBy: req.user?.id
+              uploadedBy: authReq.user?.id
             }
           });
         })
@@ -174,7 +175,7 @@ router.get('/download/:attachmentId', async (req: Request, res: Response) => {
 });
 
 // 删除附件
-router.delete('/:attachmentId', authenticate, async (req: AuthRequest, res: Response) => {
+router.delete('/:attachmentId', authenticate, async (req: Request, res: Response) => {
   try {
     const prisma: PrismaClient = (req as any).prisma;
     const { attachmentId } = req.params;

@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-
-type Role = 'ADMIN' | 'UNIVERSITY' | 'COMPANY' | 'STUDENT';
+import { PrismaClient, Role } from '@prisma/client';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -88,7 +86,7 @@ export const authenticate = async (
   }
 };
 
-export const authorize = (...roles: string[]) => {
+export const authorize = (...roles: Role[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const authReq = req as AuthRequest;
     
