@@ -383,7 +383,11 @@ router.delete(
 
       // 根据角色处理不同的删除逻辑
       if (user.role === 'STUDENT' && user.studentProfile) {
-        // 学生：重置白名单允许重新注册
+        // 学生：先删除关联的实习申请
+        await prisma.internshipApplication.deleteMany({
+          where: { studentId: user.studentProfile.id },
+        });
+        // 重置白名单允许重新注册
         await prisma.studentWhitelist.updateMany({
           where: { studentId: user.studentProfile.studentId },
           data: { isUsed: false, usedAt: null, usedByUserId: null },
