@@ -119,7 +119,7 @@ export default function SettingsPage() {
               className="glass-card p-6"
             >
               <h2 className="card-title mb-6">个人信息</h2>
-              
+
               <form onSubmit={profileForm.handleSubmit(handleProfileSubmit)} className="space-y-4">
                 {/* Avatar */}
                 <div className="flex items-center gap-4 mb-6">
@@ -151,18 +151,21 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="input-label">钱包地址</label>
-                  <input
-                    type="text"
-                    {...profileForm.register('walletAddress')}
-                    className="input-field font-mono text-sm"
-                    placeholder="0x..."
-                  />
-                  <p className="text-xs text-dark-500 mt-1">
-                    用于接收区块链证明的以太坊钱包地址
-                  </p>
-                </div>
+                {/* 钱包地址 - 仅对学生用户显示 */}
+                {user?.role === 'STUDENT' && (
+                  <div>
+                    <label className="input-label">钱包地址</label>
+                    <input
+                      type="text"
+                      {...profileForm.register('walletAddress')}
+                      className="input-field font-mono text-sm"
+                      placeholder="0x..."
+                    />
+                    <p className="text-xs text-dark-500 mt-1">
+                      您的以太坊钱包地址，证书上链时将记录此地址作为证书归属标识
+                    </p>
+                  </div>
+                )}
 
                 <div className="pt-4">
                   <button type="submit" disabled={loading} className="btn-primary">
@@ -180,7 +183,7 @@ export default function SettingsPage() {
               className="glass-card p-6"
             >
               <h2 className="card-title mb-6">修改密码</h2>
-              
+
               <form onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)} className="space-y-4 max-w-md">
                 <div>
                   <label className="input-label">当前密码</label>
@@ -225,7 +228,7 @@ export default function SettingsPage() {
               className="glass-card p-6"
             >
               <h2 className="card-title mb-6">通知设置</h2>
-              
+
               <div className="space-y-4">
                 {[
                   { id: 'email', name: '邮件通知', desc: '证明状态变更时发送邮件通知' },
@@ -258,7 +261,7 @@ export default function SettingsPage() {
               className="glass-card p-6"
             >
               <h2 className="card-title mb-6">区块链配置</h2>
-              
+
               <div className="space-y-6">
                 <div className="p-4 rounded-xl bg-dark-800/50">
                   <div className="flex items-center justify-between mb-2">
