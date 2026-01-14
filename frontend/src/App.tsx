@@ -23,6 +23,8 @@ import WhitelistPage from './pages/WhitelistPage'
 import ApplicationsPage from './pages/ApplicationsPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ThirdPartyOrgsPage from './pages/ThirdPartyOrgsPage'
+import TermsPage from './pages/TermsPage'
+import PrivacyPage from './pages/PrivacyPage'
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -51,6 +53,8 @@ function App() {
     <Routes>
       {/* Public Routes */}
       <Route path="/verify/:code" element={<PublicVerifyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
 
       {/* Auth Routes */}
       <Route element={<AuthLayout />}>

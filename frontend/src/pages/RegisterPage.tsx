@@ -368,13 +368,13 @@ export default function RegisterPage() {
             />
             <span className="text-sm text-dark-400">
               我已阅读并同意{' '}
-              <a href="#" className="text-primary-400 hover:text-primary-300">
+              <Link to="/terms" className="text-primary-400 hover:text-primary-300">
                 服务条款
-              </a>{' '}
+              </Link>{' '}
               和{' '}
-              <a href="#" className="text-primary-400 hover:text-primary-300">
+              <Link to="/privacy" className="text-primary-400 hover:text-primary-300">
                 隐私政策
-              </a>
+              </Link>
             </span>
           </div>
 
