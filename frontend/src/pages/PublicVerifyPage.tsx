@@ -83,24 +83,44 @@ export default function PublicVerifyPage() {
     }
   }
 
-  // PDF下载函数 - 使用axios解决跨域问题
+  // PDF下载函数 - 直接使用fetch和Blob下载
   const downloadPdf = async (certId: string, studentName: string, studentId: string = '') => {
     const loadingToast = toast.loading('正在生成PDF...')
     try {
-      const response = await api.get(`/certificates/${certId}/pdf`, {
-        responseType: 'blob',
+      const baseUrl = import.meta.env.VITE_API_URL || ''
+      const pdfUrl = `${baseUrl}/certificates/${certId}/pdf`
+
+      const response = await fetch(pdfUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/pdf',
+        },
       })
 
-      const blob = new Blob([response.data], { type: 'application/pdf' })
-      const url = window.URL.createObjectURL(blob)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const blob = await response.blob()
+
+      // 创建下载文件名
+      const fileName = `${studentName}${studentId ? '_' + studentId : ''}_实习证书.pdf`
+
+      // 使用FileSaver逻辑
+      const blobUrl = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = url
-      // 文件名格式: 学生名字_学号_实习证书.pdf
-      link.download = `${studentName}${studentId ? '_' + studentId : ''}_实习证书.pdf`
+      link.style.display = 'none'
+      link.href = blobUrl
+      link.setAttribute('download', fileName)
+
       document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
+
+      // 清理
+      setTimeout(() => {
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(blobUrl)
+      }, 100)
 
       toast.success('PDF下载成功', { id: loadingToast })
     } catch (error) {

@@ -98,29 +98,50 @@ export default function CertificateDetailPage() {
     toast.success(`${label}已复制`)
   }
 
-  // PDF下载函数 - 使用axios解决跨域问题
+  // PDF下载函数 - 直接使用fetch和Blob下载
   const downloadPdf = async () => {
     if (!certificate) return
 
     const loadingToast = toast.loading('正在生成PDF...')
     try {
-      const pdfUrl = `${import.meta.env.VITE_API_URL || ''}/certificates/${certificate.id}/pdf`
-      const response = await api.get(pdfUrl.replace(import.meta.env.VITE_API_URL || '', ''), {
-        responseType: 'blob',
+      // 直接构建完整URL使用fetch
+      const baseUrl = import.meta.env.VITE_API_URL || ''
+      const pdfUrl = `${baseUrl}/certificates/${certificate.id}/pdf`
+
+      const response = await fetch(pdfUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/pdf',
+        },
       })
 
-      const blob = new Blob([response.data], { type: 'application/pdf' })
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      // 文件名格式: 学生名字_学号_实习证书.pdf
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const blob = await response.blob()
+
+      // 创建下载文件名
       const studentName = certificate.student.user.name
       const studentId = certificate.student.studentId
-      link.download = `${studentName}_${studentId}_实习证书.pdf`
+      const fileName = `${studentName}_${studentId}_实习证书.pdf`
+
+      // 使用FileSaver逻辑
+      const blobUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.style.display = 'none'
+      link.href = blobUrl
+      link.setAttribute('download', fileName)
+
+      // 必须添加到DOM中才能触发下载
       document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
+
+      // 清理
+      setTimeout(() => {
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(blobUrl)
+      }, 100)
 
       toast.success('PDF下载成功', { id: loadingToast })
     } catch (error) {
