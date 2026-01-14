@@ -267,6 +267,24 @@ router.get(
         throw new AppError('证明不存在', 404);
       }
 
+      // 权限检查：学生只能查看自己的证书
+      if (authReq.user!.role === 'STUDENT') {
+        const studentProfile = await prisma.studentProfile.findUnique({
+          where: { userId: authReq.user!.id },
+        });
+        if (!studentProfile || studentProfile.id !== certificate.studentId) {
+          throw new AppError('无权查看此证明', 403);
+        }
+      } else if (authReq.user!.role === 'COMPANY') {
+        if (certificate.companyId !== authReq.user!.companyId) {
+          throw new AppError('无权查看此证明', 403);
+        }
+      } else if (authReq.user!.role === 'UNIVERSITY') {
+        if (certificate.universityId !== authReq.user!.universityId) {
+          throw new AppError('无权查看此证明', 403);
+        }
+      }
+
       res.json({
         success: true,
         data: certificate,
@@ -533,12 +551,12 @@ router.post(
       }
 
       // 检查权限 - 只能评价自己机构的证书
-      if (authReq.user!.role === 'UNIVERSITY' && 
-          certificate.universityId !== authReq.user!.universityId) {
+      if (authReq.user!.role === 'UNIVERSITY' &&
+        certificate.universityId !== authReq.user!.universityId) {
         throw new AppError('无权操作此证明', 403);
       }
-      if (authReq.user!.role === 'COMPANY' && 
-          certificate.companyId !== authReq.user!.companyId) {
+      if (authReq.user!.role === 'COMPANY' &&
+        certificate.companyId !== authReq.user!.companyId) {
         throw new AppError('无权操作此证明', 403);
       }
 
@@ -592,8 +610,8 @@ router.post(
       }
 
       // 检查权限
-      if (authReq.user!.role === 'UNIVERSITY' && 
-          certificate.universityId !== authReq.user!.universityId) {
+      if (authReq.user!.role === 'UNIVERSITY' &&
+        certificate.universityId !== authReq.user!.universityId) {
         throw new AppError('无权操作此证明', 403);
       }
 
@@ -679,7 +697,7 @@ router.post(
           certificate.certHash,
           reason || '管理员撤销'
         );
-        
+
         if (!result.success) {
           console.warn('链上撤销失败:', result.error);
         }
