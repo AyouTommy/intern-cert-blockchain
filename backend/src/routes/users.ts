@@ -114,6 +114,47 @@ router.get(
   }
 );
 
+// 获取待审核用户列表 - 必须在 /:id 之前定义
+router.get(
+  '/pending',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const authReq = req as AuthRequest;
+      const prisma = authReq.prisma;
+
+      const pendingUsers = await prisma.user.findMany({
+        where: {
+          approvalStatus: 'PENDING',
+          role: { in: ['UNIVERSITY', 'COMPANY', 'THIRD_PARTY'] },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          phone: true,
+          approvalStatus: true,
+          applyOrgName: true,
+          applyOrgType: true,
+          applyOrgCode: true,
+          applyReason: true,
+          createdAt: true,
+        },
+      });
+
+      res.json({
+        success: true,
+        data: { users: pendingUsers },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // 获取用户详情
 router.get(
   '/:id',
@@ -281,6 +322,51 @@ router.patch(
       res.json({
         success: true,
         message: user.isActive ? '用户已禁用' : '用户已启用',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 删除用户（管理员）
+router.delete(
+  '/:id',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const authReq = req as AuthRequest;
+      const prisma = authReq.prisma;
+      const { id } = req.params;
+
+      // 不允许删除自己
+      if (id === authReq.user!.id) {
+        throw new AppError('不能删除自己的账户', 400);
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id },
+        select: { id: true, role: true },
+      });
+
+      if (!user) {
+        throw new AppError('用户不存在', 404);
+      }
+
+      // 删除关联的学生档案（如果存在）
+      await prisma.studentProfile.deleteMany({
+        where: { userId: id },
+      });
+
+      // 删除用户
+      await prisma.user.delete({
+        where: { id },
+      });
+
+      res.json({
+        success: true,
+        message: '用户已删除',
       });
     } catch (error) {
       next(error);

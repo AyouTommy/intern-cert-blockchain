@@ -10,6 +10,7 @@ import {
   KeyIcon,
   CheckIcon,
   XMarkIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../services/api'
@@ -115,6 +116,23 @@ export default function UsersPage() {
       await api.patch(`/users/${id}/toggle-status`)
       toast.success('用户状态已更新')
       fetchUsers()
+    } catch (error) {
+      // Error handled by interceptor
+    }
+  }
+
+  const handleDeleteUser = async (user: User) => {
+    if (!confirm(`确定要删除用户 "${user.name}" 吗？此操作不可撤销！`)) {
+      return
+    }
+    try {
+      await api.delete(`/users/${user.id}`)
+      toast.success('用户已删除')
+      if (activeTab === 'all') {
+        fetchUsers()
+      } else {
+        fetchPendingUsers()
+      }
     } catch (error) {
       // Error handled by interceptor
     }
@@ -380,6 +398,13 @@ export default function UsersPage() {
                             )}
                           >
                             {user.isActive ? '禁用' : '启用'}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user)}
+                            className="text-sm px-3 py-1 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-1"
+                            title="删除用户"
+                          >
+                            <TrashIcon className="w-4 h-4" />
                           </button>
                         </>
                       )}
