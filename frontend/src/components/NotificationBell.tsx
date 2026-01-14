@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BellIcon, CheckIcon } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
@@ -180,14 +179,6 @@ export default function NotificationBell() {
                                 ))}
                             </div>
                         )}
-
-                        <Link
-                            to="/notifications"
-                            className="block p-3 text-center text-sm text-primary-400 hover:text-primary-300 border-t border-dark-700"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            查看全部通知
-                        </Link>
                     </motion.div>
                 )}
             </AnimatePresence>
