@@ -49,7 +49,7 @@ export default function DashboardPage() {
       iconColor: 'text-primary-400',
     },
     {
-      name: '已上链',
+      name: '已上�?,
       value: stats?.overview.activeCertificates || 0,
       icon: CheckBadgeIcon,
       color: 'from-emerald-500 to-emerald-600',
@@ -57,7 +57,7 @@ export default function DashboardPage() {
       iconColor: 'text-emerald-400',
     },
     {
-      name: '待处理',
+      name: '待处�?,
       value: stats?.overview.pendingCertificates || 0,
       icon: ClockIcon,
       color: 'from-amber-500 to-amber-600',
@@ -106,8 +106,8 @@ export default function DashboardPage() {
   ]
 
   const pieData = [
-    { name: '已上链', value: stats?.overview.activeCertificates || 0 },
-    { name: '待处理', value: stats?.overview.pendingCertificates || 0 },
+    { name: '已上�?, value: stats?.overview.activeCertificates || 0 },
+    { name: '待处�?, value: stats?.overview.pendingCertificates || 0 },
     { name: '已撤销', value: stats?.overview.revokedCertificates || 0 },
   ].filter(d => d.value > 0)
 
@@ -124,12 +124,12 @@ export default function DashboardPage() {
             欢迎回来，{user?.name}
             <span className="inline-block ml-2 animate-pulse">👋</span>
           </h1>
-          <p className="page-subtitle">这是您的实习证明管理控制台</p>
+          <p className="page-subtitle">这是您的实习证明管理控制�?/p>
         </div>
         {(user?.role === 'ADMIN' || user?.role === 'UNIVERSITY' || user?.role === 'COMPANY') && (
           <Link to="/certificates/new" className="btn-primary inline-flex items-center gap-2">
             <DocumentTextIcon className="w-5 h-5" />
-            创建新证明
+            创建新证�?
           </Link>
         )}
       </div>
@@ -150,10 +150,10 @@ export default function DashboardPage() {
               </div>
               <ArrowTrendingUpIcon className="w-5 h-5 text-emerald-400" />
             </div>
-            <p className="text-3xl font-display font-bold text-dark-900 mb-1">
+            <p className="text-3xl font-display font-bold text-primary-700 mb-1">
               {stat.value.toLocaleString()}
             </p>
-            <p className="text-sm text-dark-600">{stat.name}</p>
+            <p className="text-sm text-dark-500">{stat.name}</p>
           </motion.div>
         ))}
       </div>
@@ -164,7 +164,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 glass-card p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="section-title mb-0">证明趋势</h2>
-            <span className="text-sm text-dark-400">最近7天</span>
+            <span className="text-sm text-dark-500">最�?�?/span>
           </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -211,7 +211,7 @@ export default function DashboardPage() {
                 <Area
                   type="monotone"
                   dataKey="active"
-                  name="已上链"
+                  name="已上�?
                   stroke="#10b981"
                   fillOpacity={1}
                   fill="url(#colorActive)"
@@ -223,7 +223,7 @@ export default function DashboardPage() {
 
         {/* Pie Chart */}
         <div className="glass-card p-6">
-          <h2 className="section-title">状态分布</h2>
+          <h2 className="section-title">状态分�?/h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -259,7 +259,7 @@ export default function DashboardPage() {
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: COLORS[index % COLORS.length] }}
                 />
-                <span className="text-sm text-dark-700">{entry.name}</span>
+                <span className="text-sm text-dark-400">{entry.name}</span>
               </div>
             ))}
           </div>
@@ -284,10 +284,10 @@ export default function DashboardPage() {
                   <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
                 </div>
                 <div>
-                  <p className="text-xl font-semibold text-dark-900">
+                  <p className="text-xl font-semibold text-primary-700">
                     {stat.value.toLocaleString()}
                   </p>
-                  <p className="text-sm text-dark-600">{stat.name}</p>
+                  <p className="text-sm text-dark-500">{stat.name}</p>
                 </div>
               </motion.div>
             ))}
@@ -301,27 +301,27 @@ export default function DashboardPage() {
               <CubeIcon className="w-6 h-6 text-primary-400" />
             </div>
             <div>
-              <h2 className="section-title mb-0">区块链状态</h2>
-              <p className="text-sm text-dark-600">智能合约运行情况</p>
+              <h2 className="section-title mb-0">区块链状�?/h2>
+              <p className="text-sm text-dark-500">智能合约运行情况</p>
             </div>
           </div>
 
           {stats?.blockchain ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 rounded-xl bg-slate-100">
-                <span className="text-dark-700">链上证明总数</span>
-                <span className="text-xl font-semibold text-dark-900">
+                <span className="text-dark-400">链上证明总数</span>
+                <span className="text-xl font-semibold text-primary-700">
                   {stats.blockchain.total.toLocaleString()}
                 </span>
               </div>
               <div className="flex items-center justify-between p-4 rounded-xl bg-slate-100">
-                <span className="text-dark-700">有效证明</span>
+                <span className="text-dark-400">有效证明</span>
                 <span className="text-xl font-semibold text-emerald-600">
                   {stats.blockchain.active.toLocaleString()}
                 </span>
               </div>
               <div className="flex items-center justify-between p-4 rounded-xl bg-slate-100">
-                <span className="text-dark-700">已撤销</span>
+                <span className="text-dark-400">已撤销</span>
                 <span className="text-xl font-semibold text-red-600">
                   {stats.blockchain.revoked.toLocaleString()}
                 </span>
@@ -336,7 +336,7 @@ export default function DashboardPage() {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
                 <CubeIcon className="w-8 h-8 text-dark-400" />
               </div>
-              <p className="text-dark-600 mb-4">区块链服务未连接</p>
+              <p className="text-dark-500 mb-4">区块链服务未连接</p>
               <p className="text-sm text-dark-500">
                 请确保已部署智能合约并配置正确的连接参数
               </p>
@@ -357,8 +357,8 @@ export default function DashboardPage() {
               <DocumentTextIcon className="w-6 h-6 text-primary-600" />
             </div>
             <div>
-              <p className="font-medium text-dark-900">创建证明</p>
-              <p className="text-sm text-dark-600">新建实习证明</p>
+              <p className="font-medium text-primary-700">创建证明</p>
+              <p className="text-sm text-dark-500">新建实习证明</p>
             </div>
           </Link>
           <Link
@@ -369,8 +369,8 @@ export default function DashboardPage() {
               <ShieldCheckIcon className="w-6 h-6 text-emerald-600" />
             </div>
             <div>
-              <p className="font-medium text-dark-900">核验证明</p>
-              <p className="text-sm text-dark-600">验证证明真伪</p>
+              <p className="font-medium text-primary-700">核验证明</p>
+              <p className="text-sm text-dark-500">验证证明真伪</p>
             </div>
           </Link>
           <Link
@@ -381,8 +381,8 @@ export default function DashboardPage() {
               <ClockIcon className="w-6 h-6 text-amber-600" />
             </div>
             <div>
-              <p className="font-medium text-dark-900">待处理</p>
-              <p className="text-sm text-dark-600">
+              <p className="font-medium text-primary-700">待处�?/p>
+              <p className="text-sm text-dark-500">
                 {stats?.overview.pendingCertificates || 0} 条待上链
               </p>
             </div>
@@ -395,8 +395,8 @@ export default function DashboardPage() {
               <CubeIcon className="w-6 h-6 text-purple-600" />
             </div>
             <div>
-              <p className="font-medium text-dark-900">系统设置</p>
-              <p className="text-sm text-dark-600">配置与管理</p>
+              <p className="font-medium text-primary-700">系统设置</p>
+              <p className="text-sm text-dark-500">配置与管�?/p>
             </div>
           </Link>
         </div>
