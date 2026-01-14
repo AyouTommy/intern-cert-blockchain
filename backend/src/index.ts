@@ -15,6 +15,7 @@ import templateRoutes from './routes/templates';
 import attachmentRoutes from './routes/attachments';
 import whitelistRoutes from './routes/whitelist';
 import applicationRoutes from './routes/applications';
+import notificationRoutes from './routes/notifications';
 
 // 中间件导入
 import { errorHandler } from './middleware/errorHandler';
@@ -65,6 +66,7 @@ app.use('/api/templates', templateRoutes);
 app.use('/api/attachments', attachmentRoutes);
 app.use('/api/whitelist', whitelistRoutes);
 app.use('/api/applications', applicationRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // 404处理
 app.use((req, res) => {

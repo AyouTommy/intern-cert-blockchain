@@ -442,3 +442,22 @@ model InternshipApplication {
   @@index([universityId])
   @@index([status])
 }
+
+// 密码重置请求
+model PasswordResetRequest {
+  id              String   @id @default(uuid())
+  userId          String
+  newPasswordHash String
+  reason          String?  @db.Text
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  
+  processedAt     DateTime?
+  processedBy     String?
+  rejectReason    String?  @db.Text
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+}

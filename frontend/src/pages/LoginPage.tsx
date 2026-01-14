@@ -110,9 +110,9 @@ export default function LoginPage() {
               />
               记住我
             </label>
-            <a href="#" className="text-primary-400 hover:text-primary-300">
+            <Link to="/forgot-password" className="text-primary-400 hover:text-primary-300">
               忘记密码？
-            </a>
+            </Link>
           </div>
 
           <motion.button
@@ -144,24 +144,8 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
-
-        {/* Demo accounts */}
-        <div className="mt-8 pt-6 border-t border-dark-700">
-          <p className="text-xs text-dark-500 text-center mb-3">演示账户</p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="p-2 rounded-lg bg-dark-800/50 text-dark-400">
-              <p className="font-medium text-dark-300">管理员</p>
-              <p>admin@example.com</p>
-              <p>admin123</p>
-            </div>
-            <div className="p-2 rounded-lg bg-dark-800/50 text-dark-400">
-              <p className="font-medium text-dark-300">高校</p>
-              <p>university@pku.edu.cn</p>
-              <p>university123</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   )
 }
+

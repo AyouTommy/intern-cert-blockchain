@@ -18,6 +18,7 @@ import {
   UserGroupIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../stores/authStore'
+import NotificationBell from '../components/NotificationBell'
 import clsx from 'clsx'
 
 const navigation = [
@@ -152,6 +153,9 @@ export default function MainLayout() {
                 </svg>
               </div>
             </div>
+
+            {/* Notification Bell */}
+            <NotificationBell />
 
             {/* User menu */}
             <div className="relative">

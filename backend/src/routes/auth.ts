@@ -433,4 +433,74 @@ router.put(
   }
 );
 
+// 忘记密码 - 提交密码重置申请
+router.post(
+  '/forgot-password',
+  [
+    body('email').isEmail().withMessage('请输入有效的邮箱'),
+    body('newPassword').isLength({ min: 6 }).withMessage('新密码至少6个字符'),
+  ],
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          errors: errors.array(),
+        });
+      }
+
+      const prisma = (req as any).prisma as PrismaClient;
+      const { email, newPassword, reason } = req.body;
+
+      // 检查用户是否存在
+      const user = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (!user) {
+        throw new AppError('该邮箱未注册', 404);
+      }
+
+      // 加密新密码
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+      // 创建密码重置请求记录
+      await prisma.passwordResetRequest.create({
+        data: {
+          userId: user.id,
+          newPasswordHash: hashedPassword,
+          reason: reason || '用户申请重置密码',
+          status: 'PENDING',
+        },
+      });
+
+      // 通知管理员
+      const admins = await prisma.user.findMany({
+        where: { role: 'ADMIN' },
+        select: { id: true },
+      });
+
+      for (const admin of admins) {
+        await prisma.notification.create({
+          data: {
+            userId: admin.id,
+            title: '密码重置申请',
+            content: `用户 ${user.name}（${user.email}）申请重置密码，请前往审核。`,
+            type: 'PASSWORD_RESET',
+          },
+        });
+      }
+
+      res.json({
+        success: true,
+        message: '密码重置申请已提交，请等待管理员审核',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;
+
