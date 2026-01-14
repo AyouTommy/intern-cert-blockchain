@@ -80,11 +80,13 @@ export default function NotificationBell() {
 
     const markAllAsRead = async () => {
         try {
-            await api.patch('/notifications/read-all')
-            setNotifications(notifications.map(n => ({ ...n, isRead: true })))
-            setUnreadCount(0)
-        } catch (error) {
-            console.error('Failed to mark all as read')
+            const response = await api.patch('/notifications/read-all')
+            if (response.data.success) {
+                setNotifications(notifications.map(n => ({ ...n, isRead: true })))
+                setUnreadCount(0)
+            }
+        } catch (error: any) {
+            console.error('Failed to mark all as read:', error)
         }
     }
 
