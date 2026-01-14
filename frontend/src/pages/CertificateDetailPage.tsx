@@ -98,24 +98,25 @@ export default function CertificateDetailPage() {
     toast.success(`${label}已复制`)
   }
 
-  // PDF下载函数 - 解决跨域文件名问题
+  // PDF下载函数 - 使用axios解决跨域问题
   const downloadPdf = async () => {
     if (!certificate) return
 
     const loadingToast = toast.loading('正在生成PDF...')
     try {
       const pdfUrl = `${import.meta.env.VITE_API_URL || ''}/certificates/${certificate.id}/pdf`
-      const response = await fetch(pdfUrl)
+      const response = await api.get(pdfUrl.replace(import.meta.env.VITE_API_URL || '', ''), {
+        responseType: 'blob',
+      })
 
-      if (!response.ok) {
-        throw new Error('PDF生成失败')
-      }
-
-      const blob = await response.blob()
+      const blob = new Blob([response.data], { type: 'application/pdf' })
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `实习证明_${certificate.certNumber}.pdf`
+      // 文件名格式: 学生名字_学号_实习证书.pdf
+      const studentName = certificate.student.user.name
+      const studentId = certificate.student.studentId
+      link.download = `${studentName}_${studentId}_实习证书.pdf`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
