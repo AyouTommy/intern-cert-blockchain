@@ -10,12 +10,12 @@ export default function AuthLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-950 flex">
+    <div className="min-h-screen bg-dark-900 flex">
       {/* Left side - Decorative */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/50 via-dark-900 to-accent-900/30" />
-        
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-600/20 via-dark-800 to-accent-500/10" />
+
         {/* Animated background elements */}
         <div className="absolute inset-0">
           <motion.div
@@ -45,7 +45,7 @@ export default function AuthLayout() {
         </div>
 
         {/* Grid pattern */}
-        <div 
+        <div
           className="absolute inset-0 opacity-[0.02]"
           style={{
             backgroundImage: `
@@ -71,17 +71,17 @@ export default function AuthLayout() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-2xl font-display font-bold text-white">链证通</h1>
-                <p className="text-dark-400 text-sm">Blockchain Certification</p>
+                <h1 className="text-2xl font-display font-bold text-dark-100">链证通</h1>
+                <p className="text-dark-300 text-sm">Blockchain Certification</p>
               </div>
             </div>
 
-            <h2 className="text-4xl xl:text-5xl font-display font-bold text-white leading-tight mb-6">
+            <h2 className="text-4xl xl:text-5xl font-display font-bold text-dark-100 leading-tight mb-6">
               高校实习证明
               <br />
-              <span className="gradient-text">区块链上链系统</span>
+              <span className="text-primary-600">区块链上链系统</span>
             </h2>
-            
+
             <p className="text-dark-300 text-lg max-w-md mb-10">
               基于区块链技术，实现实习证明的不可篡改存储与链上核验，
               为高校、企业、学生提供可信的数字凭证服务。
@@ -105,7 +105,7 @@ export default function AuthLayout() {
                     {feature.icon}
                   </div>
                   <div>
-                    <p className="text-white font-medium">{feature.title}</p>
+                    <p className="text-dark-100 font-medium">{feature.title}</p>
                     <p className="text-dark-400 text-sm">{feature.desc}</p>
                   </div>
                 </motion.div>
