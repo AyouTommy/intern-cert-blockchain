@@ -17,7 +17,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import api, { DashboardStats } from '../services/api'
 import { useAuthStore } from '../stores/authStore'
 
-const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444']
+const COLORS = ['#a855f7', '#10b981', '#f59e0b', '#ef4444']
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
@@ -174,8 +174,8 @@ export default function DashboardPage() {
               >
                 <defs>
                   <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
@@ -202,7 +202,7 @@ export default function DashboardPage() {
                   type="monotone"
                   dataKey="created"
                   name="新建证明"
-                  stroke="#0ea5e9"
+                  stroke="#a855f7"
                   fillOpacity={1}
                   fill="url(#colorCreated)"
                 />

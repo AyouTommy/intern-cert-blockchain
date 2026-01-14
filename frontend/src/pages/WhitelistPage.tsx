@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../services/api'
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
 
 interface WhitelistEntry {
     id: string
@@ -53,6 +54,10 @@ export default function WhitelistPage() {
     // 批量导入状态
     const [batchData, setBatchData] = useState('')
     const [batchUniversityId, setBatchUniversityId] = useState('')
+
+    // 删除确认模态框状态
+    const [deletingEntry, setDeletingEntry] = useState<WhitelistEntry | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     useEffect(() => {
         fetchWhitelist()
@@ -148,17 +153,24 @@ export default function WhitelistPage() {
         }
     }
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('确定要删除此记录吗？')) return
+    const handleDelete = async (entry: WhitelistEntry) => {
+        setDeletingEntry(entry)
+    }
 
+    const confirmDelete = async () => {
+        if (!deletingEntry) return
+        setIsDeleting(true)
         try {
-            const response = await api.delete(`/whitelist/${id}`)
+            const response = await api.delete(`/whitelist/${deletingEntry.id}`)
             if (response.data.success) {
                 toast.success('删除成功')
                 fetchWhitelist()
             }
         } catch (error: any) {
             toast.error(error.response?.data?.message || '删除失败')
+        } finally {
+            setIsDeleting(false)
+            setDeletingEntry(null)
         }
     }
 
@@ -272,7 +284,7 @@ export default function WhitelistPage() {
                                         <td className="px-4 py-3 text-right">
                                             {!entry.isUsed && (
                                                 <button
-                                                    onClick={() => handleDelete(entry.id)}
+                                                    onClick={() => handleDelete(entry)}
                                                     className="text-red-400 hover:text-red-300 p-1"
                                                     title="删除"
                                                 >
@@ -458,6 +470,16 @@ export default function WhitelistPage() {
                     </motion.div>
                 </div>
             )}
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmDeleteModal
+                isOpen={!!deletingEntry}
+                title="确认删除"
+                message={`确定要删除学生 "${deletingEntry?.name}"(${deletingEntry?.studentId}) 的白名单记录吗？`}
+                onConfirm={confirmDelete}
+                onCancel={() => setDeletingEntry(null)}
+                isLoading={isDeleting}
+            />
         </div>
     )
 }
