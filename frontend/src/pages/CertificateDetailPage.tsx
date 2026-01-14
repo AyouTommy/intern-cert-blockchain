@@ -129,7 +129,7 @@ export default function CertificateDetailPage() {
             创建于 {format(new Date(certificate.createdAt), 'yyyy年MM月dd日 HH:mm')}
           </p>
         </div>
-        
+
         {/* Actions */}
         <div className="flex items-center gap-2">
           {(certificate.status === 'PENDING' || certificate.status === 'FAILED') && canManage && (
@@ -283,7 +283,7 @@ export default function CertificateDetailPage() {
                   已上链
                 </div>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="p-4 rounded-xl bg-dark-800/50">
                   <div className="flex items-center justify-between mb-2">
@@ -328,6 +328,55 @@ export default function CertificateDetailPage() {
                   </div>
                 </div>
               </div>
+            </motion.div>
+          )}
+
+          {/* PDF Certificate File */}
+          {certificate.attachments && certificate.attachments.some((a: any) => a.category === 'CERTIFICATE_PDF') && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="glass-card p-6"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 rounded-xl bg-amber-500/10">
+                  <DocumentTextIcon className="w-6 h-6 text-amber-400" />
+                </div>
+                <h2 className="card-title">证书文件</h2>
+              </div>
+
+              {certificate.attachments
+                .filter((a: any) => a.category === 'CERTIFICATE_PDF')
+                .map((att: any) => {
+                  const pdfUrl = `${import.meta.env.VITE_API_URL || ''}/api/attachments/download/${att.id}`;
+                  return (
+                    <div key={att.id} className="space-y-4">
+                      {/* PDF Preview */}
+                      <div className="rounded-xl overflow-hidden border border-dark-700 bg-dark-800/50">
+                        <iframe
+                          src={pdfUrl}
+                          className="w-full h-[400px]"
+                          title="PDF Preview"
+                        />
+                      </div>
+
+                      {/* Download Button */}
+                      <a
+                        href={pdfUrl}
+                        download={att.originalName || 'certificate.pdf'}
+                        className="btn-primary w-full flex items-center justify-center gap-2"
+                      >
+                        <ArrowUpOnSquareIcon className="w-5 h-5 rotate-180" />
+                        下载证书PDF
+                      </a>
+
+                      <p className="text-center text-sm text-dark-400">
+                        文件大小: {(att.fileSize / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                  );
+                })}
             </motion.div>
           )}
         </div>

@@ -32,7 +32,7 @@ const retryRequest = async (error: AxiosError, retryCount: number = 0): Promise<
   if (!config) return Promise.reject(error)
 
   // 只对网络错误和 503 错误重试
-  const shouldRetry = 
+  const shouldRetry =
     !error.response || // 网络错误
     error.response.status === 503 || // 服务不可用（冷启动）
     error.code === 'ECONNABORTED' // 超时
@@ -53,7 +53,7 @@ const retryRequest = async (error: AxiosError, retryCount: number = 0): Promise<
 
     // 等待后重试
     await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
-    
+
     try {
       const response = await api.request(config)
       // 成功后关闭提示
@@ -98,7 +98,7 @@ api.interceptors.response.use(
   },
   async (error: AxiosError) => {
     // 检查是否需要重试（冷启动场景）
-    const shouldRetry = 
+    const shouldRetry =
       !error.response || // 网络错误
       error.response.status === 503 || // 服务不可用
       error.code === 'ECONNABORTED' // 超时
@@ -111,10 +111,10 @@ api.interceptors.response.use(
       }
     }
 
-    const message = error.response?.data && typeof error.response.data === 'object' && 'message' in error.response.data 
-      ? (error.response.data as { message: string }).message 
+    const message = error.response?.data && typeof error.response.data === 'object' && 'message' in error.response.data
+      ? (error.response.data as { message: string }).message
       : error.message || '请求失败'
-    
+
     if (error.response?.status === 401) {
       // Token expired or invalid
       localStorage.removeItem('auth-storage')
@@ -133,7 +133,7 @@ api.interceptors.response.use(
     } else {
       toast.error(message)
     }
-    
+
     return Promise.reject(error)
   }
 )
@@ -198,6 +198,15 @@ export interface Certificate {
     id: string
     name: string
   }
+  attachments?: {
+    id: string
+    fileName: string
+    originalName: string
+    fileSize: number
+    mimeType: string
+    category: string
+    description?: string
+  }[]
 }
 
 export interface University {
