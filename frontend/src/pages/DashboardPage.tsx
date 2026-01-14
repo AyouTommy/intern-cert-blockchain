@@ -182,21 +182,23 @@ export default function DashboardPage() {
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
                 <XAxis
                   dataKey="date"
-                  stroke="#64748b"
+                  stroke="#71717a"
                   fontSize={12}
                   tickFormatter={(value) => value.slice(5)}
                 />
-                <YAxis stroke="#64748b" fontSize={12} />
+                <YAxis stroke="#71717a" fontSize={12} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#1e293b',
-                    border: '1px solid #334155',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e4e4e7',
                     borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
                   }}
-                  labelStyle={{ color: '#f1f5f9' }}
+                  labelStyle={{ color: '#18181b' }}
+                  itemStyle={{ color: '#3f3f46' }}
                 />
                 <Area
                   type="monotone"
@@ -240,10 +242,12 @@ export default function DashboardPage() {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#1e293b',
-                    border: '1px solid #334155',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e4e4e7',
                     borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
                   }}
+                  itemStyle={{ color: '#3f3f46' }}
                 />
               </PieChart>
             </ResponsiveContainer>

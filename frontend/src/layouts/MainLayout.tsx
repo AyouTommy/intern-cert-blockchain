@@ -74,7 +74,7 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-950">
+    <div className="min-h-screen bg-slate-50">
       {/* Mobile sidebar */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -83,7 +83,7 @@ export default function MainLayout() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-40 lg:hidden"
+              className="fixed inset-0 bg-dark-900/30 backdrop-blur-sm z-40 lg:hidden"
               onClick={() => setSidebarOpen(false)}
             />
             <motion.aside
@@ -91,13 +91,13 @@ export default function MainLayout() {
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 w-72 bg-dark-900 border-r border-dark-800 z-50 lg:hidden"
+              className="fixed inset-y-0 left-0 w-72 bg-white border-r border-dark-200 z-50 lg:hidden"
             >
-              <div className="flex items-center justify-between h-16 px-4 border-b border-dark-800">
+              <div className="flex items-center justify-between h-16 px-4 border-b border-dark-200">
                 <Logo />
                 <button
                   onClick={() => setSidebarOpen(false)}
-                  className="p-2 text-dark-400 hover:text-dark-100 rounded-lg hover:bg-dark-800"
+                  className="p-2 text-dark-400 hover:text-dark-900 rounded-lg hover:bg-dark-100"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
@@ -109,15 +109,15 @@ export default function MainLayout() {
       </AnimatePresence>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 lg:flex lg:flex-col bg-dark-900 border-r border-dark-800">
-        <div className="flex items-center h-16 px-6 border-b border-dark-800">
+      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 lg:flex lg:flex-col bg-white border-r border-dark-200">
+        <div className="flex items-center h-16 px-6 border-b border-dark-200">
           <Logo />
         </div>
         <Navigation items={filteredNavigation} />
 
         {/* Quick Actions */}
         {(user?.role === 'ADMIN' || user?.role === 'UNIVERSITY' || user?.role === 'COMPANY') && (
-          <div className="px-4 py-4 border-t border-dark-800">
+          <div className="px-4 py-4 border-t border-dark-200">
             <button
               onClick={() => navigate('/certificates/new')}
               className="w-full btn-primary flex items-center justify-center gap-2"
@@ -132,7 +132,7 @@ export default function MainLayout() {
       {/* Main content */}
       <div className="lg:pl-72">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 h-16 bg-dark-900/80 backdrop-blur-xl border-b border-dark-800">
+        <header className="sticky top-0 z-30 h-16 bg-white/80 backdrop-blur-xl border-b border-dark-200">
           <div className="flex items-center justify-between h-full px-4 lg:px-8">
             <button
               onClick={() => setSidebarOpen(true)}

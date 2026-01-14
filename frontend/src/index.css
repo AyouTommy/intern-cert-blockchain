@@ -4,11 +4,11 @@
 
 @layer base {
   * {
-    @apply border-dark-700;
+    @apply border-dark-200;
   }
   
   body {
-    @apply bg-dark-950 text-dark-100 antialiased;
+    @apply bg-slate-50 text-dark-800 antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
@@ -18,25 +18,25 @@
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-dark-900;
+    @apply bg-dark-100;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-dark-600 rounded-full;
+    @apply bg-dark-300 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-dark-500;
+    @apply bg-dark-400;
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-dark-900/50 backdrop-blur-xl border border-dark-700/50 rounded-2xl shadow-glass;
+    @apply bg-white/90 backdrop-blur-xl border border-dark-200 rounded-2xl shadow-lg;
   }
 
   .glass-card-hover {
-    @apply glass-card transition-all duration-300 hover:border-primary-500/30 hover:shadow-glass-lg;
+    @apply glass-card transition-all duration-300 hover:border-primary-400 hover:shadow-xl;
   }
 
   .gradient-text {
@@ -53,13 +53,13 @@
   }
 
   .btn-secondary {
-    @apply px-6 py-3 bg-dark-800 text-dark-100 font-medium rounded-xl border border-dark-600
-           hover:bg-dark-700 hover:border-dark-500 transition-all duration-300
+    @apply px-6 py-3 bg-white text-dark-700 font-medium rounded-xl border border-dark-300
+           hover:bg-dark-50 hover:border-dark-400 transition-all duration-300
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-ghost {
-    @apply px-4 py-2 text-dark-300 hover:text-dark-100 hover:bg-dark-800/50 rounded-lg transition-all duration-200;
+    @apply px-4 py-2 text-dark-600 hover:text-dark-900 hover:bg-dark-100 rounded-lg transition-all duration-200;
   }
 
   .btn-danger {
@@ -69,13 +69,13 @@
   }
 
   .input-field {
-    @apply w-full px-4 py-3 bg-dark-800/50 border border-dark-600 rounded-xl text-dark-100
-           placeholder:text-dark-500 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20
+    @apply w-full px-4 py-3 bg-white border border-dark-300 rounded-xl text-dark-800
+           placeholder:text-dark-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20
            transition-all duration-200;
   }
 
   .input-label {
-    @apply block text-sm font-medium text-dark-300 mb-2;
+    @apply block text-sm font-medium text-dark-600 mb-2;
   }
 
   .badge {
@@ -99,7 +99,7 @@
   }
 
   .badge-neutral {
-    @apply badge bg-dark-700 text-dark-300 border border-dark-600;
+    @apply badge bg-dark-100 text-dark-600 border border-dark-200;
   }
 
   .stat-card {
@@ -116,11 +116,11 @@
   }
 
   .table-header {
-    @apply bg-dark-800/50 text-dark-400 text-xs uppercase tracking-wider font-medium;
+    @apply bg-dark-50 text-dark-500 text-xs uppercase tracking-wider font-medium;
   }
 
   .table-row {
-    @apply border-b border-dark-700/50 hover:bg-dark-800/30 transition-colors;
+    @apply border-b border-dark-100 hover:bg-dark-50 transition-colors;
   }
 
   .table-cell {
@@ -128,20 +128,20 @@
   }
 
   .nav-link {
-    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-dark-400 hover:text-dark-100 hover:bg-dark-800/50
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-dark-500 hover:text-dark-900 hover:bg-dark-100
            transition-all duration-200 group;
   }
 
   .nav-link-active {
-    @apply nav-link bg-primary-500/10 text-primary-400 border-l-2 border-primary-500;
+    @apply nav-link bg-primary-50 text-primary-700 border-l-2 border-primary-500;
   }
 
   .page-title {
-    @apply text-3xl font-display font-bold text-dark-50;
+    @apply text-3xl font-display font-bold text-dark-900;
   }
 
   .page-subtitle {
-    @apply text-dark-400 mt-1;
+    @apply text-dark-500 mt-1;
   }
 
   .section-title {
@@ -153,15 +153,15 @@
   }
 
   .link {
-    @apply text-primary-400 hover:text-primary-300 transition-colors;
+    @apply text-primary-600 hover:text-primary-500 transition-colors;
   }
 
   .divider {
-    @apply border-t border-dark-700/50 my-6;
+    @apply border-t border-dark-200 my-6;
   }
 
   .modal-overlay {
-    @apply fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50;
+    @apply fixed inset-0 bg-dark-900/50 backdrop-blur-sm z-50;
   }
 
   .modal-content {
@@ -173,15 +173,15 @@
   }
 
   .dropdown-item {
-    @apply flex items-center gap-3 px-4 py-2 text-sm text-dark-300 hover:text-dark-100 hover:bg-dark-800/50 transition-colors;
+    @apply flex items-center gap-3 px-4 py-2 text-sm text-dark-600 hover:text-dark-900 hover:bg-dark-50 transition-colors;
   }
 
   .skeleton {
-    @apply animate-pulse bg-dark-700 rounded;
+    @apply animate-pulse bg-dark-200 rounded;
   }
 
   .blockchain-hash {
-    @apply font-mono text-xs text-primary-400 bg-dark-800 px-2 py-1 rounded break-all;
+    @apply font-mono text-xs text-primary-600 bg-primary-50 px-2 py-1 rounded break-all;
   }
 }
 
