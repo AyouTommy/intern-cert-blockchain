@@ -811,11 +811,20 @@ router.get(
       // 动态生成PDF
       const { buffer, hash } = await generateCertificatePdf(certificate as any);
 
-      // 设置响应头 - 使用inline允许浏览器预览
+      // 检查是否强制下载 (有download参数时使用attachment)
+      const forceDownload = req.query.download !== undefined;
+      const disposition = forceDownload ? 'attachment' : 'inline';
+
+      // 文件名格式: 学生名字_学号_实习证书.pdf
+      const studentName = certificate.student.user.name;
+      const studentId = certificate.student.studentId;
+      const fileName = `${studentName}_${studentId}_实习证书.pdf`;
+
+      // 设置响应头
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader(
         'Content-Disposition',
-        `inline; filename*=UTF-8''${encodeURIComponent(`实习证明_${certificate.certNumber}.pdf`)}`
+        `${disposition}; filename*=UTF-8''${encodeURIComponent(fileName)}`
       );
       res.setHeader('Content-Length', buffer.length);
       res.setHeader('X-PDF-Hash', hash);

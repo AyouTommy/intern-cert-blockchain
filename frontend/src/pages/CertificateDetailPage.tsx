@@ -104,9 +104,9 @@ export default function CertificateDetailPage() {
 
     const loadingToast = toast.loading('正在生成PDF...')
     try {
-      // 直接构建完整URL使用fetch
+      // 直接构建完整URL使用fetch，添加download参数触发attachment模式
       const baseUrl = import.meta.env.VITE_API_URL || ''
-      const pdfUrl = `${baseUrl}/certificates/${certificate.id}/pdf`
+      const pdfUrl = `${baseUrl}/certificates/${certificate.id}/pdf?download`
 
       const response = await fetch(pdfUrl, {
         method: 'GET',

@@ -88,7 +88,7 @@ export default function PublicVerifyPage() {
     const loadingToast = toast.loading('正在生成PDF...')
     try {
       const baseUrl = import.meta.env.VITE_API_URL || ''
-      const pdfUrl = `${baseUrl}/certificates/${certId}/pdf`
+      const pdfUrl = `${baseUrl}/certificates/${certId}/pdf?download`
 
       const response = await fetch(pdfUrl, {
         method: 'GET',
