@@ -150,10 +150,10 @@ export default function DashboardPage() {
               </div>
               <ArrowTrendingUpIcon className="w-5 h-5 text-emerald-400" />
             </div>
-            <p className="text-3xl font-display font-bold text-white mb-1">
+            <p className="text-3xl font-display font-bold text-dark-900 mb-1">
               {stat.value.toLocaleString()}
             </p>
-            <p className="text-sm text-dark-400">{stat.name}</p>
+            <p className="text-sm text-dark-600">{stat.name}</p>
           </motion.div>
         ))}
       </div>
@@ -259,7 +259,7 @@ export default function DashboardPage() {
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: COLORS[index % COLORS.length] }}
                 />
-                <span className="text-sm text-dark-300">{entry.name}</span>
+                <span className="text-sm text-dark-700">{entry.name}</span>
               </div>
             ))}
           </div>
@@ -278,16 +278,16 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3, delay: 0.2 + index * 0.05 }}
-                className="flex items-center gap-4 p-4 rounded-xl bg-dark-800/50"
+                className="flex items-center gap-4 p-4 rounded-xl bg-slate-100"
               >
                 <div className={`p-3 rounded-xl ${stat.bgColor}`}>
                   <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
                 </div>
                 <div>
-                  <p className="text-xl font-semibold text-white">
+                  <p className="text-xl font-semibold text-dark-900">
                     {stat.value.toLocaleString()}
                   </p>
-                  <p className="text-sm text-dark-400">{stat.name}</p>
+                  <p className="text-sm text-dark-600">{stat.name}</p>
                 </div>
               </motion.div>
             ))}
@@ -302,41 +302,41 @@ export default function DashboardPage() {
             </div>
             <div>
               <h2 className="section-title mb-0">区块链状态</h2>
-              <p className="text-sm text-dark-400">智能合约运行情况</p>
+              <p className="text-sm text-dark-600">智能合约运行情况</p>
             </div>
           </div>
 
           {stats?.blockchain ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-xl bg-dark-800/50">
-                <span className="text-dark-300">链上证明总数</span>
-                <span className="text-xl font-semibold text-white">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-100">
+                <span className="text-dark-700">链上证明总数</span>
+                <span className="text-xl font-semibold text-dark-900">
                   {stats.blockchain.total.toLocaleString()}
                 </span>
               </div>
-              <div className="flex items-center justify-between p-4 rounded-xl bg-dark-800/50">
-                <span className="text-dark-300">有效证明</span>
-                <span className="text-xl font-semibold text-emerald-400">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-100">
+                <span className="text-dark-700">有效证明</span>
+                <span className="text-xl font-semibold text-emerald-600">
                   {stats.blockchain.active.toLocaleString()}
                 </span>
               </div>
-              <div className="flex items-center justify-between p-4 rounded-xl bg-dark-800/50">
-                <span className="text-dark-300">已撤销</span>
-                <span className="text-xl font-semibold text-red-400">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-100">
+                <span className="text-dark-700">已撤销</span>
+                <span className="text-xl font-semibold text-red-600">
                   {stats.blockchain.revoked.toLocaleString()}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-emerald-400">
+              <div className="flex items-center gap-2 text-sm text-emerald-600">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 智能合约运行正常
               </div>
             </div>
           ) : (
             <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-dark-800 flex items-center justify-center">
-                <CubeIcon className="w-8 h-8 text-dark-500" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
+                <CubeIcon className="w-8 h-8 text-dark-400" />
               </div>
-              <p className="text-dark-400 mb-4">区块链服务未连接</p>
+              <p className="text-dark-600 mb-4">区块链服务未连接</p>
               <p className="text-sm text-dark-500">
                 请确保已部署智能合约并配置正确的连接参数
               </p>
@@ -351,52 +351,52 @@ export default function DashboardPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
             to="/certificates/new"
-            className="flex items-center gap-4 p-4 rounded-xl bg-dark-800/50 hover:bg-dark-700/50 transition-colors group"
+            className="flex items-center gap-4 p-4 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors group"
           >
             <div className="p-3 rounded-xl bg-primary-500/10 group-hover:bg-primary-500/20 transition-colors">
-              <DocumentTextIcon className="w-6 h-6 text-primary-400" />
+              <DocumentTextIcon className="w-6 h-6 text-primary-600" />
             </div>
             <div>
-              <p className="font-medium text-white">创建证明</p>
-              <p className="text-sm text-dark-400">新建实习证明</p>
+              <p className="font-medium text-dark-900">创建证明</p>
+              <p className="text-sm text-dark-600">新建实习证明</p>
             </div>
           </Link>
           <Link
             to="/verify"
-            className="flex items-center gap-4 p-4 rounded-xl bg-dark-800/50 hover:bg-dark-700/50 transition-colors group"
+            className="flex items-center gap-4 p-4 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors group"
           >
             <div className="p-3 rounded-xl bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
-              <ShieldCheckIcon className="w-6 h-6 text-emerald-400" />
+              <ShieldCheckIcon className="w-6 h-6 text-emerald-600" />
             </div>
             <div>
-              <p className="font-medium text-white">核验证明</p>
-              <p className="text-sm text-dark-400">验证证明真伪</p>
+              <p className="font-medium text-dark-900">核验证明</p>
+              <p className="text-sm text-dark-600">验证证明真伪</p>
             </div>
           </Link>
           <Link
             to="/certificates"
-            className="flex items-center gap-4 p-4 rounded-xl bg-dark-800/50 hover:bg-dark-700/50 transition-colors group"
+            className="flex items-center gap-4 p-4 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors group"
           >
             <div className="p-3 rounded-xl bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
-              <ClockIcon className="w-6 h-6 text-amber-400" />
+              <ClockIcon className="w-6 h-6 text-amber-600" />
             </div>
             <div>
-              <p className="font-medium text-white">待处理</p>
-              <p className="text-sm text-dark-400">
+              <p className="font-medium text-dark-900">待处理</p>
+              <p className="text-sm text-dark-600">
                 {stats?.overview.pendingCertificates || 0} 条待上链
               </p>
             </div>
           </Link>
           <Link
             to="/settings"
-            className="flex items-center gap-4 p-4 rounded-xl bg-dark-800/50 hover:bg-dark-700/50 transition-colors group"
+            className="flex items-center gap-4 p-4 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors group"
           >
             <div className="p-3 rounded-xl bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
-              <CubeIcon className="w-6 h-6 text-purple-400" />
+              <CubeIcon className="w-6 h-6 text-purple-600" />
             </div>
             <div>
-              <p className="font-medium text-white">系统设置</p>
-              <p className="text-sm text-dark-400">配置与管理</p>
+              <p className="font-medium text-dark-900">系统设置</p>
+              <p className="text-sm text-dark-600">配置与管理</p>
             </div>
           </Link>
         </div>
