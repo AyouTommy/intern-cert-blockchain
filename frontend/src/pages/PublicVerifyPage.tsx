@@ -102,7 +102,7 @@ export default function PublicVerifyPage() {
             <ArrowLeftIcon className="w-4 h-4" />
             返回首页
           </Link>
-          
+
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -110,7 +110,7 @@ export default function PublicVerifyPage() {
           >
             <ShieldCheckIcon className="w-12 h-12 text-primary-400" />
           </motion.div>
-          
+
           <h1 className="text-3xl font-display font-bold text-white mb-2">
             实习证明核验
           </h1>
@@ -127,11 +127,10 @@ export default function PublicVerifyPage() {
           className="space-y-6"
         >
           {/* Status Banner */}
-          <div className={`glass-card p-8 text-center ${
-            result?.isValid 
-              ? 'border border-emerald-500/30 bg-emerald-500/5' 
+          <div className={`glass-card p-8 text-center ${result?.isValid
+              ? 'border border-emerald-500/30 bg-emerald-500/5'
               : 'border border-red-500/30 bg-red-500/5'
-          }`}>
+            }`}>
             {result?.isValid ? (
               <motion.div
                 initial={{ scale: 0 }}
@@ -359,7 +358,7 @@ export default function PublicVerifyPage() {
             高校实习证明上链系统 · 基于区块链技术的可信证明平台
           </p>
           <p className="text-dark-600 text-xs mt-2">
-            © 2024 链证通. All rights reserved.
+            © 2026 链证通. All rights reserved.
           </p>
         </motion.div>
       </div>

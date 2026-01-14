@@ -1,12 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
     <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0ea5e9"/>
-      <stop offset="100%" style="stop-color:#d946ef"/>
+      <stop offset="0%" style="stop-color:#a855f7"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
     </linearGradient>
   </defs>
+  <!-- 圆角背景 -->
   <rect width="100" height="100" rx="20" fill="url(#grad)"/>
-  <path d="M50 15c-19.33 0-35 15.67-35 35 0 19.33 15.67 35 35 35s35-15.67 35-35c0-19.33-15.67-35-35-35zm0 60c-13.81 0-25-11.19-25-25s11.19-25 25-25 25 11.19 25 25-11.19 25-25 25z" fill="white" opacity="0.3"/>
-  <path d="M45 50l5 5 15-15" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M50 25v-5M75 50h5M50 75v5M25 50h-5" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+  <!-- 区块链链条图案 -->
+  <g fill="white" opacity="0.9">
+    <!-- 中心六边形 -->
+    <polygon points="50,25 65,35 65,55 50,65 35,55 35,35" fill="none" stroke="white" stroke-width="3"/>
+    <!-- 内部连接线 -->
+    <line x1="50" y1="25" x2="50" y2="65" stroke="white" stroke-width="2" opacity="0.5"/>
+    <line x1="35" y1="35" x2="65" y2="55" stroke="white" stroke-width="2" opacity="0.5"/>
+    <line x1="65" y1="35" x2="35" y2="55" stroke="white" stroke-width="2" opacity="0.5"/>
+    <!-- 节点圆点 -->
+    <circle cx="50" cy="25" r="4" fill="white"/>
+    <circle cx="65" cy="35" r="4" fill="white"/>
+    <circle cx="65" cy="55" r="4" fill="white"/>
+    <circle cx="50" cy="65" r="4" fill="white"/>
+    <circle cx="35" cy="55" r="4" fill="white"/>
+    <circle cx="35" cy="35" r="4" fill="white"/>
+    <!-- 中心验证勾选 -->
+    <path d="M42 45 L48 52 L58 40" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+  <!-- 底部链接点 -->
+  <circle cx="50" cy="80" r="3" fill="white" opacity="0.6"/>
+  <circle cx="35" cy="85" r="2" fill="white" opacity="0.4"/>
+  <circle cx="65" cy="85" r="2" fill="white" opacity="0.4"/>
 </svg>
