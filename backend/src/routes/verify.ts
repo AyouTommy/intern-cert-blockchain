@@ -137,7 +137,7 @@ router.get(
             type: att.mimeType,
             category: att.category,
             description: att.description,
-            downloadUrl: `/api/attachments/download/${att.id}`,
+            downloadUrl: `/attachments/download/${att.id}`,
           })),
         },
       });
@@ -292,10 +292,10 @@ router.get(
     try {
       const isAvailable = blockchainService.isContractAvailable();
       const address = blockchainService.getContractAddress();
-      
+
       let networkInfo = null;
       let stats = null;
-      
+
       if (isAvailable) {
         try {
           networkInfo = await blockchainService.getNetworkInfo();

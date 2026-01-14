@@ -349,7 +349,7 @@ export default function CertificateDetailPage() {
               {certificate.attachments
                 .filter((a: any) => a.category === 'CERTIFICATE_PDF')
                 .map((att: any) => {
-                  const pdfUrl = `${import.meta.env.VITE_API_URL || ''}/api/attachments/download/${att.id}`;
+                  const pdfUrl = `${import.meta.env.VITE_API_URL || ''}/attachments/download/${att.id}`;
                   return (
                     <div key={att.id} className="space-y-4">
                       {/* PDF Preview */}

@@ -42,7 +42,7 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
     'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   ];
-  
+
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
@@ -97,7 +97,7 @@ router.post(
       const attachments = await Promise.all(
         files.map(async (file) => {
           const fileHash = calculateFileHash(file.path);
-          
+
           return prisma.attachment.create({
             data: {
               certificateId,
@@ -142,7 +142,7 @@ router.get('/:certificateId', async (req: Request, res: Response) => {
       success: true,
       data: attachments.map(att => ({
         ...att,
-        downloadUrl: `/api/attachments/download/${att.id}`
+        downloadUrl: `/attachments/download/${att.id}`
       }))
     });
   } catch (error: any) {
