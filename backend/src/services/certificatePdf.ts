@@ -16,6 +16,7 @@ interface CertificateFull {
     description?: string | null;
     evaluation?: string | null;
     verifyUrl?: string | null;
+    verifyCode?: string | null;
     qrCode?: string | null;
     certHash?: string | null;
     txHash?: string | null;
@@ -65,15 +66,99 @@ function formatDateCN(date: Date): string {
 }
 
 /**
- * 生成证书PDF Buffer
- * 按照用户详细要求设计内容和排版
+ * 绘制装饰性边框
+ */
+function drawDecorativeBorder(doc: PDFKit.PDFDocument, margin: number = 40) {
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+
+    // 外边框 - 深蓝色
+    doc.rect(margin, margin, pageWidth - margin * 2, pageHeight - margin * 2)
+        .strokeColor('#1e3a5f')
+        .lineWidth(2)
+        .stroke();
+
+    // 内边框 - 金色
+    doc.rect(margin + 8, margin + 8, pageWidth - margin * 2 - 16, pageHeight - margin * 2 - 16)
+        .strokeColor('#c9a962')
+        .lineWidth(1)
+        .stroke();
+
+    // 四角装饰
+    const cornerSize = 20;
+    const corners = [
+        { x: margin + 3, y: margin + 3 },
+        { x: pageWidth - margin - 3, y: margin + 3 },
+        { x: margin + 3, y: pageHeight - margin - 3 },
+        { x: pageWidth - margin - 3, y: pageHeight - margin - 3 },
+    ];
+
+    corners.forEach((corner, i) => {
+        doc.save();
+        doc.strokeColor('#c9a962').lineWidth(2);
+
+        // 根据角落位置绘制L形装饰
+        if (i === 0) { // 左上
+            doc.moveTo(corner.x, corner.y + cornerSize).lineTo(corner.x, corner.y).lineTo(corner.x + cornerSize, corner.y).stroke();
+        } else if (i === 1) { // 右上
+            doc.moveTo(corner.x - cornerSize, corner.y).lineTo(corner.x, corner.y).lineTo(corner.x, corner.y + cornerSize).stroke();
+        } else if (i === 2) { // 左下
+            doc.moveTo(corner.x, corner.y - cornerSize).lineTo(corner.x, corner.y).lineTo(corner.x + cornerSize, corner.y).stroke();
+        } else { // 右下
+            doc.moveTo(corner.x - cornerSize, corner.y).lineTo(corner.x, corner.y).lineTo(corner.x, corner.y - cornerSize).stroke();
+        }
+        doc.restore();
+    });
+}
+
+/**
+ * 绘制分隔线
+ */
+function drawDivider(doc: PDFKit.PDFDocument, y: number, type: 'gold' | 'simple' = 'gold') {
+    const pageWidth = doc.page.width;
+    const margin = 60;
+
+    if (type === 'gold') {
+        // 金色渐变分隔线
+        doc.moveTo(margin, y)
+            .lineTo(pageWidth / 2 - 20, y)
+            .strokeColor('#c9a962')
+            .lineWidth(1)
+            .stroke();
+
+        // 中间菱形装饰
+        doc.save();
+        doc.fillColor('#c9a962');
+        doc.moveTo(pageWidth / 2, y - 4)
+            .lineTo(pageWidth / 2 + 8, y)
+            .lineTo(pageWidth / 2, y + 4)
+            .lineTo(pageWidth / 2 - 8, y)
+            .fill();
+        doc.restore();
+
+        doc.moveTo(pageWidth / 2 + 20, y)
+            .lineTo(pageWidth - margin, y)
+            .strokeColor('#c9a962')
+            .lineWidth(1)
+            .stroke();
+    } else {
+        doc.moveTo(margin, y)
+            .lineTo(pageWidth - margin, y)
+            .strokeColor('#e0e0e0')
+            .lineWidth(0.5)
+            .stroke();
+    }
+}
+
+/**
+ * 生成证书PDF Buffer - 精美设计版
  */
 export async function generateCertificatePdf(certificate: CertificateFull): Promise<{ buffer: Buffer; hash: string }> {
     return new Promise((resolve, reject) => {
         try {
             const doc = new PDFDocument({
                 size: 'A4',
-                margins: { top: 50, bottom: 50, left: 50, right: 50 },
+                margins: { top: 60, bottom: 60, left: 60, right: 60 },
                 info: {
                     Title: `实习证明 - ${certificate.certNumber}`,
                     Author: '链证通 · 高校实习证明上链系统',
@@ -81,6 +166,7 @@ export async function generateCertificatePdf(certificate: CertificateFull): Prom
                     Creator: 'InternCert Blockchain System',
                     Producer: 'PDFKit',
                 },
+                bufferPages: true,
             });
 
             const chunks: Buffer[] = [];
@@ -95,200 +181,270 @@ export async function generateCertificatePdf(certificate: CertificateFull): Prom
             // 注册中文字体
             const fontPath = getAvailableFont();
             let fontName = 'Helvetica';
+            let fontBold = 'Helvetica-Bold';
             if (fontPath) {
                 doc.registerFont('ChineseFont', fontPath);
                 fontName = 'ChineseFont';
+                fontBold = 'ChineseFont';
             }
 
             const pageWidth = doc.page.width;
-            const contentWidth = pageWidth - 100;
+            const contentWidth = pageWidth - 120;
             const centerX = pageWidth / 2;
 
-            // ==================== 顶部：高校名称 + 标题 ====================
-            // 高校名称
-            doc.font(fontName).fontSize(16).fillColor('#3E56A0')
-                .text(certificate.university.name, 50, 50, { align: 'center', width: contentWidth });
+            // ========== 第一页：主证书页 ==========
+
+            // 绘制装饰边框
+            drawDecorativeBorder(doc);
+
+            // 顶部：发证机构
+            let currentY = 80;
+            doc.font(fontName).fontSize(12).fillColor('#1e3a5f')
+                .text(certificate.university.name, 60, currentY, { align: 'center', width: contentWidth });
 
             // 主标题
-            doc.moveDown(0.8);
-            doc.fontSize(32).fillColor('#12204E')
-                .text('实 习 证 明', { align: 'center', width: contentWidth });
+            currentY += 35;
+            doc.font(fontBold).fontSize(36).fillColor('#1e3a5f')
+                .text('实 习 证 明', 60, currentY, { align: 'center', width: contentWidth });
 
             // 英文副标题
-            doc.moveDown(0.3);
-            doc.fontSize(12).fillColor('#7B8BB8')
-                .text('INTERNSHIP CERTIFICATE', { align: 'center', width: contentWidth });
+            currentY += 50;
+            doc.font('Helvetica').fontSize(11).fillColor('#666666')
+                .text('INTERNSHIP CERTIFICATE', 60, currentY, { align: 'center', width: contentWidth });
 
-            // 分隔线
-            doc.moveDown(0.8);
-            const lineY = doc.y;
-            doc.moveTo(50, lineY).lineTo(pageWidth - 50, lineY)
-                .strokeColor('#C7D2FE').lineWidth(2).stroke();
+            // 金色分隔线
+            currentY += 25;
+            drawDivider(doc, currentY, 'gold');
 
             // 证书编号
-            doc.moveDown(0.5);
-            doc.fontSize(10).fillColor('#7B8BB8')
-                .text(`证书编号: ${certificate.certNumber}`, { align: 'right', width: contentWidth });
+            currentY += 15;
+            doc.font(fontName).fontSize(10).fillColor('#888888')
+                .text(`证书编号: ${certificate.certNumber}`, 60, currentY, { align: 'center', width: contentWidth });
 
-            // ==================== 学生信息卡片 ====================
-            doc.moveDown(1);
-            const studentBoxY = doc.y;
+            // 正文内容 - 居中对齐的段落
+            currentY += 40;
+            doc.font(fontName).fontSize(14).fillColor('#333333');
 
-            doc.fontSize(13).fillColor('#3B5BFF')
-                .text('【学生信息】', 50, studentBoxY);
+            const studentName = certificate.student.user.name;
+            const companyName = certificate.company.name;
+            const position = certificate.position;
+            const startDate = formatDateCN(certificate.startDate);
+            const endDate = formatDateCN(certificate.endDate);
 
-            doc.moveDown(0.5);
-            doc.fontSize(12).fillColor('#12204E');
-            doc.text(`姓    名: ${certificate.student.user.name}`, 70, doc.y);
-            doc.moveDown(0.4);
-            // 学号脱敏：显示前3位和后2位
-            const studentId = certificate.student.studentId;
-            const maskedId = studentId.length > 5
-                ? `${studentId.slice(0, 3)}****${studentId.slice(-2)}`
-                : studentId;
-            doc.text(`学    号: ${maskedId}`, 70, doc.y);
+            // 主要内容段落
+            const mainText = `兹证明 ${studentName} 同学于 ${startDate} 至 ${endDate} 期间，在 ${companyName} 进行实习，担任 ${position} 岗位。`;
 
-            // ==================== 实习信息卡片 ====================
-            doc.moveDown(1.2);
-            doc.fontSize(13).fillColor('#3B5BFF')
-                .text('【实习信息】', 50, doc.y);
+            doc.text(mainText, 80, currentY, {
+                align: 'justify',
+                width: contentWidth - 40,
+                lineGap: 8,
+            });
 
-            doc.moveDown(0.5);
-            doc.fontSize(12).fillColor('#12204E');
-            doc.text(`实习单位: ${certificate.company.name}`, 70, doc.y);
-            doc.moveDown(0.4);
-            doc.text(`实习岗位: ${certificate.position}`, 70, doc.y);
+            currentY = doc.y + 20;
 
+            // 部门信息
             if (certificate.department) {
-                doc.moveDown(0.4);
-                doc.text(`所属部门: ${certificate.department}`, 70, doc.y);
+                doc.font(fontName).fontSize(12).fillColor('#555555')
+                    .text(`所属部门: ${certificate.department}`, 80, currentY, { width: contentWidth - 40 });
+                currentY = doc.y + 15;
             }
 
-            doc.moveDown(0.4);
-            doc.text(`实习时间: ${formatDateCN(certificate.startDate)} 至 ${formatDateCN(certificate.endDate)}`, 70, doc.y);
-
-            // 实习描述
+            // 工作内容
             if (certificate.description) {
-                doc.moveDown(0.4);
-                doc.text(`工作内容:`, 70, doc.y);
-                doc.moveDown(0.2);
-                doc.fontSize(11).fillColor('#3E56A0')
-                    .text(certificate.description, 90, doc.y, { width: contentWidth - 60 });
+                currentY += 10;
+                doc.font(fontName).fontSize(12).fillColor('#1e3a5f')
+                    .text('【 工作内容 】', 80, currentY);
+                currentY = doc.y + 8;
+                doc.font(fontName).fontSize(11).fillColor('#444444')
+                    .text(certificate.description, 80, currentY, {
+                        width: contentWidth - 40,
+                        lineGap: 5,
+                    });
+                currentY = doc.y + 15;
             }
 
-            // ==================== 确认主体 ====================
-            doc.moveDown(1.2);
-            doc.fontSize(13).fillColor('#3B5BFF')
-                .text('【确认主体】', 50, doc.y);
+            // 实习评价
+            if (certificate.evaluation) {
+                currentY += 10;
+                doc.font(fontName).fontSize(12).fillColor('#1e3a5f')
+                    .text('【 实习评价 】', 80, currentY);
+                currentY = doc.y + 8;
+                doc.font(fontName).fontSize(11).fillColor('#444444')
+                    .text(certificate.evaluation, 80, currentY, {
+                        width: contentWidth - 40,
+                        lineGap: 5,
+                    });
+                currentY = doc.y + 15;
+            }
 
-            doc.moveDown(0.5);
-            doc.fontSize(12).fillColor('#12204E');
-            doc.text(`发证高校: ${certificate.university.name}`, 70, doc.y);
-            doc.moveDown(0.4);
-            doc.text(`实习单位: ${certificate.company.name}`, 70, doc.y);
+            // 简单分隔线
+            currentY += 20;
+            drawDivider(doc, currentY, 'simple');
 
-            // 签发日期
-            doc.moveDown(0.4);
+            // 确认主体区域
+            currentY += 25;
+            doc.font(fontName).fontSize(12).fillColor('#1e3a5f')
+                .text('【 确认主体 】', 80, currentY);
+
+            currentY += 25;
+            doc.font(fontName).fontSize(11).fillColor('#333333');
+            doc.text(`发证高校: ${certificate.university.name}`, 100, currentY);
+            currentY += 20;
+            doc.text(`实习单位: ${certificate.company.name}`, 100, currentY);
+            currentY += 20;
             const issuedDate = certificate.issuedAt || certificate.createdAt;
-            doc.text(`签发日期: ${formatDateCN(new Date(issuedDate))}`, 70, doc.y);
+            doc.text(`签发日期: ${formatDateCN(new Date(issuedDate))}`, 100, currentY);
 
-            // ==================== 核验信息 + 二维码 ====================
-            doc.moveDown(1.2);
-            doc.fontSize(13).fillColor('#3B5BFF')
-                .text('【核验信息】', 50, doc.y);
+            // 底部：盖章区域提示
+            currentY = doc.page.height - 150;
+            doc.font(fontName).fontSize(9).fillColor('#999999')
+                .text('（本证书信息已上链存储，扫描第二页二维码可验证真伪）', 60, currentY, {
+                    align: 'center',
+                    width: contentWidth
+                });
 
-            const verifyBlockY = doc.y + 15;
+            // 页脚
+            currentY = doc.page.height - 80;
+            doc.font(fontName).fontSize(8).fillColor('#aaaaaa')
+                .text('链证通 · 区块链实习证明上链系统', 60, currentY, { align: 'center', width: contentWidth });
+            doc.text('ChainCert Internship Certification System', 60, currentY + 12, { align: 'center', width: contentWidth });
 
-            // 验证链接
-            doc.fontSize(10).fillColor('#12204E')
-                .text(`验证链接: ${certificate.verifyUrl || '暂无'}`, 70, verifyBlockY, { width: contentWidth - 150 });
+            // ========== 第二页：区块链存证页 ==========
+            doc.addPage();
+            drawDecorativeBorder(doc);
 
-            doc.moveDown(0.5);
-            doc.fontSize(9).fillColor('#7B8BB8')
-                .text('扫描右侧二维码或访问验证链接可核验证书真伪', 70, doc.y, { width: contentWidth - 150 });
+            currentY = 80;
+            doc.font(fontBold).fontSize(20).fillColor('#1e3a5f')
+                .text('区块链存证信息', 60, currentY, { align: 'center', width: contentWidth });
 
-            // 二维码（右侧）
+            currentY += 35;
+            doc.font('Helvetica').fontSize(10).fillColor('#666666')
+                .text('BLOCKCHAIN CERTIFICATION DETAILS', 60, currentY, { align: 'center', width: contentWidth });
+
+            currentY += 25;
+            drawDivider(doc, currentY, 'gold');
+
+            // 状态徽章
+            currentY += 30;
+            if (certificate.status === 'ACTIVE' && certificate.certHash) {
+                // 绘制状态徽章背景
+                doc.roundedRect(centerX - 60, currentY - 5, 120, 28, 14)
+                    .fillColor('#e8f5e9')
+                    .fill();
+                doc.roundedRect(centerX - 60, currentY - 5, 120, 28, 14)
+                    .strokeColor('#4caf50')
+                    .lineWidth(1)
+                    .stroke();
+                doc.font(fontName).fontSize(12).fillColor('#2e7d32')
+                    .text('✓ 已上链认证', centerX - 50, currentY + 3, { width: 100, align: 'center' });
+            }
+
+            // 区块链详细信息
+            currentY += 50;
+
+            // 信息卡片背景
+            const cardY = currentY;
+            const cardHeight = 200;
+            doc.roundedRect(70, cardY, contentWidth - 20, cardHeight, 8)
+                .fillColor('#f8f9fa')
+                .fill();
+            doc.roundedRect(70, cardY, contentWidth - 20, cardHeight, 8)
+                .strokeColor('#e0e0e0')
+                .lineWidth(1)
+                .stroke();
+
+            currentY += 20;
+            doc.font(fontName).fontSize(11).fillColor('#1e3a5f');
+
+            // Certification Hash
+            doc.text('Certification Hash (证明哈希)', 90, currentY);
+            currentY += 18;
+            doc.font('Courier').fontSize(9).fillColor('#333333')
+                .text(certificate.certHash || 'N/A', 90, currentY, { width: contentWidth - 60 });
+
+            // Transaction Hash
+            currentY += 30;
+            doc.font(fontName).fontSize(11).fillColor('#1e3a5f')
+                .text('Transaction Hash (交易哈希)', 90, currentY);
+            currentY += 18;
+            doc.font('Courier').fontSize(9).fillColor('#333333')
+                .text(certificate.txHash || 'N/A', 90, currentY, { width: contentWidth - 60 });
+
+            // Block Number & Chain ID
+            currentY += 30;
+            doc.font(fontName).fontSize(11).fillColor('#1e3a5f');
+            doc.text('Block Number (区块高度)', 90, currentY);
+            doc.text('Chain ID (链标识)', 300, currentY);
+            currentY += 18;
+            doc.font('Courier').fontSize(12).fillColor('#333333');
+            doc.text(`#${certificate.blockNumber?.toLocaleString() || 'N/A'}`, 90, currentY);
+            doc.text(String(certificate.chainId || 'N/A'), 300, currentY);
+
+            // 上链时间
+            currentY += 30;
+            doc.font(fontName).fontSize(11).fillColor('#1e3a5f')
+                .text('Timestamp (上链时间)', 90, currentY);
+            currentY += 18;
+            const timestamp = certificate.issuedAt ? new Date(certificate.issuedAt).toISOString() : 'N/A';
+            doc.font('Courier').fontSize(10).fillColor('#333333')
+                .text(timestamp, 90, currentY);
+
+            // 二维码验证区域
+            currentY = cardY + cardHeight + 40;
+            doc.font(fontName).fontSize(12).fillColor('#1e3a5f')
+                .text('【 扫码验证 】', 60, currentY, { align: 'center', width: contentWidth });
+
+            currentY += 30;
+
+            // 二维码背景框
+            const qrBoxSize = 130;
+            const qrBoxX = centerX - qrBoxSize / 2;
+            doc.roundedRect(qrBoxX - 10, currentY - 10, qrBoxSize + 20, qrBoxSize + 20, 8)
+                .fillColor('#ffffff')
+                .fill();
+            doc.roundedRect(qrBoxX - 10, currentY - 10, qrBoxSize + 20, qrBoxSize + 20, 8)
+                .strokeColor('#c9a962')
+                .lineWidth(2)
+                .stroke();
+
+            // 二维码图片
             if (certificate.qrCode && certificate.qrCode.startsWith('data:image')) {
                 try {
                     const base64Data = certificate.qrCode.split(',')[1];
                     const imgBuffer = Buffer.from(base64Data, 'base64');
-                    doc.image(imgBuffer, pageWidth - 150, verifyBlockY - 10, { width: 90, height: 90 });
+                    doc.image(imgBuffer, qrBoxX, currentY, { width: qrBoxSize, height: qrBoxSize });
                 } catch (e) {
-                    // 二维码解析失败，跳过
-                    console.warn('QR code parsing failed');
+                    doc.font(fontName).fontSize(10).fillColor('#999999')
+                        .text('二维码', qrBoxX, currentY + qrBoxSize / 2 - 5, { width: qrBoxSize, align: 'center' });
                 }
+            } else {
+                doc.font(fontName).fontSize(10).fillColor('#999999')
+                    .text('[二维码]', qrBoxX, currentY + qrBoxSize / 2 - 5, { width: qrBoxSize, align: 'center' });
             }
 
-            // ==================== 区块链存证信息 ====================
-            if (certificate.certHash && certificate.status === 'ACTIVE') {
-                doc.moveDown(2);
+            // 验证链接
+            currentY += qrBoxSize + 25;
+            doc.font(fontName).fontSize(10).fillColor('#666666')
+                .text('验证链接:', 60, currentY, { align: 'center', width: contentWidth });
+            currentY += 15;
+            const verifyUrl = certificate.verifyUrl || `https://intern-cert-blockchain.vercel.app/verify/${certificate.verifyCode || ''}`;
+            doc.font('Courier').fontSize(9).fillColor('#1565c0')
+                .text(verifyUrl, 60, currentY, { align: 'center', width: contentWidth });
 
-                // 区块链区块背景
-                const blockchainY = doc.y;
-                doc.rect(50, blockchainY - 5, contentWidth, 100)
-                    .fillColor('#F0F4FF').fill();
+            // 页脚说明
+            currentY = doc.page.height - 120;
+            doc.font(fontName).fontSize(9).fillColor('#888888')
+                .text('本证书信息已永久存储于以太坊区块链网络', 60, currentY, { align: 'center', width: contentWidth });
+            currentY += 15;
+            doc.text('任何人均可通过上述验证链接或扫描二维码核验证书真伪', 60, currentY, { align: 'center', width: contentWidth });
+            currentY += 15;
+            doc.text('如有争议，以链上记录为准', 60, currentY, { align: 'center', width: contentWidth });
 
-                doc.fontSize(11).fillColor('#3B5BFF')
-                    .text('【区块链存证】 ✓ 已上链', 60, blockchainY + 5);
-
-                doc.moveDown(0.5);
-                doc.font('Courier').fontSize(8).fillColor('#3E56A0');
-
-                // 证明哈希
-                const certHashShort = certificate.certHash.length > 20
-                    ? `${certificate.certHash.slice(0, 10)}...${certificate.certHash.slice(-10)}`
-                    : certificate.certHash;
-                doc.text(`Certification Hash: ${certHashShort}`, 60, doc.y);
-
-                // 交易哈希
-                if (certificate.txHash) {
-                    doc.moveDown(0.3);
-                    const txHashShort = certificate.txHash.length > 20
-                        ? `${certificate.txHash.slice(0, 10)}...${certificate.txHash.slice(-10)}`
-                        : certificate.txHash;
-                    doc.text(`Transaction Hash:   ${txHashShort}`, 60, doc.y);
-                }
-
-                // 区块信息
-                doc.moveDown(0.3);
-                doc.text(`Block Number: #${certificate.blockNumber?.toLocaleString() || 'N/A'}    Chain ID: ${certificate.chainId || 'N/A'}`, 60, doc.y);
-
-                // 上链时间
-                if (certificate.issuedAt) {
-                    doc.moveDown(0.3);
-                    doc.text(`Timestamp: ${new Date(certificate.issuedAt).toISOString()}`, 60, doc.y);
-                }
-
-                // 恢复字体
-                doc.font(fontName);
-            }
-
-            // ==================== 页脚 ====================
-            const footerY = doc.page.height - 70;
-
-            // 分隔线
-            doc.moveTo(50, footerY - 10).lineTo(pageWidth - 50, footerY - 10)
-                .strokeColor('#C7D2FE').lineWidth(1).stroke();
-
-            // 免责声明
-            doc.fontSize(8).fillColor('#7B8BB8')
-                .text('本证明由「链证通」区块链实习证明上链系统生成，信息已永久存储于区块链。', 50, footerY, {
-                    align: 'center',
-                    width: contentWidth,
-                });
-
-            doc.moveDown(0.3);
-            doc.text('如有争议，以链上记录为准。', {
-                align: 'center',
-                width: contentWidth,
-            });
-
-            doc.moveDown(0.3);
-            doc.fontSize(7).fillColor('#A0AEC0')
-                .text('© 2026 链证通. All rights reserved.', {
-                    align: 'center',
-                    width: contentWidth,
-                });
+            // 页脚
+            currentY = doc.page.height - 80;
+            doc.font(fontName).fontSize(8).fillColor('#aaaaaa')
+                .text('链证通 · 区块链实习证明上链系统', 60, currentY, { align: 'center', width: contentWidth });
+            doc.text(`文档哈希将在下载时计算 | 生成时间: ${new Date().toISOString()}`, 60, currentY + 12, { align: 'center', width: contentWidth });
 
             doc.end();
         } catch (error) {
