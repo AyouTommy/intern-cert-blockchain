@@ -98,6 +98,36 @@ export default function CertificateDetailPage() {
     toast.success(`${label}已复制`)
   }
 
+  // PDF下载函数 - 解决跨域文件名问题
+  const downloadPdf = async () => {
+    if (!certificate) return
+
+    const loadingToast = toast.loading('正在生成PDF...')
+    try {
+      const pdfUrl = `${import.meta.env.VITE_API_URL || ''}/certificates/${certificate.id}/pdf`
+      const response = await fetch(pdfUrl)
+
+      if (!response.ok) {
+        throw new Error('PDF生成失败')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `实习证明_${certificate.certNumber}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      toast.success('PDF下载成功', { id: loadingToast })
+    } catch (error) {
+      console.error('PDF下载失败:', error)
+      toast.error('PDF下载失败，请稍后重试', { id: loadingToast })
+    }
+  }
+
   const canManage = user?.role === 'ADMIN' || user?.role === 'UNIVERSITY'
 
   if (loading) {
@@ -367,14 +397,13 @@ export default function CertificateDetailPage() {
               </div>
 
               {/* 下载按钮 */}
-              <a
-                href={`${import.meta.env.VITE_API_URL || ''}/certificates/${certificate.id}/pdf`}
-                download={`实习证明_${certificate.certNumber}.pdf`}
+              <button
+                onClick={downloadPdf}
                 className="btn-primary w-full flex items-center justify-center gap-2"
               >
                 <ArrowUpOnSquareIcon className="w-5 h-5 rotate-180" />
                 下载PDF证书
-              </a>
+              </button>
 
               <p className="text-center text-sm text-dark-400 mt-3">
                 点击上方按钮下载完整PDF文件，包含区块链存证信息
