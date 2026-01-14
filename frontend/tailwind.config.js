@@ -7,25 +7,29 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary蓝色系(语义色通过CSS变量使用)
-        primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-          950: '#172554',
+        // 使用CSS变量的RGB格式，支持alpha
+        bg: 'rgb(var(--bg) / <alpha-value>)',
+        surface: {
+          DEFAULT: 'rgb(var(--surface) / <alpha-value>)',
+          '2': 'rgb(var(--surface2) / <alpha-value>)',
         },
-        // 保留accent用于渐变
+        border: 'rgb(var(--border) / <alpha-value>)',
+        txt: {
+          DEFAULT: 'rgb(var(--text) / <alpha-value>)',
+          '2': 'rgb(var(--text2) / <alpha-value>)',
+          muted: 'rgb(var(--muted) / <alpha-value>)',
+        },
+        primary: {
+          DEFAULT: 'rgb(var(--primary) / <alpha-value>)',
+          hover: 'rgb(var(--primary-hover) / <alpha-value>)',
+        },
+        success: 'rgb(var(--success) / <alpha-value>)',
+        warning: 'rgb(var(--warning) / <alpha-value>)',
+        danger: 'rgb(var(--danger) / <alpha-value>)',
+        honor: 'rgb(var(--honor) / <alpha-value>)',
         accent: {
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',
+          cyan: 'rgb(var(--accent-cyan) / <alpha-value>)',
+          violet: 'rgb(var(--accent-violet) / <alpha-value>)',
         },
       },
       fontFamily: {

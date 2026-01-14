@@ -3,60 +3,83 @@
 @tailwind utilities;
 
 /* ============================================
-   Design Tokens (CSS Variables)
+   Design Tokens - Iris/Periwinkle/Aqua 雾蓝紫高级配色
+   禁止白/灰/黑 - 全部使用有色相的蓝紫系
+   RGB格式支持Tailwind alpha
    ============================================ */
 :root {
+  /* 背景色(雾蓝紫，非白非灰) */
+  --bg: 238 242 255;
+  /* #EEF2FF 雾蓝紫页面底 */
+  --surface: 246 240 255;
+  /* #F6F0FF 浅紫纸感卡片底 */
+  --surface2: 232 238 255;
+  /* #E8EEFF 二级容器/表头 */
+  --border: 200 212 255;
+  /* #C8D4FF 细边框清晰不发灰 */
+
+  /* 文字色(深靛蓝墨色，非黑非灰) */
+  --text: 18 32 78;
+  /* #12204E 主文字 */
+  --text2: 38 56 122;
+  /* #26387A 次要文字 */
+  --muted: 62 86 160;
+  /* #3E56A0 占位符 */
+
+  /* 主色(皇家靛蓝) */
+  --primary: 59 91 255;
+  /* #3B5BFF */
+  --primary-hover: 39 75 255;
+  /* #274BFF */
+
   /* 语义色 */
-  --color-primary: #0F62FE;
-  --color-primary-hover: #0353E9;
-  --color-primary-light: rgba(15, 98, 254, 0.08);
-  --color-success: #198038;
-  --color-success-light: rgba(25, 128, 56, 0.1);
-  --color-warning: #F1C21B;
-  --color-warning-light: rgba(241, 194, 27, 0.12);
-  --color-danger: #DA1E28;
-  --color-danger-light: rgba(218, 30, 40, 0.1);
-  --color-honor: #C9A227;
+  --success: 22 163 74;
+  /* #16A34A */
+  --warning: 245 158 11;
+  /* #F59E0B */
+  --danger: 244 63 94;
+  /* #F43F5E */
+  --honor: 201 162 39;
+  /* #C9A227 */
 
-  /* 点缀色 (用于aurora高光，面积<5%) */
-  --color-accent-cyan: #22D3EE;
-  --color-accent-violet: #A78BFA;
-
-  /* Light模式 */
-  --color-bg: #F7F9FC;
-  --color-surface: #FFFFFF;
-  --color-surface2: #F1F5F9;
-  --color-border: #E2E8F0;
-  --color-text: #0F172A;
-  --color-text2: #475569;
-  --color-muted: #64748B;
+  /* 年轻点缀(面积<5%) */
+  --accent-cyan: 34 211 238;
+  /* #22D3EE */
+  --accent-violet: 167 139 250;
+  /* #A78BFA */
 
   /* 通用token */
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
-  --radius-2xl: 1.25rem;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-sm: 0 1px 3px rgb(59 91 255 / 0.08);
+  --shadow-md: 0 4px 12px rgb(59 91 255 / 0.12);
+  --shadow-lg: 0 8px 24px rgb(59 91 255 / 0.16);
   --transition-fast: 150ms;
   --transition-normal: 180ms;
-  --transition-slow: 300ms;
 }
 
+/* Dark主题(深蓝紫，非纯黑) */
 .dark,
 [data-theme="dark"] {
-  --color-bg: #0B1220;
-  --color-surface: #0F172A;
-  --color-surface2: #111C2E;
-  --color-border: #1F2A3A;
-  --color-text: #E5E7EB;
-  --color-text2: #CBD5E1;
-  --color-muted: #94A3B8;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --bg: 14 18 54;
+  /* #0E1236 深蓝紫 */
+  --surface: 18 26 74;
+  /* #121A4A */
+  --surface2: 26 36 92;
+  /* #1A245C */
+  --border: 46 64 140;
+  /* #2E408C */
+  --text: 237 242 255;
+  /* #EDF2FF */
+  --text2: 203 214 255;
+  /* #CBD6FF */
+  --muted: 155 173 255;
+  /* #9BADFF */
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.5);
 }
 
 /* ============================================
@@ -122,35 +145,38 @@
 
 @layer base {
   * {
-    @apply border-slate-200;
+    border-color: rgb(var(--border));
   }
 
   body {
-    background: var(--color-bg);
-    color: var(--color-text);
+    background: rgb(var(--bg));
+    color: rgb(var(--text));
     font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* 淡蓝雾渐变背景 + 微纹理 */
+  /* Aurora雾光背景 + 细网格纹理 */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     background:
-      linear-gradient(180deg, rgba(15, 98, 254, 0.04) 0%, transparent 40%),
+      /* Aurora雾光 */
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgb(var(--primary) / 0.1), transparent 50%),
+      radial-gradient(ellipse 60% 40% at 80% 0%, rgb(var(--accent-violet) / 0.08), transparent 40%),
+      radial-gradient(ellipse 50% 30% at 20% 10%, rgb(var(--accent-cyan) / 0.06), transparent 30%),
+      /* 细网格纹理 */
       repeating-linear-gradient(0deg,
         transparent,
-        transparent 50px,
-        rgba(15, 98, 254, 0.015) 50px,
-        rgba(15, 98, 254, 0.015) 51px),
+        transparent 60px,
+        rgb(var(--primary) / 0.02) 60px,
+        rgb(var(--primary) / 0.02) 61px),
       repeating-linear-gradient(90deg,
         transparent,
-        transparent 50px,
-        rgba(15, 98, 254, 0.015) 50px,
-        rgba(15, 98, 254, 0.015) 51px);
+        transparent 60px,
+        rgb(var(--primary) / 0.02) 60px,
+        rgb(var(--primary) / 0.02) 61px);
     pointer-events: none;
     z-index: -1;
   }
@@ -161,16 +187,16 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: var(--color-surface2);
+    background: rgb(var(--surface2));
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--color-muted);
+    background: rgb(var(--muted));
     border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-text2);
+    background: rgb(var(--text2));
   }
 }
 
@@ -178,16 +204,16 @@
 
   /* ============ Card 卡片 ============ */
   .glass-card {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-sm);
     transition: all var(--transition-normal) ease;
   }
 
   .glass-card-hover {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-sm);
     transition: all var(--transition-normal) ease;
@@ -196,13 +222,13 @@
   .glass-card-hover:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
-    border-color: var(--color-primary);
+    border-color: rgb(var(--primary));
   }
 
   /* 验证页卡片Aurora描边 */
   .verify-card {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-sm);
     position: relative;
@@ -215,7 +241,7 @@
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent-violet) 100%);
+    background: linear-gradient(135deg, rgb(var(--primary)) 0%, rgb(var(--accent-violet)) 100%);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
@@ -226,7 +252,7 @@
   /* 验证章呼吸光效 */
   .verify-stamp {
     position: relative;
-    border: 2px solid var(--color-honor);
+    border: 2px solid rgb(var(--honor));
     border-radius: var(--radius-lg);
   }
 
@@ -234,7 +260,7 @@
     content: '';
     position: absolute;
     inset: -4px;
-    border: 2px solid var(--color-honor);
+    border: 2px solid rgb(var(--honor));
     border-radius: inherit;
     opacity: 0;
     pointer-events: none;
@@ -243,7 +269,7 @@
   .dark .verify-stamp::after,
   [data-theme="dark"] .verify-stamp::after {
     animation: glow-breathe 2.5s ease-in-out infinite;
-    color: var(--color-honor);
+    color: rgb(var(--honor));
   }
 
   /* ============ Button 按钮 ============ */
@@ -253,7 +279,7 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
-    background: var(--color-primary);
+    background: rgb(var(--primary));
     color: white;
     font-weight: 500;
     border-radius: var(--radius-lg);
@@ -275,7 +301,7 @@
   }
 
   .btn-primary:hover {
-    background: var(--color-primary-hover);
+    background: rgb(var(--primary-hover));
     transform: translateY(-1px);
     box-shadow: 0 6px 20px rgba(15, 98, 254, 0.35);
   }
@@ -290,7 +316,7 @@
 
   .btn-primary:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px var(--color-surface), 0 0 0 5px var(--color-primary);
+    box-shadow: 0 0 0 3px rgb(var(--surface)), 0 0 0 5px rgb(var(--primary));
   }
 
   .btn-primary:disabled {
@@ -305,17 +331,17 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
-    background: var(--color-surface2);
-    color: var(--color-text);
+    background: rgb(var(--surface2));
+    color: rgb(var(--text));
     font-weight: 500;
-    border: 1px solid var(--color-border);
+    border: 1px solid rgb(var(--border));
     border-radius: var(--radius-lg);
     transition: all var(--transition-normal) ease;
   }
 
   .btn-secondary:hover {
-    background: var(--color-surface);
-    border-color: var(--color-text2);
+    background: rgb(var(--surface));
+    border-color: rgb(var(--text2));
   }
 
   .btn-secondary:active {
@@ -324,7 +350,7 @@
 
   .btn-secondary:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px var(--color-surface), 0 0 0 5px var(--color-primary);
+    box-shadow: 0 0 0 3px rgb(var(--surface)), 0 0 0 5px rgb(var(--primary));
   }
 
   .btn-secondary:disabled {
@@ -337,14 +363,14 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    color: var(--color-text2);
+    color: rgb(var(--text2));
     border-radius: var(--radius-md);
     transition: all var(--transition-fast) ease;
   }
 
   .btn-ghost:hover {
-    background: var(--color-surface2);
-    color: var(--color-text);
+    background: rgb(var(--surface2));
+    color: rgb(var(--text));
   }
 
   .btn-ghost:active {
@@ -357,7 +383,7 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
-    background: var(--color-danger);
+    background: rgb(var(--danger));
     color: white;
     font-weight: 500;
     border-radius: var(--radius-lg);
@@ -381,29 +407,29 @@
   .input-field {
     width: 100%;
     padding: 0.75rem 1rem;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
     border-radius: var(--radius-lg);
-    color: var(--color-text);
+    color: rgb(var(--text));
     transition: all var(--transition-fast) ease;
   }
 
   .input-field::placeholder {
-    color: var(--color-muted);
+    color: rgb(var(--muted));
   }
 
   .input-field:hover {
-    border-color: var(--color-text2);
+    border-color: rgb(var(--text2));
   }
 
   .input-field:focus {
     outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px var(--color-primary-light);
+    border-color: rgb(var(--primary));
+    box-shadow: 0 0 0 3px rgb(var(--primary) / 0.1);
   }
 
   .input-field:disabled {
-    background: var(--color-surface2);
+    background: rgb(var(--surface2));
     opacity: 0.7;
     cursor: not-allowed;
   }
@@ -412,7 +438,7 @@
     display: block;
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--color-text2);
+    color: rgb(var(--text2));
     margin-bottom: 0.5rem;
   }
 
@@ -427,19 +453,19 @@
   }
 
   .badge-success {
-    background: var(--color-success-light);
-    color: var(--color-success);
+    background: rgb(var(--success) / 0.1);
+    color: rgb(var(--success));
     border: 1px solid rgba(25, 128, 56, 0.2);
   }
 
   .badge-warning {
-    background: var(--color-warning-light);
+    background: rgb(var(--warning) / 0.12);
     color: #92400E;
     border: 1px solid rgba(241, 194, 27, 0.25);
   }
 
   .badge-confirming {
-    background: var(--color-warning-light);
+    background: rgb(var(--warning) / 0.12);
     color: #92400E;
     border: 1px solid rgba(241, 194, 27, 0.25);
     background-size: 200% 100%;
@@ -451,27 +477,27 @@
   }
 
   .badge-error {
-    background: var(--color-danger-light);
-    color: var(--color-danger);
+    background: rgb(var(--danger) / 0.1);
+    color: rgb(var(--danger));
     border: 1px solid rgba(218, 30, 40, 0.2);
   }
 
   .badge-info {
-    background: var(--color-primary-light);
-    color: var(--color-primary);
+    background: rgb(var(--primary) / 0.1);
+    color: rgb(var(--primary));
     border: 1px solid rgba(15, 98, 254, 0.2);
   }
 
   .badge-neutral {
-    background: var(--color-surface2);
-    color: var(--color-text2);
-    border: 1px solid var(--color-border);
+    background: rgb(var(--surface2));
+    color: rgb(var(--text2));
+    border: 1px solid rgb(var(--border));
   }
 
   /* ============ Stat Card 统计卡片 ============ */
   .stat-card {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-sm);
     padding: 1.5rem;
@@ -484,7 +510,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, var(--color-primary-light) 0%, transparent 60%);
+    background: linear-gradient(135deg, rgb(var(--primary) / 0.1) 0%, transparent 60%);
     pointer-events: none;
   }
 
@@ -495,15 +521,15 @@
 
   /* ============ Table 表格 ============ */
   .table-container {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
     border-radius: var(--radius-xl);
     overflow: hidden;
   }
 
   .table-header {
-    background: var(--color-surface2);
-    color: var(--color-text2);
+    background: rgb(var(--surface2));
+    color: rgb(var(--text2));
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -511,12 +537,12 @@
   }
 
   .table-row {
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid rgb(var(--border));
     transition: background var(--transition-fast) ease;
   }
 
   .table-row:hover {
-    background: var(--color-surface2);
+    background: rgb(var(--surface2));
   }
 
   .table-cell {
@@ -531,13 +557,13 @@
     gap: 0.75rem;
     padding: 0.75rem 1rem;
     border-radius: var(--radius-lg);
-    color: var(--color-text2);
+    color: rgb(var(--text2));
     transition: all var(--transition-fast) ease;
   }
 
   .nav-link:hover {
-    background: var(--color-surface2);
-    color: var(--color-text);
+    background: rgb(var(--surface2));
+    color: rgb(var(--text));
   }
 
   .nav-link-active {
@@ -546,9 +572,9 @@
     gap: 0.75rem;
     padding: 0.75rem 1rem;
     border-radius: var(--radius-lg);
-    background: var(--color-primary-light);
-    color: var(--color-primary);
-    border-left: 3px solid var(--color-primary);
+    background: rgb(var(--primary) / 0.1);
+    color: rgb(var(--primary));
+    border-left: 3px solid rgb(var(--primary));
     font-weight: 500;
   }
 
@@ -556,47 +582,47 @@
   .page-title {
     font-size: 1.875rem;
     font-weight: 700;
-    color: var(--color-text);
+    color: rgb(var(--text));
     font-family: 'Outfit', 'Noto Sans SC', sans-serif;
   }
 
   .page-subtitle {
-    color: var(--color-text2);
+    color: rgb(var(--text2));
     margin-top: 0.25rem;
   }
 
   .section-title {
     font-size: 1.25rem;
     font-weight: 600;
-    color: var(--color-primary);
+    color: rgb(var(--primary));
     margin-bottom: 1rem;
   }
 
   .card-title {
     font-size: 1.125rem;
     font-weight: 600;
-    color: var(--color-text);
+    color: rgb(var(--text));
   }
 
   .link {
-    color: var(--color-primary);
+    color: rgb(var(--primary));
     transition: color var(--transition-fast) ease;
   }
 
   .link:hover {
-    color: var(--color-primary-hover);
+    color: rgb(var(--primary-hover));
     text-decoration: underline;
   }
 
   .link:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px var(--color-primary-light);
+    box-shadow: 0 0 0 3px rgb(var(--primary) / 0.1);
     border-radius: 2px;
   }
 
   /* ============ Utility 工具类 ============ */
   .divider {
-    border-top: 1px solid var(--color-border);
+    border-top: 1px solid rgb(var(--border));
     margin: 1.5rem 0;
   }
 
@@ -609,8 +635,8 @@
   }
 
   .modal-content {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-lg);
     padding: 1.5rem;
@@ -625,8 +651,8 @@
     right: 0;
     margin-top: 0.5rem;
     min-width: 14rem;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
     padding: 0.5rem 0;
@@ -640,17 +666,17 @@
     gap: 0.75rem;
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
-    color: var(--color-text2);
+    color: rgb(var(--text2));
     transition: all var(--transition-fast) ease;
   }
 
   .dropdown-item:hover {
-    background: var(--color-surface2);
-    color: var(--color-text);
+    background: rgb(var(--surface2));
+    color: rgb(var(--text));
   }
 
   .skeleton {
-    background: linear-gradient(90deg, var(--color-surface2) 25%, var(--color-border) 50%, var(--color-surface2) 75%);
+    background: linear-gradient(90deg, rgb(var(--surface2)) 25%, rgb(var(--border)) 50%, rgb(var(--surface2)) 75%);
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
     border-radius: var(--radius-md);
@@ -660,8 +686,8 @@
   .blockchain-hash {
     font-family: ui-monospace, 'JetBrains Mono', monospace;
     font-size: 0.75rem;
-    color: var(--color-primary);
-    background: var(--color-primary-light);
+    color: rgb(var(--primary));
+    background: rgb(var(--primary) / 0.1);
     padding: 0.25rem 0.5rem;
     border-radius: var(--radius-sm);
     word-break: break-all;
@@ -673,18 +699,18 @@
     justify-content: center;
     padding: 0.375rem;
     border-radius: var(--radius-sm);
-    color: var(--color-muted);
+    color: rgb(var(--muted));
     transition: all var(--transition-fast) ease;
   }
 
   .hash-copy-btn:hover {
-    background: var(--color-primary);
+    background: rgb(var(--primary));
     color: white;
     transform: scale(1.05);
   }
 
   .hash-copy-btn.copied {
-    background: var(--color-success);
+    background: rgb(var(--success));
     color: white;
     animation: soft-bounce 150ms ease;
   }
