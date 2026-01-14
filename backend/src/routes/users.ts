@@ -357,6 +357,30 @@ router.delete(
         throw new AppError('用户不存在', 404);
       }
 
+      // 检查是否有关联的证书（不允许删除有证书的用户）
+      const certificateCount = await prisma.certificate.count({
+        where: { issuedById: id },
+      });
+      if (certificateCount > 0) {
+        throw new AppError('该用户有关联的证书，无法删除', 400);
+      }
+
+      // 删除关联数据
+      // 1. 删除通知
+      await prisma.notification.deleteMany({
+        where: { userId: id },
+      });
+
+      // 2. 删除审计日志
+      await prisma.auditLog.deleteMany({
+        where: { userId: id },
+      });
+
+      // 3. 删除密码重置请求
+      await prisma.passwordResetRequest.deleteMany({
+        where: { userId: id },
+      });
+
       // 根据角色处理不同的删除逻辑
       if (user.role === 'STUDENT' && user.studentProfile) {
         // 学生：重置白名单允许重新注册
