@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../services/api'
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
 
 interface ThirdPartyOrg {
     id: string
@@ -39,6 +40,8 @@ export default function ThirdPartyOrgsPage() {
         type: 'OTHER',
         website: '',
     })
+    const [deletingOrg, setDeletingOrg] = useState<ThirdPartyOrg | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     useEffect(() => {
         fetchOrgs()
@@ -90,15 +93,21 @@ export default function ThirdPartyOrgsPage() {
     }
 
     const handleDelete = async (org: ThirdPartyOrg) => {
-        if (!window.confirm(`确定要删除机构 "${org.name}" 吗？此操作不可撤销！`)) {
-            return
-        }
+        setDeletingOrg(org)
+    }
+
+    const confirmDelete = async () => {
+        if (!deletingOrg) return
+        setIsDeleting(true)
         try {
-            await api.delete(`/third-party-orgs/${org.id}`)
+            await api.delete(`/third-party-orgs/${deletingOrg.id}`)
             toast.success('机构已删除')
             fetchOrgs()
         } catch (error) {
             // Error handled by interceptor
+        } finally {
+            setIsDeleting(false)
+            setDeletingOrg(null)
         }
     }
 
@@ -293,6 +302,16 @@ export default function ThirdPartyOrgsPage() {
                     </motion.div>
                 </div>
             )}
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmDeleteModal
+                isOpen={!!deletingOrg}
+                title="确认删除"
+                message={`确定要删除机构 "${deletingOrg?.name}" 吗？此操作不可撤销！`}
+                onConfirm={confirmDelete}
+                onCancel={() => setDeletingOrg(null)}
+                isLoading={isDeleting}
+            />
         </div>
     )
 }

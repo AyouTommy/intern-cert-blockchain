@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api, { University } from '../services/api'
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
 
 export default function UniversitiesPage() {
   const [universities, setUniversities] = useState<University[]>([])
@@ -26,6 +27,8 @@ export default function UniversitiesPage() {
     address: '',
     website: '',
   })
+  const [deletingUniversity, setDeletingUniversity] = useState<University | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     fetchUniversities()
@@ -102,15 +105,21 @@ export default function UniversitiesPage() {
   }
 
   const handleDelete = async (university: University) => {
-    if (!window.confirm(`确定要删除高校 "${university.name}" 吗？此操作不可撤销！`)) {
-      return
-    }
+    setDeletingUniversity(university)
+  }
+
+  const confirmDelete = async () => {
+    if (!deletingUniversity) return
+    setIsDeleting(true)
     try {
-      await api.delete(`/universities/${university.id}`)
+      await api.delete(`/universities/${deletingUniversity.id}`)
       toast.success('高校已删除')
       fetchUniversities()
     } catch (error) {
       // Error handled by interceptor
+    } finally {
+      setIsDeleting(false)
+      setDeletingUniversity(null)
     }
   }
 
@@ -335,6 +344,16 @@ export default function UniversitiesPage() {
           </motion.div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={!!deletingUniversity}
+        title="确认删除"
+        message={`确定要删除高校 "${deletingUniversity?.name}" 吗？此操作不可撤销！`}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeletingUniversity(null)}
+        isLoading={isDeleting}
+      />
     </div>
   )
 }

@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api, { Company } from '../services/api'
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
 
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([])
@@ -31,6 +32,8 @@ export default function CompaniesPage() {
     contactPhone: '',
     contactEmail: '',
   })
+  const [deletingCompany, setDeletingCompany] = useState<Company | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     fetchCompanies()
@@ -117,15 +120,21 @@ export default function CompaniesPage() {
   }
 
   const handleDelete = async (company: Company) => {
-    if (!window.confirm(`确定要删除企业 "${company.name}" 吗？此操作不可撤销！`)) {
-      return
-    }
+    setDeletingCompany(company)
+  }
+
+  const confirmDelete = async () => {
+    if (!deletingCompany) return
+    setIsDeleting(true)
     try {
-      await api.delete(`/companies/${company.id}`)
+      await api.delete(`/companies/${deletingCompany.id}`)
       toast.success('企业已删除')
       fetchCompanies()
     } catch (error) {
       // Error handled by interceptor
+    } finally {
+      setIsDeleting(false)
+      setDeletingCompany(null)
     }
   }
 
@@ -387,6 +396,16 @@ export default function CompaniesPage() {
           </motion.div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={!!deletingCompany}
+        title="确认删除"
+        message={`确定要删除企业 "${deletingCompany?.name}" 吗？此操作不可撤销！`}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeletingCompany(null)}
+        isLoading={isDeleting}
+      />
     </div>
   )
 }
