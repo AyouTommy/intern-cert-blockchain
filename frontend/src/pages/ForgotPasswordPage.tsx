@@ -54,7 +54,7 @@ export default function ForgotPasswordPage() {
                 >
                     <EnvelopeIcon className="w-10 h-10 text-primary-400" />
                 </motion.div>
-                <h1 className="text-2xl font-bold text-white mb-4">申请已提交</h1>
+                <h1 className="text-2xl font-bold text-dark-100 mb-4">申请已提交</h1>
                 <p className="text-dark-400 mb-6">
                     您的密码重置申请已提交给管理员审核。<br />
                     审核通过后，您的新密码将立即生效。
@@ -72,16 +72,16 @@ export default function ForgotPasswordPage() {
             <div className="lg:hidden mb-8 text-center">
                 <div className="inline-flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
-                        <KeyIcon className="w-7 h-7 text-white" />
+                        <KeyIcon className="w-7 h-7 text-dark-100" />
                     </div>
-                    <span className="text-xl font-display font-bold text-white">链证通</span>
+                    <span className="text-xl font-display font-bold text-dark-100">链证通</span>
                 </div>
-                <h2 className="text-2xl font-bold text-white">找回密码</h2>
+                <h2 className="text-2xl font-bold text-dark-100">找回密码</h2>
             </div>
 
             <div className="glass-card p-8">
                 <div className="text-center mb-8">
-                    <h1 className="text-2xl font-display font-bold text-white mb-2">忘记密码</h1>
+                    <h1 className="text-2xl font-display font-bold text-dark-100 mb-2">忘记密码</h1>
                     <p className="text-dark-400">填写以下信息申请重置密码</p>
                 </div>
 

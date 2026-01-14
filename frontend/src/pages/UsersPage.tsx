@@ -316,7 +316,7 @@ export default function UsersPage() {
                 >
                   <td className="table-cell">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-medium">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-dark-100 font-medium">
                         {user.name[0].toUpperCase()}
                       </div>
                       <div>
@@ -464,9 +464,9 @@ export default function UsersPage() {
             animate={{ opacity: 1, scale: 1 }}
             className="glass-card p-6 w-full max-w-md"
           >
-            <h2 className="text-xl font-bold text-white mb-4">重置密码</h2>
+            <h2 className="text-xl font-bold text-dark-100 mb-4">重置密码</h2>
             <p className="text-dark-400 mb-4">
-              为用户 <span className="text-white">{selectedUser.name}</span> ({selectedUser.email}) 设置新密码
+              为用户 <span className="text-dark-100">{selectedUser.name}</span> ({selectedUser.email}) 设置新密码
             </p>
             <div className="space-y-4">
               <div>
@@ -500,17 +500,17 @@ export default function UsersPage() {
             animate={{ opacity: 1, scale: 1 }}
             className="glass-card p-6 w-full max-w-md"
           >
-            <h2 className="text-xl font-bold text-white mb-4">
+            <h2 className="text-xl font-bold text-dark-100 mb-4">
               {approvalAction === 'approve' ? '批准注册' : '拒绝注册'}
             </h2>
             <div className="space-y-3 mb-4">
               <div className="flex justify-between text-sm">
                 <span className="text-dark-400">用户</span>
-                <span className="text-white">{selectedUser.name}</span>
+                <span className="text-dark-100">{selectedUser.name}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-dark-400">邮箱</span>
-                <span className="text-white">{selectedUser.email}</span>
+                <span className="text-dark-100">{selectedUser.email}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-dark-400">角色</span>
@@ -520,7 +520,7 @@ export default function UsersPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-dark-400">申请机构</span>
-                <span className="text-white">{selectedUser.applyOrgName}</span>
+                <span className="text-dark-100">{selectedUser.applyOrgName}</span>
               </div>
               {selectedUser.applyReason && (
                 <div className="text-sm">
@@ -551,8 +551,8 @@ export default function UsersPage() {
                 className={clsx(
                   'flex-1 px-4 py-2 rounded-lg font-medium transition-colors',
                   approvalAction === 'approve'
-                    ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                    : 'bg-red-500 hover:bg-red-600 text-white'
+                    ? 'bg-emerald-500 hover:bg-emerald-600 text-dark-100'
+                    : 'bg-red-500 hover:bg-red-600 text-dark-100'
                 )}
               >
                 {approvalAction === 'approve' ? '确认批准' : '确认拒绝'}

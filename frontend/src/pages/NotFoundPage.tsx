@@ -27,7 +27,7 @@ export default function NotFoundPage() {
             404
           </motion.h1>
 
-          <h2 className="text-3xl font-display font-bold text-white mb-4">
+          <h2 className="text-3xl font-display font-bold text-dark-100 mb-4">
             页面未找到
           </h2>
           

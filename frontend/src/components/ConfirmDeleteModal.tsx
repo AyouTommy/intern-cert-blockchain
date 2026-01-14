@@ -49,7 +49,7 @@ export default function ConfirmDeleteModal({
                     <button
                         type="button"
                         onClick={onConfirm}
-                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-dark-100 rounded-lg transition-colors disabled:opacity-50"
                         disabled={isLoading}
                     >
                         {isLoading ? '删除中...' : '确认删除'}

@@ -226,7 +226,7 @@ export default function ApplicationsPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-display font-bold text-white">
+                    <h1 className="text-2xl font-display font-bold text-dark-100">
                         {isStudent ? '我的申请' : isCompany ? '待评价申请' : '待审核申请'}
                     </h1>
                     <p className="text-dark-400 mt-1">
@@ -286,7 +286,7 @@ export default function ApplicationsPage() {
                             <div className="flex items-start justify-between">
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-2">
-                                        <h3 className="text-lg font-semibold text-white">{app.position}</h3>
+                                        <h3 className="text-lg font-semibold text-dark-100">{app.position}</h3>
                                         {getStatusBadge(app.status)}
                                     </div>
                                     <div className="flex flex-wrap gap-4 text-sm text-dark-400">
@@ -381,7 +381,7 @@ export default function ApplicationsPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         className="glass-card p-6 w-full max-w-md"
                     >
-                        <h2 className="text-xl font-bold text-white mb-4">新建实习证明申请</h2>
+                        <h2 className="text-xl font-bold text-dark-100 mb-4">新建实习证明申请</h2>
                         <div className="space-y-4">
                             <div>
                                 <label className="input-label">实习企业 *</label>
@@ -462,28 +462,28 @@ export default function ApplicationsPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         className="glass-card p-6 w-full max-w-lg mx-4"
                     >
-                        <h2 className="text-xl font-bold text-white mb-4">申请详情</h2>
+                        <h2 className="text-xl font-bold text-dark-100 mb-4">申请详情</h2>
 
                         <div className="space-y-3 mb-6">
                             <div className="flex justify-between text-sm">
                                 <span className="text-dark-400">申请编号</span>
-                                <span className="text-white">{selectedApp.applicationNo}</span>
+                                <span className="text-dark-100">{selectedApp.applicationNo}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-dark-400">学生姓名</span>
-                                <span className="text-white">{selectedApp.student.user.name}</span>
+                                <span className="text-dark-100">{selectedApp.student.user.name}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-dark-400">实习企业</span>
-                                <span className="text-white">{selectedApp.company.name}</span>
+                                <span className="text-dark-100">{selectedApp.company.name}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-dark-400">实习岗位</span>
-                                <span className="text-white">{selectedApp.position}</span>
+                                <span className="text-dark-100">{selectedApp.position}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-dark-400">实习期间</span>
-                                <span className="text-white">
+                                <span className="text-dark-100">
                                     {new Date(selectedApp.startDate).toLocaleDateString('zh-CN')} - {new Date(selectedApp.endDate).toLocaleDateString('zh-CN')}
                                 </span>
                             </div>
@@ -496,7 +496,7 @@ export default function ApplicationsPage() {
                         {/* Company Review Form */}
                         {isCompany && ['SUBMITTED', 'COMPANY_REVIEWING'].includes(selectedApp.status) && (
                             <div className="border-t border-dark-700 pt-4 space-y-4">
-                                <h3 className="font-semibold text-white">企业评价</h3>
+                                <h3 className="font-semibold text-dark-100">企业评价</h3>
                                 <div>
                                     <label className="input-label">评分 (1-100)</label>
                                     <input
@@ -548,7 +548,7 @@ export default function ApplicationsPage() {
                         {/* University Review Form */}
                         {isUniversity && ['COMPANY_APPROVED', 'UNIVERSITY_REVIEWING'].includes(selectedApp.status) && (
                             <div className="border-t border-dark-700 pt-4 space-y-4">
-                                <h3 className="font-semibold text-white">高校审核</h3>
+                                <h3 className="font-semibold text-dark-100">高校审核</h3>
                                 {selectedApp.companyScore && (
                                     <div className="p-3 bg-dark-800 rounded-lg">
                                         <p className="text-sm text-dark-400">企业评分：<span className="text-primary-400">{selectedApp.companyScore}分</span></p>

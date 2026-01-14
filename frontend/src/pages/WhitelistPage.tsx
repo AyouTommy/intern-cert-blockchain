@@ -179,7 +179,7 @@ export default function WhitelistPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-display font-bold text-white">学生白名单管理</h1>
+                    <h1 className="text-2xl font-display font-bold text-dark-100">学生白名单管理</h1>
                     <p className="text-dark-400 mt-1">管理可注册的学生学号列表</p>
                 </div>
                 <div className="flex gap-3">
@@ -261,8 +261,8 @@ export default function WhitelistPage() {
                             ) : (
                                 entries.map((entry) => (
                                     <tr key={entry.id} className="hover:bg-dark-800/30">
-                                        <td className="px-4 py-3 text-sm font-mono text-white">{entry.studentId}</td>
-                                        <td className="px-4 py-3 text-sm text-white">{entry.name}</td>
+                                        <td className="px-4 py-3 text-sm font-mono text-dark-100">{entry.studentId}</td>
+                                        <td className="px-4 py-3 text-sm text-dark-100">{entry.name}</td>
                                         <td className="px-4 py-3 text-sm text-dark-300">{entry.major || '-'}</td>
                                         <td className="px-4 py-3 text-sm text-dark-300">{entry.university?.name || '-'}</td>
                                         <td className="px-4 py-3">
@@ -331,7 +331,7 @@ export default function WhitelistPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         className="glass-card p-6 w-full max-w-md"
                     >
-                        <h2 className="text-xl font-bold text-white mb-4">添加学生</h2>
+                        <h2 className="text-xl font-bold text-dark-100 mb-4">添加学生</h2>
                         <div className="space-y-4">
                             <div>
                                 <label className="input-label">学号 *</label>
@@ -423,7 +423,7 @@ export default function WhitelistPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         className="glass-card p-6 w-full max-w-2xl"
                     >
-                        <h2 className="text-xl font-bold text-white mb-4">批量导入</h2>
+                        <h2 className="text-xl font-bold text-dark-100 mb-4">批量导入</h2>
                         <div className="space-y-4">
                             <div>
                                 <label className="input-label">所属高校（可选）</label>

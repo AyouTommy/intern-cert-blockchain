@@ -123,7 +123,7 @@ export default function SettingsPage() {
               <form onSubmit={profileForm.handleSubmit(handleProfileSubmit)} className="space-y-4">
                 {/* Avatar */}
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white text-2xl font-bold">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-dark-100 text-2xl font-bold">
                     {user?.name?.[0]?.toUpperCase() || 'U'}
                   </div>
                   <div>

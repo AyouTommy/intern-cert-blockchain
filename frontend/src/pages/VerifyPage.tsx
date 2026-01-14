@@ -101,7 +101,7 @@ export default function VerifyPage() {
             onClick={() => setActiveTab('code')}
             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
               activeTab === 'code'
-                ? 'bg-primary-500 text-white'
+                ? 'bg-primary-500 text-dark-100'
                 : 'text-dark-400 hover:text-dark-200'
             }`}
           >
@@ -112,7 +112,7 @@ export default function VerifyPage() {
             onClick={() => setActiveTab('number')}
             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
               activeTab === 'number'
-                ? 'bg-primary-500 text-white'
+                ? 'bg-primary-500 text-dark-100'
                 : 'text-dark-400 hover:text-dark-200'
             }`}
           >

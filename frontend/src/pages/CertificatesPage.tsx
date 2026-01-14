@@ -371,7 +371,7 @@ export default function CertificatesPage() {
                   className={clsx(
                     'w-10 h-10 rounded-lg transition-colors',
                     pageNum === page
-                      ? 'bg-primary-500 text-white'
+                      ? 'bg-primary-500 text-dark-100'
                       : 'text-dark-400 hover:bg-dark-800'
                   )}
                 >

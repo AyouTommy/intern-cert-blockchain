@@ -115,7 +115,7 @@ export default function NotificationBell() {
                     <motion.span
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
+                        className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-dark-100 text-xs font-bold rounded-full flex items-center justify-center"
                     >
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </motion.span>
@@ -131,7 +131,7 @@ export default function NotificationBell() {
                         className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto glass-card shadow-xl z-50"
                     >
                         <div className="p-3 border-b border-dark-700 flex items-center justify-between">
-                            <h3 className="font-semibold text-white">通知</h3>
+                            <h3 className="font-semibold text-dark-100">通知</h3>
                             {unreadCount > 0 && (
                                 <button
                                     onClick={markAllAsRead}
@@ -160,7 +160,7 @@ export default function NotificationBell() {
                                             <span className="text-lg">{getTypeIcon(notification.type)}</span>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2">
-                                                    <p className={`font-medium text-sm truncate ${notification.isRead ? 'text-dark-300' : 'text-white'
+                                                    <p className={`font-medium text-sm truncate ${notification.isRead ? 'text-dark-300' : 'text-dark-100'
                                                         }`}>
                                                         {notification.title}
                                                     </p>

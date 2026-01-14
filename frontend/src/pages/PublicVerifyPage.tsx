@@ -111,7 +111,7 @@ export default function PublicVerifyPage() {
             <ShieldCheckIcon className="w-12 h-12 text-primary-400" />
           </motion.div>
 
-          <h1 className="text-3xl font-display font-bold text-white mb-2">
+          <h1 className="text-3xl font-display font-bold text-dark-100 mb-2">
             实习证明核验
           </h1>
           <p className="text-dark-400">
@@ -348,7 +348,7 @@ export default function PublicVerifyPage() {
         >
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-dark-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
             </div>
