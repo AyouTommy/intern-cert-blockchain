@@ -75,6 +75,31 @@ router.get(
     }
 );
 
+// 标记所有通知为已读 (必须在 /:id/read 之前定义，否则会被参数路由拦截)
+router.patch(
+    '/read-all',
+    authenticate,
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const authReq = req as AuthRequest;
+            const prisma = authReq.prisma;
+            const userId = authReq.user!.id;
+
+            await prisma.notification.updateMany({
+                where: { userId, isRead: false },
+                data: { isRead: true },
+            });
+
+            res.json({
+                success: true,
+                message: '已全部标记为已读',
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
 // 标记单个通知为已读
 router.patch(
     '/:id/read',
@@ -109,29 +134,5 @@ router.patch(
     }
 );
 
-// 标记所有通知为已读
-router.patch(
-    '/read-all',
-    authenticate,
-    async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const authReq = req as AuthRequest;
-            const prisma = authReq.prisma;
-            const userId = authReq.user!.id;
-
-            await prisma.notification.updateMany({
-                where: { userId, isRead: false },
-                data: { isRead: true },
-            });
-
-            res.json({
-                success: true,
-                message: '已全部标记为已读',
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
-);
-
 export default router;
+
