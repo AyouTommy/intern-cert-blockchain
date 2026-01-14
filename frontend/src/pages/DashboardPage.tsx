@@ -278,7 +278,7 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3, delay: 0.2 + index * 0.05 }}
-                className="flex items-center gap-4 p-4 rounded-xl bg-slate-100"
+                className="flex items-center gap-4 p-4 rounded-xl bg-surface-2"
               >
                 <div className={`p-3 rounded-xl ${stat.bgColor}`}>
                   <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
@@ -308,19 +308,19 @@ export default function DashboardPage() {
 
           {stats?.blockchain ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-100">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-surface-2">
                 <span className="text-dark-400">链上证明总数</span>
                 <span className="text-xl font-semibold text-primary-700">
                   {stats.blockchain.total.toLocaleString()}
                 </span>
               </div>
-              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-100">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-surface-2">
                 <span className="text-dark-400">有效证明</span>
                 <span className="text-xl font-semibold text-emerald-600">
                   {stats.blockchain.active.toLocaleString()}
                 </span>
               </div>
-              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-100">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-surface-2">
                 <span className="text-dark-400">已撤销</span>
                 <span className="text-xl font-semibold text-red-600">
                   {stats.blockchain.revoked.toLocaleString()}
@@ -333,7 +333,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-surface-2 flex items-center justify-center">
                 <CubeIcon className="w-8 h-8 text-dark-400" />
               </div>
               <p className="text-dark-600 mb-4">区块链服务未连接</p>
@@ -351,7 +351,7 @@ export default function DashboardPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
             to="/certificates/new"
-            className="flex items-center gap-4 p-4 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors group"
+            className="flex items-center gap-4 p-4 rounded-xl bg-surface-2 hover:bg-surface-2 transition-colors group"
           >
             <div className="p-3 rounded-xl bg-primary-500/10 group-hover:bg-primary-500/20 transition-colors">
               <DocumentTextIcon className="w-6 h-6 text-primary-600" />
@@ -363,7 +363,7 @@ export default function DashboardPage() {
           </Link>
           <Link
             to="/verify"
-            className="flex items-center gap-4 p-4 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors group"
+            className="flex items-center gap-4 p-4 rounded-xl bg-surface-2 hover:bg-surface-2 transition-colors group"
           >
             <div className="p-3 rounded-xl bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
               <ShieldCheckIcon className="w-6 h-6 text-emerald-600" />
@@ -375,7 +375,7 @@ export default function DashboardPage() {
           </Link>
           <Link
             to="/certificates"
-            className="flex items-center gap-4 p-4 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors group"
+            className="flex items-center gap-4 p-4 rounded-xl bg-surface-2 hover:bg-surface-2 transition-colors group"
           >
             <div className="p-3 rounded-xl bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
               <ClockIcon className="w-6 h-6 text-amber-600" />
@@ -389,7 +389,7 @@ export default function DashboardPage() {
           </Link>
           <Link
             to="/settings"
-            className="flex items-center gap-4 p-4 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors group"
+            className="flex items-center gap-4 p-4 rounded-xl bg-surface-2 hover:bg-surface-2 transition-colors group"
           >
             <div className="p-3 rounded-xl bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
               <CubeIcon className="w-6 h-6 text-purple-600" />

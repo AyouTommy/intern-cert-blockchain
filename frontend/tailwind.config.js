@@ -22,6 +22,12 @@ export default {
         primary: {
           DEFAULT: 'rgb(var(--primary) / <alpha-value>)',
           hover: 'rgb(var(--primary-hover) / <alpha-value>)',
+          50: '#EEF2FF',
+          100: '#E0E7FF',
+          400: '#818CF8',
+          500: '#6366F1',
+          600: '#4F46E5',
+          700: '#4338CA',
         },
         success: 'rgb(var(--success) / <alpha-value>)',
         warning: 'rgb(var(--warning) / <alpha-value>)',
@@ -30,6 +36,22 @@ export default {
         accent: {
           cyan: 'rgb(var(--accent-cyan) / <alpha-value>)',
           violet: 'rgb(var(--accent-violet) / <alpha-value>)',
+          400: '#A78BFA',
+          500: '#8B5CF6',
+        },
+        // dark颜色系 - 雾蓝紫值(非白/灰/黑)
+        dark: {
+          50: '#EEF2FF',       // 雾蓝紫背景
+          100: '#E0E7FF',      // 浅紫hover背景
+          200: '#C7D2FE',      // 边框色
+          300: '#A5B4FC',      // 次要边框
+          400: '#3E56A0',      // muted文字
+          500: '#26387A',      // 次要文字
+          600: '#1E3A8A',      // 深蓝文字
+          700: '#EEF2FF',      // 浅色(用于背景)
+          800: '#F0EDFF',      // 淡紫纸感
+          900: '#12204E',      // 主文字色(深靛蓝墨)
+          950: '#0E1236',      // 最深色(dark模式背景)
         },
       },
       fontFamily: {

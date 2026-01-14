@@ -74,7 +74,7 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[rgb(var(--bg))]">
       {/* Mobile sidebar */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -83,7 +83,7 @@ export default function MainLayout() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-dark-900/30 backdrop-blur-sm z-40 lg:hidden"
+              className="fixed inset-0 bg-[rgb(var(--text)/.3)] backdrop-blur-sm z-40 lg:hidden"
               onClick={() => setSidebarOpen(false)}
             />
             <motion.aside
@@ -91,13 +91,13 @@ export default function MainLayout() {
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 w-72 bg-white border-r border-dark-200 z-50 lg:hidden"
+              className="fixed inset-y-0 left-0 w-72 bg-[rgb(var(--surface))] border-r border-[rgb(var(--border))] z-50 lg:hidden"
             >
-              <div className="flex items-center justify-between h-16 px-4 border-b border-dark-200">
+              <div className="flex items-center justify-between h-16 px-4 border-b border-[rgb(var(--border))]">
                 <Logo />
                 <button
                   onClick={() => setSidebarOpen(false)}
-                  className="p-2 text-dark-400 hover:text-dark-900 rounded-lg hover:bg-dark-100"
+                  className="p-2 text-[rgb(var(--muted))] hover:text-[rgb(var(--text))] rounded-lg hover:bg-[rgb(var(--surface2))]"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
@@ -109,15 +109,15 @@ export default function MainLayout() {
       </AnimatePresence>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 lg:flex lg:flex-col bg-white border-r border-dark-200">
-        <div className="flex items-center h-16 px-6 border-b border-dark-200">
+      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 lg:flex lg:flex-col bg-[rgb(var(--surface))] border-r border-[rgb(var(--border))]">
+        <div className="flex items-center h-16 px-6 border-b border-[rgb(var(--border))]">
           <Logo />
         </div>
         <Navigation items={filteredNavigation} />
 
         {/* Quick Actions */}
         {(user?.role === 'ADMIN' || user?.role === 'UNIVERSITY' || user?.role === 'COMPANY') && (
-          <div className="px-4 py-4 border-t border-dark-200">
+          <div className="px-4 py-4 border-t border-[rgb(var(--border))]">
             <button
               onClick={() => navigate('/certificates/new')}
               className="w-full btn-primary flex items-center justify-center gap-2"
@@ -132,11 +132,11 @@ export default function MainLayout() {
       {/* Main content */}
       <div className="lg:pl-72">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 h-16 bg-white/80 backdrop-blur-xl border-b border-dark-200">
+        <header className="sticky top-0 z-30 h-16 bg-[rgb(var(--surface))]/80 backdrop-blur-xl border-b border-[rgb(var(--border))]">
           <div className="flex items-center justify-between h-full px-4 lg:px-8">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 text-dark-400 hover:text-dark-100 rounded-lg hover:bg-dark-800 lg:hidden"
+              className="p-2 text-[rgb(var(--muted))] hover:text-dark-100 rounded-lg hover:bg-dark-800 lg:hidden"
             >
               <Bars3Icon className="w-6 h-6" />
             </button>
@@ -158,10 +158,10 @@ export default function MainLayout() {
                 </div>
                 <div className="hidden sm:block text-left">
                   <p className="text-sm font-medium text-dark-100">{user?.name}</p>
-                  <p className="text-xs text-dark-400">{user?.university?.name || user?.company?.name || getRoleLabel(user?.role || '')}</p>
+                  <p className="text-xs text-[rgb(var(--muted))]">{user?.university?.name || user?.company?.name || getRoleLabel(user?.role || '')}</p>
                 </div>
                 <ChevronDownIcon className={clsx(
-                  'w-4 h-4 text-dark-400 transition-transform',
+                  'w-4 h-4 text-[rgb(var(--muted))] transition-transform',
                   userMenuOpen && 'rotate-180'
                 )} />
               </button>
@@ -181,7 +181,7 @@ export default function MainLayout() {
                     >
                       <div className="px-4 py-3 border-b border-dark-700">
                         <p className="text-sm font-medium text-dark-100">{user?.name}</p>
-                        <p className="text-xs text-dark-400 truncate">{user?.email}</p>
+                        <p className="text-xs text-[rgb(var(--muted))] truncate">{user?.email}</p>
                         <span className={clsx('inline-block mt-2 px-2 py-0.5 text-xs rounded-full border', getRoleBadgeClass(user?.role || ''))}>
                           {getRoleLabel(user?.role || '')}
                         </span>
@@ -253,7 +253,7 @@ function Navigation({ items, onItemClick }: NavigationProps) {
               'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group',
               isActive
                 ? 'bg-primary-500/10 text-primary-400'
-                : 'text-dark-400 hover:text-dark-100 hover:bg-dark-800/50'
+                : 'text-[rgb(var(--muted))] hover:text-dark-100 hover:bg-dark-800/50'
             )
           }
         >

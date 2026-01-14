@@ -347,7 +347,7 @@ export default function CertificateDetailPage() {
               </div>
               <h2 className="card-title">核验二维码</h2>
             </div>
-            <div className="flex justify-center p-4 bg-white rounded-xl">
+            <div className="flex justify-center p-4 bg-surface rounded-xl">
               <QRCodeSVG
                 value={verifyUrl}
                 size={180}
