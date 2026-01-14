@@ -14,6 +14,7 @@ import {
   ShareIcon,
   QrCodeIcon,
   ClipboardDocumentIcon,
+  ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline'
 import { QRCodeSVG } from 'qrcode.react'
 import toast from 'react-hot-toast'
@@ -328,6 +329,19 @@ export default function CertificateDetailPage() {
                     </p>
                   </div>
                 </div>
+
+                {/* 区块链浏览器链接 */}
+                {certificate.txHash && (
+                  <a
+                    href={`https://${certificate.chainId === 11155111 ? 'sepolia.' : ''}etherscan.io/tx/${certificate.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 p-3 rounded-xl bg-gradient-to-r from-primary-500/10 to-accent-500/10 border border-primary-500/20 text-primary-400 hover:text-primary-300 hover:border-primary-500/40 transition-all"
+                  >
+                    <ArrowTopRightOnSquareIcon className="w-5 h-5" />
+                    <span>在 Etherscan 上查看完整交易信息</span>
+                  </a>
+                )}
               </div>
             </motion.div>
           )}
@@ -427,11 +441,38 @@ export default function CertificateDetailPage() {
               <h2 className="card-title">状态追踪</h2>
             </div>
             <div className="space-y-4">
+              {/* 证明创建 */}
               <TimelineItem
                 title="证明创建"
                 time={format(new Date(certificate.createdAt), 'yyyy/MM/dd HH:mm')}
                 status="completed"
               />
+
+              {/* 企业评价 - 如果有评价或evaluatedAt */}
+              {(certificate.evaluation || certificate.evaluatedAt) && (
+                <TimelineItem
+                  title="企业评价"
+                  time={certificate.evaluatedAt
+                    ? format(new Date(certificate.evaluatedAt), 'yyyy/MM/dd HH:mm')
+                    : '已完成'}
+                  status="completed"
+                />
+              )}
+
+              {/* 高校审核 - 如果状态不是PENDING说明已审核 */}
+              {certificate.status !== 'PENDING' && (
+                <TimelineItem
+                  title="高校审核"
+                  time={certificate.approvedAt
+                    ? format(new Date(certificate.approvedAt), 'yyyy/MM/dd HH:mm')
+                    : certificate.issuedAt
+                      ? format(new Date(certificate.issuedAt), 'yyyy/MM/dd HH:mm')
+                      : '已完成'}
+                  status="completed"
+                />
+              )}
+
+              {/* 区块链上链 */}
               {certificate.issuedAt && (
                 <TimelineItem
                   title="区块链上链"
@@ -439,6 +480,17 @@ export default function CertificateDetailPage() {
                   status="completed"
                 />
               )}
+
+              {/* 证明核验 - 显示最近核验 */}
+              {certificate.verifications && certificate.verifications.length > 0 && (
+                <TimelineItem
+                  title={`证明核验 (共${certificate.verifications.length}次)`}
+                  time={`最近: ${format(new Date(certificate.verifications[0].createdAt), 'yyyy/MM/dd HH:mm')}`}
+                  status="completed"
+                />
+              )}
+
+              {/* 证明撤销 */}
               {certificate.status === 'REVOKED' && (
                 <TimelineItem
                   title="证明撤销"
@@ -447,6 +499,25 @@ export default function CertificateDetailPage() {
                 />
               )}
             </div>
+
+            {/* 核验详情列表 */}
+            {certificate.verifications && certificate.verifications.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-dark-700">
+                <p className="text-sm text-dark-400 mb-3">最近核验记录</p>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {certificate.verifications.slice(0, 5).map((v, idx) => (
+                    <div key={v.id || idx} className="flex items-center justify-between text-xs p-2 rounded-lg bg-dark-800/50">
+                      <span className="text-dark-300">
+                        {format(new Date(v.createdAt), 'MM/dd HH:mm')}
+                      </span>
+                      <span className={v.isValid ? 'text-emerald-400' : 'text-red-400'}>
+                        {v.isValid ? '✓ 验证通过' : '✗ 验证失败'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.div>
         </div>
       </div>

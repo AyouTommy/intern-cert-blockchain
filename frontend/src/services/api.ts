@@ -207,6 +207,15 @@ export interface Certificate {
     category: string
     description?: string
   }[]
+  verifications?: {
+    id: string
+    createdAt: string
+    verifierIp?: string
+    isValid: boolean
+  }[]
+  evaluatedAt?: string  // 企业评价时间
+  approvedAt?: string   // 高校审核时间
+  revokeReason?: string
 }
 
 export interface University {
