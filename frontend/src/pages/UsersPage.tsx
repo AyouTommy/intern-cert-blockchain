@@ -16,6 +16,7 @@ import toast from 'react-hot-toast'
 import api from '../services/api'
 import { format } from 'date-fns'
 import clsx from 'clsx'
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
 
 interface User {
   id: string
@@ -71,6 +72,10 @@ export default function UsersPage() {
   const [approvalAction, setApprovalAction] = useState<'approve' | 'reject'>('approve')
   const [rejectReason, setRejectReason] = useState('')
 
+  // 删除确认模态框
+  const [deletingUser, setDeletingUser] = useState<User | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
   useEffect(() => {
     if (activeTab === 'all') {
       fetchUsers()
@@ -122,11 +127,14 @@ export default function UsersPage() {
   }
 
   const handleDeleteUser = async (user: User) => {
-    if (!confirm(`确定要删除用户 "${user.name}" 吗？此操作不可撤销！`)) {
-      return
-    }
+    setDeletingUser(user)
+  }
+
+  const confirmDeleteUser = async () => {
+    if (!deletingUser) return
+    setIsDeleting(true)
     try {
-      await api.delete(`/users/${user.id}`)
+      await api.delete(`/users/${deletingUser.id}`)
       toast.success('用户已删除')
       if (activeTab === 'all') {
         fetchUsers()
@@ -135,6 +143,9 @@ export default function UsersPage() {
       }
     } catch (error) {
       // Error handled by interceptor
+    } finally {
+      setIsDeleting(false)
+      setDeletingUser(null)
     }
   }
 
@@ -550,6 +561,16 @@ export default function UsersPage() {
           </motion.div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={!!deletingUser}
+        title="确认删除用户"
+        message={`确定要删除用户 "${deletingUser?.name}" 吗？此操作不可撤销！`}
+        onConfirm={confirmDeleteUser}
+        onCancel={() => setDeletingUser(null)}
+        isLoading={isDeleting}
+      />
     </div>
   )
 }
