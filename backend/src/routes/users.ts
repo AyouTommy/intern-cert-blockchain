@@ -359,7 +359,7 @@ router.delete(
 
       // 检查是否有关联的证书（不允许删除有证书的用户）
       const certificateCount = await prisma.certificate.count({
-        where: { issuedById: id },
+        where: { issuerId: id },
       });
       if (certificateCount > 0) {
         throw new AppError('该用户有关联的证书，无法删除', 400);
