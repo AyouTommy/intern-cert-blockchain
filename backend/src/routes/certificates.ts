@@ -811,11 +811,11 @@ router.get(
       // 动态生成PDF
       const { buffer, hash } = await generateCertificatePdf(certificate as any);
 
-      // 设置响应头
+      // 设置响应头 - 使用inline允许浏览器预览
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename*=UTF-8''${encodeURIComponent(`实习证明_${certificate.certNumber}.pdf`)}`
+        `inline; filename*=UTF-8''${encodeURIComponent(`实习证明_${certificate.certNumber}.pdf`)}`
       );
       res.setHeader('Content-Length', buffer.length);
       res.setHeader('X-PDF-Hash', hash);
