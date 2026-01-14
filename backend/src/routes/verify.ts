@@ -103,6 +103,7 @@ router.get(
         success: true,
         isValid,
         data: {
+          id: certificate.id,
           certNumber: certificate.certNumber,
           status: certificate.status,
           studentName: certificate.student.user.name,

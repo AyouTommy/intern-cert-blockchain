@@ -1,10 +1,11 @@
 import PDFDocument from 'pdfkit';
-import { PrismaClient } from '@prisma/client';
-import * as fs from 'fs';
-import * as path from 'path';
 import * as crypto from 'crypto';
+import * as path from 'path';
+import * as fs from 'fs';
 
-// 证书完整信息类型
+/**
+ * 证书完整信息类型
+ */
 interface CertificateFull {
     id: string;
     certNumber: string;
@@ -21,172 +22,272 @@ interface CertificateFull {
     blockNumber?: number | null;
     chainId?: string | null;
     issuedAt?: Date | null;
+    createdAt: Date;
     issuerId: string;
+    status: string;
     student: {
         studentId: string;
         user: { name: string };
     };
-    university: { name: string; code: string };
-    company: { name: string; code: string };
+    university: {
+        name: string;
+        code: string;
+        logo?: string | null;
+    };
+    company: {
+        name: string;
+        code: string;
+        logo?: string | null;
+    };
 }
 
-// 字体路径
-const FONT_PATH = path.join(__dirname, '../../fonts/NotoSansSC-Regular.otf');
-const FONT_FALLBACK = 'Helvetica';
+// 检测中文字体路径
+const FONT_PATHS = [
+    path.join(__dirname, '../../fonts/NotoSansSC-Regular.otf'),
+    path.join(__dirname, '../../fonts/NotoSansCJKsc-Regular.otf'),
+    path.join(__dirname, '../../fonts/SimHei.ttf'),
+];
+
+function getAvailableFont(): string | null {
+    for (const fontPath of FONT_PATHS) {
+        if (fs.existsSync(fontPath)) {
+            return fontPath;
+        }
+    }
+    return null;
+}
 
 /**
- * 生成证书PDF
+ * 格式化日期为中文格式
  */
-export async function generateCertificatePdf(certificate: CertificateFull): Promise<Buffer> {
+function formatDateCN(date: Date): string {
+    return `${date.getFullYear()}年${String(date.getMonth() + 1).padStart(2, '0')}月${String(date.getDate()).padStart(2, '0')}日`;
+}
+
+/**
+ * 生成证书PDF Buffer
+ * 按照用户详细要求设计内容和排版
+ */
+export async function generateCertificatePdf(certificate: CertificateFull): Promise<{ buffer: Buffer; hash: string }> {
     return new Promise((resolve, reject) => {
         try {
             const doc = new PDFDocument({
                 size: 'A4',
-                margin: 50,
+                margins: { top: 50, bottom: 50, left: 50, right: 50 },
                 info: {
                     Title: `实习证明 - ${certificate.certNumber}`,
-                    Author: '链证通',
+                    Author: '链证通 · 高校实习证明上链系统',
                     Subject: '区块链实习证明',
+                    Creator: 'InternCert Blockchain System',
+                    Producer: 'PDFKit',
                 },
             });
 
             const chunks: Buffer[] = [];
             doc.on('data', (chunk) => chunks.push(chunk));
-            doc.on('end', () => resolve(Buffer.concat(chunks)));
+            doc.on('end', () => {
+                const buffer = Buffer.concat(chunks);
+                const hash = crypto.createHash('sha256').update(buffer).digest('hex');
+                resolve({ buffer, hash });
+            });
             doc.on('error', reject);
 
             // 注册中文字体
-            let fontName = FONT_FALLBACK;
-            if (fs.existsSync(FONT_PATH)) {
-                doc.registerFont('NotoSansSC', FONT_PATH);
-                fontName = 'NotoSansSC';
+            const fontPath = getAvailableFont();
+            let fontName = 'Helvetica';
+            if (fontPath) {
+                doc.registerFont('ChineseFont', fontPath);
+                fontName = 'ChineseFont';
             }
 
-            const pageWidth = doc.page.width - 100;
+            const pageWidth = doc.page.width;
+            const contentWidth = pageWidth - 100;
+            const centerX = pageWidth / 2;
 
-            // 标题
-            doc.font(fontName).fontSize(28).fillColor('#12204E')
-                .text('实 习 证 明', { align: 'center' });
-            doc.moveDown(0.5);
+            // ==================== 顶部：高校名称 + 标题 ====================
+            // 高校名称
+            doc.font(fontName).fontSize(16).fillColor('#3E56A0')
+                .text(certificate.university.name, 50, 50, { align: 'center', width: contentWidth });
 
-            // 副标题
-            doc.fontSize(12).fillColor('#3E56A0')
-                .text('INTERNSHIP CERTIFICATE', { align: 'center' });
-            doc.moveDown(1.5);
+            // 主标题
+            doc.moveDown(0.8);
+            doc.fontSize(32).fillColor('#12204E')
+                .text('实 习 证 明', { align: 'center', width: contentWidth });
+
+            // 英文副标题
+            doc.moveDown(0.3);
+            doc.fontSize(12).fillColor('#7B8BB8')
+                .text('INTERNSHIP CERTIFICATE', { align: 'center', width: contentWidth });
 
             // 分隔线
-            doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y)
+            doc.moveDown(0.8);
+            const lineY = doc.y;
+            doc.moveTo(50, lineY).lineTo(pageWidth - 50, lineY)
                 .strokeColor('#C7D2FE').lineWidth(2).stroke();
-            doc.moveDown(1);
 
             // 证书编号
-            doc.fontSize(10).fillColor('#3E56A0')
-                .text(`证书编号：${certificate.certNumber}`, { align: 'right' });
-            doc.moveDown(1.5);
-
-            // 正文
-            doc.fontSize(14).fillColor('#12204E').lineGap(8);
-
-            const startDateStr = certificate.startDate.toLocaleDateString('zh-CN');
-            const endDateStr = certificate.endDate.toLocaleDateString('zh-CN');
-
-            doc.text(`兹证明 ${certificate.student.user.name} 同学（学号：${certificate.student.studentId}）`, {
-                align: 'left',
-                continued: false,
-            });
             doc.moveDown(0.5);
+            doc.fontSize(10).fillColor('#7B8BB8')
+                .text(`证书编号: ${certificate.certNumber}`, { align: 'right', width: contentWidth });
 
-            doc.text(`于 ${startDateStr} 至 ${endDateStr} 期间，`, { align: 'left' });
+            // ==================== 学生信息卡片 ====================
+            doc.moveDown(1);
+            const studentBoxY = doc.y;
+
+            doc.fontSize(13).fillColor('#3B5BFF')
+                .text('【学生信息】', 50, studentBoxY);
+
             doc.moveDown(0.5);
+            doc.fontSize(12).fillColor('#12204E');
+            doc.text(`姓    名: ${certificate.student.user.name}`, 70, doc.y);
+            doc.moveDown(0.4);
+            // 学号脱敏：显示前3位和后2位
+            const studentId = certificate.student.studentId;
+            const maskedId = studentId.length > 5
+                ? `${studentId.slice(0, 3)}****${studentId.slice(-2)}`
+                : studentId;
+            doc.text(`学    号: ${maskedId}`, 70, doc.y);
 
-            doc.text(`在 ${certificate.company.name} 完成实习。`, { align: 'left' });
+            // ==================== 实习信息卡片 ====================
+            doc.moveDown(1.2);
+            doc.fontSize(13).fillColor('#3B5BFF')
+                .text('【实习信息】', 50, doc.y);
+
             doc.moveDown(0.5);
+            doc.fontSize(12).fillColor('#12204E');
+            doc.text(`实习单位: ${certificate.company.name}`, 70, doc.y);
+            doc.moveDown(0.4);
+            doc.text(`实习岗位: ${certificate.position}`, 70, doc.y);
 
-            doc.text(`实习岗位：${certificate.position}${certificate.department ? `（${certificate.department}）` : ''}`, {
-                align: 'left',
-            });
-            doc.moveDown(1.5);
+            if (certificate.department) {
+                doc.moveDown(0.4);
+                doc.text(`所属部门: ${certificate.department}`, 70, doc.y);
+            }
+
+            doc.moveDown(0.4);
+            doc.text(`实习时间: ${formatDateCN(certificate.startDate)} 至 ${formatDateCN(certificate.endDate)}`, 70, doc.y);
 
             // 实习描述
             if (certificate.description) {
-                doc.fontSize(12).fillColor('#3E56A0').text('实习内容：', { align: 'left' });
-                doc.fontSize(12).fillColor('#12204E').text(certificate.description, {
-                    align: 'left',
-                    width: pageWidth,
-                });
-                doc.moveDown(1);
+                doc.moveDown(0.4);
+                doc.text(`工作内容:`, 70, doc.y);
+                doc.moveDown(0.2);
+                doc.fontSize(11).fillColor('#3E56A0')
+                    .text(certificate.description, 90, doc.y, { width: contentWidth - 60 });
             }
 
-            // 评语
-            if (certificate.evaluation) {
-                doc.fontSize(12).fillColor('#3E56A0').text('实习评价：', { align: 'left' });
-                doc.fontSize(12).fillColor('#12204E').text(certificate.evaluation, {
-                    align: 'left',
-                    width: pageWidth,
-                });
-                doc.moveDown(1.5);
-            }
+            // ==================== 确认主体 ====================
+            doc.moveDown(1.2);
+            doc.fontSize(13).fillColor('#3B5BFF')
+                .text('【确认主体】', 50, doc.y);
 
-            // 分隔线
-            doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y)
-                .strokeColor('#C7D2FE').lineWidth(1).stroke();
-            doc.moveDown(1);
-
-            // 区块链验证信息
-            doc.fontSize(11).fillColor('#3E56A0').text('区块链验证信息', { align: 'left' });
             doc.moveDown(0.5);
+            doc.fontSize(12).fillColor('#12204E');
+            doc.text(`发证高校: ${certificate.university.name}`, 70, doc.y);
+            doc.moveDown(0.4);
+            doc.text(`实习单位: ${certificate.company.name}`, 70, doc.y);
 
-            doc.fontSize(9).fillColor('#12204E');
-            if (certificate.certHash) {
-                doc.text(`证明哈希: ${certificate.certHash}`, { align: 'left' });
-            }
-            if (certificate.txHash) {
-                doc.text(`交易哈希: ${certificate.txHash}`, { align: 'left' });
-            }
-            if (certificate.blockNumber) {
-                doc.text(`区块高度: #${certificate.blockNumber}`, { align: 'left' });
-            }
-            if (certificate.chainId) {
-                doc.text(`链ID: ${certificate.chainId}`, { align: 'left' });
-            }
-            doc.moveDown(1);
+            // 签发日期
+            doc.moveDown(0.4);
+            const issuedDate = certificate.issuedAt || certificate.createdAt;
+            doc.text(`签发日期: ${formatDateCN(new Date(issuedDate))}`, 70, doc.y);
 
-            // 二维码区域
+            // ==================== 核验信息 + 二维码 ====================
+            doc.moveDown(1.2);
+            doc.fontSize(13).fillColor('#3B5BFF')
+                .text('【核验信息】', 50, doc.y);
+
+            const verifyBlockY = doc.y + 15;
+
+            // 验证链接
+            doc.fontSize(10).fillColor('#12204E')
+                .text(`验证链接: ${certificate.verifyUrl || '暂无'}`, 70, verifyBlockY, { width: contentWidth - 150 });
+
+            doc.moveDown(0.5);
+            doc.fontSize(9).fillColor('#7B8BB8')
+                .text('扫描右侧二维码或访问验证链接可核验证书真伪', 70, doc.y, { width: contentWidth - 150 });
+
+            // 二维码（右侧）
             if (certificate.qrCode && certificate.qrCode.startsWith('data:image')) {
                 try {
                     const base64Data = certificate.qrCode.split(',')[1];
                     const imgBuffer = Buffer.from(base64Data, 'base64');
-                    doc.image(imgBuffer, doc.page.width - 150, doc.y, { width: 100, height: 100 });
+                    doc.image(imgBuffer, pageWidth - 150, verifyBlockY - 10, { width: 90, height: 90 });
                 } catch (e) {
                     // 二维码解析失败，跳过
+                    console.warn('QR code parsing failed');
                 }
             }
 
-            // 验证链接
-            if (certificate.verifyUrl) {
-                doc.fontSize(8).fillColor('#3E56A0')
-                    .text(`扫描二维码或访问 ${certificate.verifyUrl} 验证真伪`, 50, doc.y + 110, {
-                        align: 'center',
-                        width: pageWidth,
-                    });
+            // ==================== 区块链存证信息 ====================
+            if (certificate.certHash && certificate.status === 'ACTIVE') {
+                doc.moveDown(2);
+
+                // 区块链区块背景
+                const blockchainY = doc.y;
+                doc.rect(50, blockchainY - 5, contentWidth, 100)
+                    .fillColor('#F0F4FF').fill();
+
+                doc.fontSize(11).fillColor('#3B5BFF')
+                    .text('【区块链存证】 ✓ 已上链', 60, blockchainY + 5);
+
+                doc.moveDown(0.5);
+                doc.font('Courier').fontSize(8).fillColor('#3E56A0');
+
+                // 证明哈希
+                const certHashShort = certificate.certHash.length > 20
+                    ? `${certificate.certHash.slice(0, 10)}...${certificate.certHash.slice(-10)}`
+                    : certificate.certHash;
+                doc.text(`Certification Hash: ${certHashShort}`, 60, doc.y);
+
+                // 交易哈希
+                if (certificate.txHash) {
+                    doc.moveDown(0.3);
+                    const txHashShort = certificate.txHash.length > 20
+                        ? `${certificate.txHash.slice(0, 10)}...${certificate.txHash.slice(-10)}`
+                        : certificate.txHash;
+                    doc.text(`Transaction Hash:   ${txHashShort}`, 60, doc.y);
+                }
+
+                // 区块信息
+                doc.moveDown(0.3);
+                doc.text(`Block Number: #${certificate.blockNumber?.toLocaleString() || 'N/A'}    Chain ID: ${certificate.chainId || 'N/A'}`, 60, doc.y);
+
+                // 上链时间
+                if (certificate.issuedAt) {
+                    doc.moveDown(0.3);
+                    doc.text(`Timestamp: ${new Date(certificate.issuedAt).toISOString()}`, 60, doc.y);
+                }
+
+                // 恢复字体
+                doc.font(fontName);
             }
 
-            // 签发信息
-            doc.moveDown(3);
-            doc.fontSize(12).fillColor('#12204E');
+            // ==================== 页脚 ====================
+            const footerY = doc.page.height - 70;
 
-            const issuedDateStr = certificate.issuedAt
-                ? certificate.issuedAt.toLocaleDateString('zh-CN')
-                : new Date().toLocaleDateString('zh-CN');
+            // 分隔线
+            doc.moveTo(50, footerY - 10).lineTo(pageWidth - 50, footerY - 10)
+                .strokeColor('#C7D2FE').lineWidth(1).stroke();
 
-            doc.text(`发证高校：${certificate.university.name}`, 50, doc.page.height - 120, { align: 'left' });
-            doc.text(`签发日期：${issuedDateStr}`, 50, doc.page.height - 100, { align: 'left' });
-
-            // 页脚
+            // 免责声明
             doc.fontSize(8).fillColor('#7B8BB8')
-                .text('本证明由链证通（区块链实习证明上链系统）生成，信息已永久存储于区块链', 50, doc.page.height - 50, {
+                .text('本证明由「链证通」区块链实习证明上链系统生成，信息已永久存储于区块链。', 50, footerY, {
                     align: 'center',
-                    width: pageWidth,
+                    width: contentWidth,
+                });
+
+            doc.moveDown(0.3);
+            doc.text('如有争议，以链上记录为准。', {
+                align: 'center',
+                width: contentWidth,
+            });
+
+            doc.moveDown(0.3);
+            doc.fontSize(7).fillColor('#A0AEC0')
+                .text('© 2026 链证通. All rights reserved.', {
+                    align: 'center',
+                    width: contentWidth,
                 });
 
             doc.end();
@@ -194,95 +295,4 @@ export async function generateCertificatePdf(certificate: CertificateFull): Prom
             reject(error);
         }
     });
-}
-
-/**
- * 确保证书PDF附件存在（幂等操作）
- */
-export async function ensureCertificatePdfAttachment(
-    prisma: PrismaClient,
-    certificateId: string
-): Promise<{ id: string; filePath: string; downloadUrl: string } | null> {
-    // 获取完整证书信息
-    const certificate = await prisma.certificate.findUnique({
-        where: { id: certificateId },
-        include: {
-            student: { include: { user: { select: { name: true } } } },
-            university: { select: { name: true, code: true } },
-            company: { select: { name: true, code: true } },
-        },
-    });
-
-    if (!certificate) {
-        console.error(`Certificate not found: ${certificateId}`);
-        return null;
-    }
-
-    // 生成PDF
-    const pdfBuffer = await generateCertificatePdf(certificate as CertificateFull);
-
-    // 确保目录存在
-    const uploadDir = path.join(__dirname, '../../uploads', certificateId);
-    if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    // 文件名
-    const fileName = `internship_certificate_${certificate.certNumber}.pdf`;
-    const filePath = path.join(uploadDir, fileName);
-
-    // 写入文件
-    fs.writeFileSync(filePath, pdfBuffer);
-
-    // 计算文件哈希
-    const fileHash = crypto.createHash('sha256').update(pdfBuffer).digest('hex');
-
-    // 查找是否已存在相同类型的附件
-    const existingAttachment = await prisma.attachment.findFirst({
-        where: {
-            certificateId,
-            category: 'CERTIFICATE_PDF',
-        },
-    });
-
-    let attachment;
-
-    if (existingAttachment) {
-        // 更新已存在的附件
-        attachment = await prisma.attachment.update({
-            where: { id: existingAttachment.id },
-            data: {
-                fileName,
-                originalName: fileName,
-                fileSize: pdfBuffer.length,
-                mimeType: 'application/pdf',
-                filePath,
-                fileHash,
-            },
-        });
-    } else {
-        // 创建新附件
-        attachment = await prisma.attachment.create({
-            data: {
-                certificateId,
-                fileName,
-                originalName: fileName,
-                fileSize: pdfBuffer.length,
-                mimeType: 'application/pdf',
-                filePath,
-                fileHash,
-                category: 'CERTIFICATE_PDF',
-                description: '系统自动生成的实习证明PDF文件',
-                uploadedBy: certificate.issuerId,
-            },
-        });
-    }
-
-    console.log(`PDF generated for certificate ${certificate.certNumber}: ${filePath}`);
-
-    return {
-        id: attachment.id,
-        filePath,
-        downloadUrl: `/api/attachments/download/${attachment.id}`,
-    };
 }

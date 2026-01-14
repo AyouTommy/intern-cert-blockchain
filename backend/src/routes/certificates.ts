@@ -7,7 +7,7 @@ import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 import { blockchainService } from '../services/blockchain';
 import { config } from '../config';
-import { ensureCertificatePdfAttachment } from '../services/certificatePdf';
+import { generateCertificatePdf } from '../services/certificatePdf';
 
 const router = Router();
 
@@ -353,13 +353,7 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
       });
 
       // 上链成功后生成PDF证书
-      try {
-        await ensureCertificatePdfAttachment(prisma, certificateId);
-        console.log(`PDF certificate generated for: ${certificateId}`);
-      } catch (pdfError) {
-        console.error('PDF生成失败:', pdfError);
-        // PDF生成失败不阻塞主流程
-      }
+      // 注意：PDF现在通过动态接口生成，不再保存到文件系统
     } else {
       await prisma.certificate.update({
         where: { id: certificateId },
@@ -777,6 +771,58 @@ router.delete(
         message: '证明已删除',
       });
     } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 动态生成PDF证书（不依赖文件系统，每次请求动态生成）
+router.get(
+  '/:id/pdf',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const prisma = (req as any).prisma as PrismaClient;
+      const { id } = req.params;
+
+      const certificate = await prisma.certificate.findUnique({
+        where: { id },
+        include: {
+          student: { include: { user: { select: { name: true } } } },
+          university: { select: { name: true, code: true, logo: true } },
+          company: { select: { name: true, code: true, logo: true } },
+        },
+      });
+
+      if (!certificate) {
+        return res.status(404).json({
+          success: false,
+          message: '证明不存在',
+        });
+      }
+
+      // 只允许已上链的证书生成PDF
+      if (certificate.status !== 'ACTIVE') {
+        return res.status(400).json({
+          success: false,
+          message: '只有已上链的证书才能生成PDF',
+        });
+      }
+
+      // 动态生成PDF
+      const { buffer, hash } = await generateCertificatePdf(certificate as any);
+
+      // 设置响应头
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename*=UTF-8''${encodeURIComponent(`实习证明_${certificate.certNumber}.pdf`)}`
+      );
+      res.setHeader('Content-Length', buffer.length);
+      res.setHeader('X-PDF-Hash', hash);
+
+      res.send(buffer);
+    } catch (error) {
+      console.error('PDF生成失败:', error);
       next(error);
     }
   }

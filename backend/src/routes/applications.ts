@@ -7,7 +7,6 @@ import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 import { blockchainService } from '../services/blockchain';
 import { config } from '../config';
-import { ensureCertificatePdfAttachment } from '../services/certificatePdf';
 
 const router = Router();
 
@@ -826,13 +825,7 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
             });
 
             // 上链成功后生成PDF证书
-            try {
-                await ensureCertificatePdfAttachment(prisma, certificateId);
-                console.log(`PDF certificate generated for: ${certificateId}`);
-            } catch (pdfError) {
-                console.error('PDF生成失败:', pdfError);
-                // PDF生成失败不阻塞主流程
-            }
+            // 注意：PDF现在通过动态接口 GET /api/certificates/:id/pdf 生成
         } else {
             await prisma.certificate.update({
                 where: { id: certificateId },

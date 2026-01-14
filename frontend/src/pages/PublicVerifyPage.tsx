@@ -19,6 +19,7 @@ interface VerifyResult {
   success: boolean
   isValid: boolean
   data?: {
+    id: string
     certNumber: string
     status: string
     studentName: string
@@ -344,8 +345,8 @@ export default function PublicVerifyPage() {
                 </motion.div>
               )}
 
-              {/* PDF Certificate Download */}
-              {result.data.attachments && result.data.attachments.some(a => a.category === 'CERTIFICATE_PDF') && (
+              {/* PDF Certificate Download - 动态生成 */}
+              {result.data.status === 'ACTIVE' && result.data.id && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -359,37 +360,35 @@ export default function PublicVerifyPage() {
                     <h3 className="text-lg font-semibold text-dark-100">证书文件</h3>
                   </div>
 
-                  {result.data.attachments
-                    .filter(a => a.category === 'CERTIFICATE_PDF')
-                    .map(att => {
-                      const pdfUrl = `${import.meta.env.VITE_API_URL || ''}${att.downloadUrl}`;
-                      return (
-                        <div key={att.id} className="space-y-4">
-                          {/* PDF Preview */}
-                          <div className="rounded-xl overflow-hidden border border-dark-700 bg-dark-800/50">
-                            <iframe
-                              src={pdfUrl}
-                              className="w-full h-[400px]"
-                              title="PDF Preview"
-                            />
-                          </div>
-
-                          {/* Download Button */}
-                          <a
-                            href={pdfUrl}
-                            download={att.name || 'certificate.pdf'}
-                            className="btn-primary w-full flex items-center justify-center gap-2"
-                          >
-                            <DocumentTextIcon className="w-5 h-5" />
-                            下载证书PDF
-                          </a>
-
-                          <p className="text-center text-sm text-dark-400">
-                            文件大小: {(att.size / 1024).toFixed(1)} KB
-                          </p>
+                  {(() => {
+                    const pdfUrl = `${import.meta.env.VITE_API_URL || ''}/certificates/${result.data.id}/pdf`;
+                    return (
+                      <div className="space-y-4">
+                        {/* PDF Preview */}
+                        <div className="rounded-xl overflow-hidden border border-dark-700 bg-dark-800/50">
+                          <iframe
+                            src={pdfUrl}
+                            className="w-full h-[400px]"
+                            title="PDF Preview"
+                          />
                         </div>
-                      );
-                    })}
+
+                        {/* Download Button */}
+                        <a
+                          href={pdfUrl}
+                          download={`实习证明_${result.data.certNumber}.pdf`}
+                          className="btn-primary w-full flex items-center justify-center gap-2"
+                        >
+                          <DocumentTextIcon className="w-5 h-5" />
+                          下载证书PDF
+                        </a>
+
+                        <p className="text-center text-sm text-dark-400">
+                          PDF由系统动态生成，包含完整区块链存证信息
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </motion.div>
               )}
             </>
