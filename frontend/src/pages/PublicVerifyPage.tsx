@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 import api from '../services/api'
+import PublicCertificatePreview from '../components/PublicCertificatePreview'
 
 interface VerifyResult {
   success: boolean
@@ -360,35 +361,24 @@ export default function PublicVerifyPage() {
                     <h3 className="text-lg font-semibold text-dark-100">证书文件</h3>
                   </div>
 
-                  {(() => {
-                    const pdfUrl = `${import.meta.env.VITE_API_URL || ''}/certificates/${result.data.id}/pdf`;
-                    return (
-                      <div className="space-y-4">
-                        {/* PDF Preview */}
-                        <div className="rounded-xl overflow-hidden border border-dark-700 bg-dark-800/50">
-                          <iframe
-                            src={pdfUrl}
-                            className="w-full h-[400px]"
-                            title="PDF Preview"
-                          />
-                        </div>
+                  {/* 证书预览 - A4纸样式 */}
+                  <div className="flex justify-center mb-4 overflow-auto">
+                    <PublicCertificatePreview data={result.data as any} verifyUrl={window.location.href} />
+                  </div>
 
-                        {/* Download Button */}
-                        <a
-                          href={pdfUrl}
-                          download={`实习证明_${result.data.certNumber}.pdf`}
-                          className="btn-primary w-full flex items-center justify-center gap-2"
-                        >
-                          <DocumentTextIcon className="w-5 h-5" />
-                          下载证书PDF
-                        </a>
+                  {/* 下载按钮 */}
+                  <a
+                    href={`${import.meta.env.VITE_API_URL || ''}/certificates/${result.data.id}/pdf`}
+                    download={`实习证明_${result.data.certNumber}.pdf`}
+                    className="btn-primary w-full flex items-center justify-center gap-2"
+                  >
+                    <DocumentTextIcon className="w-5 h-5" />
+                    下载PDF证书
+                  </a>
 
-                        <p className="text-center text-sm text-dark-400">
-                          PDF由系统动态生成，包含完整区块链存证信息
-                        </p>
-                      </div>
-                    );
-                  })()}
+                  <p className="text-center text-sm text-dark-400 mt-3">
+                    点击上方按钮下载完整PDF文件
+                  </p>
                 </motion.div>
               )}
             </>
