@@ -22,6 +22,7 @@ import NotFoundPage from './pages/NotFoundPage'
 import WhitelistPage from './pages/WhitelistPage'
 import ApplicationsPage from './pages/ApplicationsPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ThirdPartyOrgsPage from './pages/ThirdPartyOrgsPage'
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -84,6 +85,11 @@ function App() {
         <Route path="/whitelist" element={
           <AdminRoute>
             <WhitelistPage />
+          </AdminRoute>
+        } />
+        <Route path="/third-party-orgs" element={
+          <AdminRoute>
+            <ThirdPartyOrgsPage />
           </AdminRoute>
         } />
       </Route>

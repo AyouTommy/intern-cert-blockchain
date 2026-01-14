@@ -339,6 +339,7 @@ router.delete(
       const authReq = req as AuthRequest;
       const prisma = authReq.prisma;
       const { id } = req.params;
+      const { deleteOrg } = req.query; // 可选参数，是否删除关联机构
 
       // 不允许删除自己
       if (id === authReq.user!.id) {
@@ -347,17 +348,60 @@ router.delete(
 
       const user = await prisma.user.findUnique({
         where: { id },
-        select: { id: true, role: true },
+        include: {
+          studentProfile: true,
+        },
       });
 
       if (!user) {
         throw new AppError('用户不存在', 404);
       }
 
-      // 删除关联的学生档案（如果存在）
-      await prisma.studentProfile.deleteMany({
-        where: { userId: id },
-      });
+      // 根据角色处理不同的删除逻辑
+      if (user.role === 'STUDENT' && user.studentProfile) {
+        // 学生：重置白名单允许重新注册
+        await prisma.studentWhitelist.updateMany({
+          where: { studentId: user.studentProfile.studentId },
+          data: { isUsed: false, usedAt: null, usedByUserId: null },
+        });
+        // 删除学生档案
+        await prisma.studentProfile.delete({
+          where: { id: user.studentProfile.id },
+        });
+      } else if (user.role === 'UNIVERSITY' && user.universityId) {
+        // 高校用户：检查是否删除机构
+        if (deleteOrg === 'true') {
+          // 检查是否还有其他用户关联到该高校
+          const otherUsers = await prisma.user.count({
+            where: { universityId: user.universityId, id: { not: id } },
+          });
+          if (otherUsers === 0) {
+            // 没有其他用户，删除高校
+            await prisma.university.delete({ where: { id: user.universityId } });
+          }
+        }
+      } else if (user.role === 'COMPANY' && user.companyId) {
+        // 企业用户：检查是否删除机构
+        if (deleteOrg === 'true') {
+          const otherUsers = await prisma.user.count({
+            where: { companyId: user.companyId, id: { not: id } },
+          });
+          if (otherUsers === 0) {
+            await prisma.company.delete({ where: { id: user.companyId } });
+          }
+        }
+      } else if (user.role === 'THIRD_PARTY' && user.thirdPartyOrgId) {
+        // 第三方机构用户：检查是否删除机构
+        if (deleteOrg === 'true') {
+          const otherUsers = await prisma.user.count({
+            where: { thirdPartyOrgId: user.thirdPartyOrgId, id: { not: id } },
+          });
+          if (otherUsers === 0) {
+            // @ts-ignore
+            await prisma.thirdPartyOrg.delete({ where: { id: user.thirdPartyOrgId } });
+          }
+        }
+      }
 
       // 删除用户
       await prisma.user.delete({

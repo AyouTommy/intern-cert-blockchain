@@ -30,6 +30,7 @@ const navigation = [
   { name: '证明核验', href: '/verify', icon: ShieldCheckIcon, roles: ['ADMIN', 'UNIVERSITY', 'COMPANY', 'STUDENT', 'THIRD_PARTY'] },
   { name: '高校管理', href: '/universities', icon: BuildingOfficeIcon, roles: ['ADMIN'] },
   { name: '企业管理', href: '/companies', icon: BuildingOffice2Icon, roles: ['ADMIN'] },
+  { name: '第三方机构', href: '/third-party-orgs', icon: BuildingOffice2Icon, roles: ['ADMIN'] },
   { name: '学生白名单', href: '/whitelist', icon: UserGroupIcon, roles: ['ADMIN'] },
   { name: '用户管理', href: '/users', icon: UsersIcon, roles: ['ADMIN'] },
   { name: '系统设置', href: '/settings', icon: Cog6ToothIcon, roles: ['ADMIN', 'UNIVERSITY', 'COMPANY'] },

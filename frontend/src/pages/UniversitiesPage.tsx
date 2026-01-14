@@ -6,6 +6,7 @@ import {
   MagnifyingGlassIcon,
   CheckBadgeIcon,
   PencilIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api, { University } from '../services/api'
@@ -35,7 +36,7 @@ export default function UniversitiesPage() {
       const params = new URLSearchParams()
       params.append('limit', '50')
       if (search) params.append('search', search)
-      
+
       const response = await api.get(`/universities?${params}`)
       setUniversities(response.data.data.universities)
     } catch (error) {
@@ -98,6 +99,19 @@ export default function UniversitiesPage() {
       address: '',
       website: '',
     })
+  }
+
+  const handleDelete = async (university: University) => {
+    if (!window.confirm(`确定要删除高校 "${university.name}" 吗？此操作不可撤销！`)) {
+      return
+    }
+    try {
+      await api.delete(`/universities/${university.id}`)
+      toast.success('高校已删除')
+      fetchUniversities()
+    } catch (error) {
+      // Error handled by interceptor
+    }
   }
 
   return (
@@ -167,6 +181,12 @@ export default function UniversitiesPage() {
                     className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg"
                   >
                     <PencilIcon className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(university)}
+                    className="p-2 text-dark-400 hover:text-red-400 hover:bg-dark-800 rounded-lg"
+                  >
+                    <TrashIcon className="w-4 h-4" />
                   </button>
                 </div>
               </div>
