@@ -155,6 +155,131 @@ router.get(
   }
 );
 
+// 获取密码重置请求列表（管理员）- 必须在 /:id 路由之前定义
+router.get(
+  '/password-reset-requests',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const authReq = req as AuthRequest;
+      const prisma = authReq.prisma;
+
+      // @ts-ignore - PasswordResetRequest will be available after prisma generate
+      const requests = await prisma.passwordResetRequest.findMany({
+        where: { status: 'PENDING' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // 获取用户信息
+      const userIds = requests.map((r: any) => r.userId);
+      const users = await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, name: true, email: true, role: true },
+      });
+
+      const userMap = new Map(users.map((u: any) => [u.id, u]));
+      const enrichedRequests = requests.map((r: any) => ({
+        ...r,
+        user: userMap.get(r.userId),
+      }));
+
+      res.json({
+        success: true,
+        data: { requests: enrichedRequests },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 处理密码重置请求（管理员）- 必须在 /:id 路由之前定义
+router.patch(
+  '/password-reset-requests/:id',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const authReq = req as AuthRequest;
+      const prisma = authReq.prisma;
+      const { id } = req.params;
+      const { approved, rejectReason } = req.body;
+
+      // @ts-ignore
+      const request = await prisma.passwordResetRequest.findUnique({
+        where: { id },
+      });
+
+      if (!request || request.status !== 'PENDING') {
+        throw new AppError('请求不存在或已处理', 404);
+      }
+
+      if (approved) {
+        // 更新用户密码
+        await prisma.user.update({
+          where: { id: request.userId },
+          data: { password: request.newPasswordHash },
+        });
+
+        // 更新请求状态
+        // @ts-ignore
+        await prisma.passwordResetRequest.update({
+          where: { id },
+          data: {
+            status: 'APPROVED',
+            processedAt: new Date(),
+            processedBy: authReq.user!.id,
+          },
+        });
+
+        // 通知用户
+        await prisma.notification.create({
+          data: {
+            userId: request.userId,
+            title: '密码重置成功',
+            content: '您的密码重置申请已通过，新密码已生效。',
+            type: 'SYSTEM',
+          },
+        });
+
+        res.json({
+          success: true,
+          message: '已批准密码重置',
+        });
+      } else {
+        // @ts-ignore
+        await prisma.passwordResetRequest.update({
+          where: { id },
+          data: {
+            status: 'REJECTED',
+            processedAt: new Date(),
+            processedBy: authReq.user!.id,
+            rejectReason,
+          },
+        });
+
+        // 通知用户
+        await prisma.notification.create({
+          data: {
+            userId: request.userId,
+            title: '密码重置被拒绝',
+            content: `您的密码重置申请已被拒绝。${rejectReason ? `原因：${rejectReason}` : ''}`,
+            type: 'SYSTEM',
+          },
+        });
+
+        res.json({
+          success: true,
+          message: '已拒绝密码重置请求',
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // 获取用户详情
 router.get(
   '/:id',
@@ -810,131 +935,6 @@ router.post(
         res.json({
           success: true,
           message: '已拒绝该申请',
-        });
-      }
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-// 获取密码重置请求列表（管理员）
-router.get(
-  '/password-reset-requests',
-  authenticate,
-  authorize('ADMIN'),
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const authReq = req as AuthRequest;
-      const prisma = authReq.prisma;
-
-      // @ts-ignore - PasswordResetRequest will be available after prisma generate
-      const requests = await prisma.passwordResetRequest.findMany({
-        where: { status: 'PENDING' },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      // 获取用户信息
-      const userIds = requests.map((r: any) => r.userId);
-      const users = await prisma.user.findMany({
-        where: { id: { in: userIds } },
-        select: { id: true, name: true, email: true, role: true },
-      });
-
-      const userMap = new Map(users.map((u: any) => [u.id, u]));
-      const enrichedRequests = requests.map((r: any) => ({
-        ...r,
-        user: userMap.get(r.userId),
-      }));
-
-      res.json({
-        success: true,
-        data: { requests: enrichedRequests },
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-// 处理密码重置请求（管理员）
-router.patch(
-  '/password-reset-requests/:id',
-  authenticate,
-  authorize('ADMIN'),
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const authReq = req as AuthRequest;
-      const prisma = authReq.prisma;
-      const { id } = req.params;
-      const { approved, rejectReason } = req.body;
-
-      // @ts-ignore
-      const request = await prisma.passwordResetRequest.findUnique({
-        where: { id },
-      });
-
-      if (!request || request.status !== 'PENDING') {
-        throw new AppError('请求不存在或已处理', 404);
-      }
-
-      if (approved) {
-        // 更新用户密码
-        await prisma.user.update({
-          where: { id: request.userId },
-          data: { password: request.newPasswordHash },
-        });
-
-        // 更新请求状态
-        // @ts-ignore
-        await prisma.passwordResetRequest.update({
-          where: { id },
-          data: {
-            status: 'APPROVED',
-            processedAt: new Date(),
-            processedBy: authReq.user!.id,
-          },
-        });
-
-        // 通知用户
-        await prisma.notification.create({
-          data: {
-            userId: request.userId,
-            title: '密码重置成功',
-            content: '您的密码重置申请已通过，新密码已生效。',
-            type: 'SYSTEM',
-          },
-        });
-
-        res.json({
-          success: true,
-          message: '已批准密码重置',
-        });
-      } else {
-        // @ts-ignore
-        await prisma.passwordResetRequest.update({
-          where: { id },
-          data: {
-            status: 'REJECTED',
-            processedAt: new Date(),
-            processedBy: authReq.user!.id,
-            rejectReason,
-          },
-        });
-
-        // 通知用户
-        await prisma.notification.create({
-          data: {
-            userId: request.userId,
-            title: '密码重置被拒绝',
-            content: `您的密码重置申请已被拒绝。${rejectReason ? `原因：${rejectReason}` : ''}`,
-            type: 'SYSTEM',
-          },
-        });
-
-        res.json({
-          success: true,
-          message: '已拒绝密码重置请求',
         });
       }
     } catch (error) {
