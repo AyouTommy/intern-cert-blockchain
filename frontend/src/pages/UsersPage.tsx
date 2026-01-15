@@ -36,6 +36,20 @@ interface User {
   studentProfile?: { studentId: string }
 }
 
+interface PasswordResetRequest {
+  id: string
+  userId: string
+  reason?: string
+  status: string
+  createdAt: string
+  user?: {
+    id: string
+    name: string
+    email: string
+    role: string
+  }
+}
+
 const roleLabels: Record<string, { label: string; class: string }> = {
   ADMIN: { label: '管理员', class: 'bg-red-500/20 text-red-400' },
   UNIVERSITY: { label: '高校', class: 'bg-blue-500/20 text-blue-400' },
@@ -50,7 +64,7 @@ const approvalStatusLabels: Record<string, { label: string; class: string }> = {
   REJECTED: { label: '已拒绝', class: 'bg-red-500/20 text-red-400' },
 }
 
-type TabType = 'all' | 'pending'
+type TabType = 'all' | 'pending' | 'passwordReset'
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -61,6 +75,7 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState('')
   const [page, setPage] = useState(1)
   const [activeTab, setActiveTab] = useState<TabType>('all')
+  const [passwordResetRequests, setPasswordResetRequests] = useState<PasswordResetRequest[]>([])
 
   // 修改密码模态框
   const [showPasswordModal, setShowPasswordModal] = useState(false)
@@ -79,8 +94,10 @@ export default function UsersPage() {
   useEffect(() => {
     if (activeTab === 'all') {
       fetchUsers()
-    } else {
+    } else if (activeTab === 'pending') {
       fetchPendingUsers()
+    } else if (activeTab === 'passwordReset') {
+      fetchPasswordResetRequests()
     }
   }, [search, roleFilter, page, activeTab])
 
@@ -113,6 +130,29 @@ export default function UsersPage() {
       setPendingUsers([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchPasswordResetRequests = async () => {
+    setLoading(true)
+    try {
+      const response = await api.get('/users/password-reset-requests')
+      setPasswordResetRequests(response.data.data.requests || [])
+    } catch (error) {
+      console.error('Failed to fetch password reset requests:', error)
+      setPasswordResetRequests([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePasswordResetApproval = async (requestId: string, approved: boolean) => {
+    try {
+      await api.patch(`/users/password-reset-requests/${requestId}`, { approved })
+      toast.success(approved ? '密码重置已批准' : '密码重置已拒绝')
+      fetchPasswordResetRequests()
+    } catch (error) {
+      // Error handled by interceptor
     }
   }
 
@@ -238,6 +278,23 @@ export default function UsersPage() {
             </span>
           )}
         </button>
+        <button
+          onClick={() => { setActiveTab('passwordReset'); setPage(1); }}
+          className={clsx(
+            'px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2',
+            activeTab === 'passwordReset'
+              ? 'bg-blue-500/20 text-blue-400'
+              : 'text-dark-400 hover:text-dark-200'
+          )}
+        >
+          <KeyIcon className="w-4 h-4" />
+          密码重置审核
+          {passwordResetRequests.length > 0 && activeTab !== 'passwordReset' && (
+            <span className="px-1.5 py-0.5 bg-blue-500 text-white rounded-full text-xs">
+              {passwordResetRequests.length}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Filters - only for all users tab */}
@@ -273,160 +330,251 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="table-container overflow-x-auto">
-        <table className="w-full min-w-[700px]">
-          <thead>
-            <tr className="table-header">
-              <th className="table-cell text-left">用户</th>
-              <th className="table-cell text-left">角色</th>
-              <th className="table-cell text-left">{activeTab === 'pending' ? '申请机构' : '所属机构'}</th>
-              {activeTab === 'pending' && <th className="table-cell text-left">申请说明</th>}
-              <th className="table-cell text-left">注册时间</th>
-              <th className="table-cell text-left">状态</th>
-              <th className="table-cell text-right">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              [...Array(5)].map((_, i) => (
-                <tr key={i} className="table-row">
-                  <td colSpan={activeTab === 'pending' ? 7 : 6} className="table-cell">
-                    <div className="h-12 skeleton rounded" />
+      {/* Password Reset Requests Table */}
+      {activeTab === 'passwordReset' && (
+        <div className="table-container overflow-x-auto">
+          <table className="w-full min-w-[600px]">
+            <thead>
+              <tr className="table-header">
+                <th className="table-cell text-left">用户</th>
+                <th className="table-cell text-left">角色</th>
+                <th className="table-cell text-left">申请原因</th>
+                <th className="table-cell text-left">申请时间</th>
+                <th className="table-cell text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                [...Array(3)].map((_, i) => (
+                  <tr key={i} className="table-row">
+                    <td colSpan={5} className="table-cell">
+                      <div className="h-12 skeleton rounded" />
+                    </td>
+                  </tr>
+                ))
+              ) : passwordResetRequests.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="table-cell text-center py-12">
+                    <KeyIcon className="w-12 h-12 mx-auto text-dark-600 mb-4" />
+                    <p className="text-dark-400">暂无待审核的密码重置申请</p>
                   </td>
                 </tr>
-              ))
-            ) : displayUsers.length === 0 ? (
-              <tr>
-                <td colSpan={activeTab === 'pending' ? 7 : 6} className="table-cell text-center py-12">
-                  <UsersIcon className="w-12 h-12 mx-auto text-dark-600 mb-4" />
-                  <p className="text-dark-400">
-                    {activeTab === 'pending' ? '暂无待审批的注册申请' : '暂无用户数据'}
-                  </p>
-                </td>
-              </tr>
-            ) : (
-              displayUsers.map((user, index) => (
-                <motion.tr
-                  key={user.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: index * 0.03 }}
-                  className="table-row"
-                >
-                  <td className="table-cell">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-dark-100 font-medium">
-                        {user.name[0].toUpperCase()}
+              ) : (
+                passwordResetRequests.map((request, index) => (
+                  <motion.tr
+                    key={request.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, delay: index * 0.03 }}
+                    className="table-row"
+                  >
+                    <td className="table-cell">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-dark-100 font-medium">
+                          {request.user?.name?.[0]?.toUpperCase() || '?'}
+                        </div>
+                        <div>
+                          <p className="font-medium text-dark-100">{request.user?.name || '未知'}</p>
+                          <p className="text-sm text-dark-400">{request.user?.email || '-'}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-dark-100">{user.name}</p>
-                        <p className="text-sm text-dark-400">{user.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="table-cell">
-                    <span className={clsx(
-                      'px-2 py-1 rounded-full text-xs font-medium',
-                      roleLabels[user.role]?.class
-                    )}>
-                      {roleLabels[user.role]?.label || user.role}
-                    </span>
-                  </td>
-                  <td className="table-cell text-dark-300">
-                    {activeTab === 'pending'
-                      ? (user.applyOrgName || '-')
-                      : (user.university?.name || user.company?.name || user.studentProfile?.studentId || '-')
-                    }
-                    {activeTab === 'pending' && user.applyOrgCode && (
-                      <p className="text-xs text-dark-500">{user.applyOrgCode}</p>
-                    )}
-                  </td>
-                  {activeTab === 'pending' && (
-                    <td className="table-cell text-dark-400 text-sm max-w-[200px] truncate">
-                      {user.applyReason || '-'}
                     </td>
-                  )}
-                  <td className="table-cell text-dark-400 text-sm">
-                    {format(new Date(user.createdAt), 'yyyy/MM/dd')}
-                  </td>
-                  <td className="table-cell">
-                    {activeTab === 'pending' ? (
+                    <td className="table-cell">
                       <span className={clsx(
                         'px-2 py-1 rounded-full text-xs font-medium',
-                        approvalStatusLabels[user.approvalStatus || 'PENDING']?.class
+                        roleLabels[request.user?.role || '']?.class
                       )}>
-                        <ClockIcon className="w-3 h-3 mr-1 inline" />
-                        {approvalStatusLabels[user.approvalStatus || 'PENDING']?.label}
+                        {roleLabels[request.user?.role || '']?.label || request.user?.role}
                       </span>
-                    ) : user.isActive ? (
-                      <span className="badge-success">
-                        <CheckCircleIcon className="w-3 h-3 mr-1" />
-                        正常
-                      </span>
-                    ) : (
-                      <span className="badge-error">
-                        <XCircleIcon className="w-3 h-3 mr-1" />
-                        禁用
-                      </span>
-                    )}
+                    </td>
+                    <td className="table-cell text-dark-400 text-sm max-w-[200px]">
+                      {request.reason || '用户申请重置密码'}
+                    </td>
+                    <td className="table-cell text-dark-400 text-sm">
+                      {format(new Date(request.createdAt), 'yyyy/MM/dd HH:mm')}
+                    </td>
+                    <td className="table-cell text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handlePasswordResetApproval(request.id, true)}
+                          className="text-sm px-3 py-1 rounded-lg text-emerald-400 hover:bg-emerald-500/10 transition-colors flex items-center gap-1"
+                        >
+                          <CheckIcon className="w-4 h-4" />
+                          批准
+                        </button>
+                        <button
+                          onClick={() => handlePasswordResetApproval(request.id, false)}
+                          className="text-sm px-3 py-1 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-1"
+                        >
+                          <XMarkIcon className="w-4 h-4" />
+                          拒绝
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Users Table - only for all and pending tabs */}
+      {(activeTab === 'all' || activeTab === 'pending') && (
+        <div className="table-container overflow-x-auto">
+          <table className="w-full min-w-[700px]">
+            <thead>
+              <tr className="table-header">
+                <th className="table-cell text-left">用户</th>
+                <th className="table-cell text-left">角色</th>
+                <th className="table-cell text-left">{activeTab === 'pending' ? '申请机构' : '所属机构'}</th>
+                {activeTab === 'pending' && <th className="table-cell text-left">申请说明</th>}
+                <th className="table-cell text-left">注册时间</th>
+                <th className="table-cell text-left">状态</th>
+                <th className="table-cell text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                [...Array(5)].map((_, i) => (
+                  <tr key={i} className="table-row">
+                    <td colSpan={activeTab === 'pending' ? 7 : 6} className="table-cell">
+                      <div className="h-12 skeleton rounded" />
+                    </td>
+                  </tr>
+                ))
+              ) : displayUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={activeTab === 'pending' ? 7 : 6} className="table-cell text-center py-12">
+                    <UsersIcon className="w-12 h-12 mx-auto text-dark-600 mb-4" />
+                    <p className="text-dark-400">
+                      {activeTab === 'pending' ? '暂无待审批的注册申请' : '暂无用户数据'}
+                    </p>
                   </td>
-                  <td className="table-cell text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      {activeTab === 'pending' ? (
-                        <>
-                          <button
-                            onClick={() => openApprovalModal(user, 'approve')}
-                            className="text-sm px-3 py-1 rounded-lg text-emerald-400 hover:bg-emerald-500/10 transition-colors flex items-center gap-1"
-                          >
-                            <CheckIcon className="w-4 h-4" />
-                            批准
-                          </button>
-                          <button
-                            onClick={() => openApprovalModal(user, 'reject')}
-                            className="text-sm px-3 py-1 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-1"
-                          >
-                            <XMarkIcon className="w-4 h-4" />
-                            拒绝
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => openPasswordModal(user)}
-                            className="text-sm px-3 py-1 rounded-lg text-blue-400 hover:bg-blue-500/10 transition-colors flex items-center gap-1"
-                            title="重置密码"
-                          >
-                            <KeyIcon className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleToggleStatus(user.id)}
-                            className={clsx(
-                              'text-sm px-3 py-1 rounded-lg transition-colors',
-                              user.isActive
-                                ? 'text-red-400 hover:bg-red-500/10'
-                                : 'text-emerald-400 hover:bg-emerald-500/10'
-                            )}
-                          >
-                            {user.isActive ? '禁用' : '启用'}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(user)}
-                            className="text-sm px-3 py-1 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-1"
-                            title="删除用户"
-                          >
-                            <TrashIcon className="w-4 h-4" />
-                          </button>
-                        </>
+                </tr>
+              ) : (
+                displayUsers.map((user, index) => (
+                  <motion.tr
+                    key={user.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, delay: index * 0.03 }}
+                    className="table-row"
+                  >
+                    <td className="table-cell">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-dark-100 font-medium">
+                          {user.name[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-dark-100">{user.name}</p>
+                          <p className="text-sm text-dark-400">{user.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="table-cell">
+                      <span className={clsx(
+                        'px-2 py-1 rounded-full text-xs font-medium',
+                        roleLabels[user.role]?.class
+                      )}>
+                        {roleLabels[user.role]?.label || user.role}
+                      </span>
+                    </td>
+                    <td className="table-cell text-dark-300">
+                      {activeTab === 'pending'
+                        ? (user.applyOrgName || '-')
+                        : (user.university?.name || user.company?.name || user.studentProfile?.studentId || '-')
+                      }
+                      {activeTab === 'pending' && user.applyOrgCode && (
+                        <p className="text-xs text-dark-500">{user.applyOrgCode}</p>
                       )}
-                    </div>
-                  </td>
-                </motion.tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                    </td>
+                    {activeTab === 'pending' && (
+                      <td className="table-cell text-dark-400 text-sm max-w-[200px] truncate">
+                        {user.applyReason || '-'}
+                      </td>
+                    )}
+                    <td className="table-cell text-dark-400 text-sm">
+                      {format(new Date(user.createdAt), 'yyyy/MM/dd')}
+                    </td>
+                    <td className="table-cell">
+                      {activeTab === 'pending' ? (
+                        <span className={clsx(
+                          'px-2 py-1 rounded-full text-xs font-medium',
+                          approvalStatusLabels[user.approvalStatus || 'PENDING']?.class
+                        )}>
+                          <ClockIcon className="w-3 h-3 mr-1 inline" />
+                          {approvalStatusLabels[user.approvalStatus || 'PENDING']?.label}
+                        </span>
+                      ) : user.isActive ? (
+                        <span className="badge-success">
+                          <CheckCircleIcon className="w-3 h-3 mr-1" />
+                          正常
+                        </span>
+                      ) : (
+                        <span className="badge-error">
+                          <XCircleIcon className="w-3 h-3 mr-1" />
+                          禁用
+                        </span>
+                      )}
+                    </td>
+                    <td className="table-cell text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {activeTab === 'pending' ? (
+                          <>
+                            <button
+                              onClick={() => openApprovalModal(user, 'approve')}
+                              className="text-sm px-3 py-1 rounded-lg text-emerald-400 hover:bg-emerald-500/10 transition-colors flex items-center gap-1"
+                            >
+                              <CheckIcon className="w-4 h-4" />
+                              批准
+                            </button>
+                            <button
+                              onClick={() => openApprovalModal(user, 'reject')}
+                              className="text-sm px-3 py-1 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-1"
+                            >
+                              <XMarkIcon className="w-4 h-4" />
+                              拒绝
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => openPasswordModal(user)}
+                              className="text-sm px-3 py-1 rounded-lg text-blue-400 hover:bg-blue-500/10 transition-colors flex items-center gap-1"
+                              title="重置密码"
+                            >
+                              <KeyIcon className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleToggleStatus(user.id)}
+                              className={clsx(
+                                'text-sm px-3 py-1 rounded-lg transition-colors',
+                                user.isActive
+                                  ? 'text-red-400 hover:bg-red-500/10'
+                                  : 'text-emerald-400 hover:bg-emerald-500/10'
+                              )}
+                            >
+                              {user.isActive ? '禁用' : '启用'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(user)}
+                              className="text-sm px-3 py-1 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-1"
+                              title="删除用户"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Pagination - only for all users tab */}
       {activeTab === 'all' && pagination.totalPages > 1 && (
