@@ -7,10 +7,12 @@ import {
   CheckBadgeIcon,
   PencilIcon,
   TrashIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api, { Company } from '../services/api'
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
+import OrgAdminModal from '../components/OrgAdminModal'
 
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([])
@@ -34,6 +36,7 @@ export default function CompaniesPage() {
   })
   const [deletingCompany, setDeletingCompany] = useState<Company | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [adminModalCompany, setAdminModalCompany] = useState<Company | null>(null)
 
   useEffect(() => {
     fetchCompanies()
@@ -223,6 +226,13 @@ export default function CompaniesPage() {
                     </span>
                   )}
                   <button
+                    onClick={() => setAdminModalCompany(company)}
+                    className="p-2 text-dark-400 hover:text-primary-400 hover:bg-dark-800 rounded-lg"
+                    title="管理员账户"
+                  >
+                    <UserGroupIcon className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={() => handleEdit(company)}
                     className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg"
                   >
@@ -405,6 +415,15 @@ export default function CompaniesPage() {
         onConfirm={confirmDelete}
         onCancel={() => setDeletingCompany(null)}
         isLoading={isDeleting}
+      />
+
+      {/* Admin Management Modal */}
+      <OrgAdminModal
+        isOpen={!!adminModalCompany}
+        onClose={() => setAdminModalCompany(null)}
+        orgType="company"
+        orgId={adminModalCompany?.id || ''}
+        orgName={adminModalCompany?.name || ''}
       />
     </div>
   )

@@ -85,16 +85,22 @@ router.patch(
             const prisma = authReq.prisma;
             const userId = authReq.user!.id;
 
-            await prisma.notification.updateMany({
+            console.log(`[Notifications] User ${userId} marking all notifications as read`);
+
+            const result = await prisma.notification.updateMany({
                 where: { userId, isRead: false },
                 data: { isRead: true },
             });
 
+            console.log(`[Notifications] Updated ${result.count} notifications for user ${userId}`);
+
             res.json({
                 success: true,
                 message: '已全部标记为已读',
+                data: { updatedCount: result.count },
             });
         } catch (error) {
+            console.error(`[Notifications] Error marking all as read:`, error);
             next(error);
         }
     }

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BellIcon, CheckIcon } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
+import toast from 'react-hot-toast'
 import api from '../services/api'
 
 interface Notification {
@@ -84,9 +85,12 @@ export default function NotificationBell() {
             if (response.data.success) {
                 setNotifications(notifications.map(n => ({ ...n, isRead: true })))
                 setUnreadCount(0)
+                const updatedCount = response.data.data?.updatedCount || 0
+                toast.success(`已将 ${updatedCount} 条通知标记为已读`)
             }
         } catch (error: any) {
             console.error('Failed to mark all as read:', error)
+            toast.error('标记已读失败，请稍后重试')
         }
     }
 

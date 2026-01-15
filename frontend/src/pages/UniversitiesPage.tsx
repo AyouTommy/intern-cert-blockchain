@@ -7,10 +7,12 @@ import {
   CheckBadgeIcon,
   PencilIcon,
   TrashIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api, { University } from '../services/api'
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
+import OrgAdminModal from '../components/OrgAdminModal'
 
 export default function UniversitiesPage() {
   const [universities, setUniversities] = useState<University[]>([])
@@ -29,6 +31,7 @@ export default function UniversitiesPage() {
   })
   const [deletingUniversity, setDeletingUniversity] = useState<University | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [adminModalUniversity, setAdminModalUniversity] = useState<University | null>(null)
 
   useEffect(() => {
     fetchUniversities()
@@ -185,6 +188,13 @@ export default function UniversitiesPage() {
                       已验证
                     </span>
                   )}
+                  <button
+                    onClick={() => setAdminModalUniversity(university)}
+                    className="p-2 text-dark-400 hover:text-primary-400 hover:bg-dark-800 rounded-lg"
+                    title="管理员账户"
+                  >
+                    <UserGroupIcon className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={() => handleEdit(university)}
                     className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg"
@@ -353,6 +363,15 @@ export default function UniversitiesPage() {
         onConfirm={confirmDelete}
         onCancel={() => setDeletingUniversity(null)}
         isLoading={isDeleting}
+      />
+
+      {/* Admin Management Modal */}
+      <OrgAdminModal
+        isOpen={!!adminModalUniversity}
+        onClose={() => setAdminModalUniversity(null)}
+        orgType="university"
+        orgId={adminModalUniversity?.id || ''}
+        orgName={adminModalUniversity?.name || ''}
       />
     </div>
   )

@@ -17,6 +17,7 @@ import whitelistRoutes from './routes/whitelist';
 import applicationRoutes from './routes/applications';
 import notificationRoutes from './routes/notifications';
 import thirdPartyOrgRoutes from './routes/thirdPartyOrgs';
+import orgAdminRoutes from './routes/orgAdmins';
 
 // 中间件导入
 import { errorHandler } from './middleware/errorHandler';
@@ -69,6 +70,7 @@ app.use('/api/whitelist', whitelistRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/third-party-orgs', thirdPartyOrgRoutes);
+app.use('/api/org-admins', orgAdminRoutes);
 
 // 404处理
 app.use((req, res) => {

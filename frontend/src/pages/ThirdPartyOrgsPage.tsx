@@ -7,10 +7,12 @@ import {
     CheckBadgeIcon,
     PencilIcon,
     TrashIcon,
+    UserGroupIcon,
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
+import OrgAdminModal from '../components/OrgAdminModal'
 
 interface ThirdPartyOrg {
     id: string
@@ -42,6 +44,7 @@ export default function ThirdPartyOrgsPage() {
     })
     const [deletingOrg, setDeletingOrg] = useState<ThirdPartyOrg | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [adminModalOrg, setAdminModalOrg] = useState<ThirdPartyOrg | null>(null)
 
     useEffect(() => {
         fetchOrgs()
@@ -183,6 +186,13 @@ export default function ThirdPartyOrgsPage() {
                                         </span>
                                     )}
                                     <button
+                                        onClick={() => setAdminModalOrg(org)}
+                                        className="p-2 text-dark-400 hover:text-primary-400 hover:bg-dark-800 rounded-lg"
+                                        title="管理员账户"
+                                    >
+                                        <UserGroupIcon className="w-4 h-4" />
+                                    </button>
+                                    <button
                                         onClick={() => handleEdit(org)}
                                         className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg"
                                     >
@@ -311,6 +321,15 @@ export default function ThirdPartyOrgsPage() {
                 onConfirm={confirmDelete}
                 onCancel={() => setDeletingOrg(null)}
                 isLoading={isDeleting}
+            />
+
+            {/* Admin Management Modal */}
+            <OrgAdminModal
+                isOpen={!!adminModalOrg}
+                onClose={() => setAdminModalOrg(null)}
+                orgType="thirdParty"
+                orgId={adminModalOrg?.id || ''}
+                orgName={adminModalOrg?.name || ''}
             />
         </div>
     )
