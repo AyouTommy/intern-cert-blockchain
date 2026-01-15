@@ -116,14 +116,21 @@ api.interceptors.response.use(
       : error.message || '请求失败'
 
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('auth-storage')
-      window.location.href = '/login'
-      toast.error('登录已过期，请重新登录')
+      // 检查是否在登录页面 - 如果是，显示后端返回的错误消息（如密码错误）
+      const isLoginPage = window.location.pathname === '/login' || window.location.pathname === '/register'
+      if (isLoginPage) {
+        // 登录/注册页面的401错误，显示后端返回的具体错误信息
+        toast.error(message)
+      } else {
+        // Token expired or invalid - 非登录页面的401错误，说明token过期
+        localStorage.removeItem('auth-storage')
+        window.location.href = '/login'
+        toast.error('登录已过期，请重新登录')
+      }
     } else if (error.response?.status === 403) {
-      toast.error('权限不足')
+      toast.error(message || '权限不足')
     } else if (error.response?.status === 404) {
-      toast.error('资源不存在')
+      toast.error(message || '资源不存在')
     } else if (error.response?.status === 503) {
       toast.error('服务器正在启动中，请稍后刷新页面重试')
     } else if (error.response?.status && error.response.status >= 500) {
