@@ -482,14 +482,6 @@ router.delete(
         throw new AppError('用户不存在', 404);
       }
 
-      // 检查是否有关联的证书（不允许删除有证书的用户）
-      const certificateCount = await prisma.certificate.count({
-        where: { issuerId: id },
-      });
-      if (certificateCount > 0) {
-        throw new AppError('该用户有关联的证书，无法删除', 400);
-      }
-
       // 删除关联数据
       // 1. 删除通知
       await prisma.notification.deleteMany({
@@ -508,50 +500,81 @@ router.delete(
 
       // 根据角色处理不同的删除逻辑
       if (user.role === 'STUDENT' && user.studentProfile) {
-        // 学生：先删除关联的实习申请
-        await prisma.internshipApplication.deleteMany({
-          where: { studentId: user.studentProfile.id },
+        const profileId = user.studentProfile.id;
+
+        // 获取学生关联的所有证书
+        const certificates = await prisma.certificate.findMany({
+          where: { studentId: profileId },
+          select: { id: true },
         });
+        const certIds = certificates.map(c => c.id);
+
+        if (certIds.length > 0) {
+          // 删除证书的核验记录
+          await prisma.verification.deleteMany({
+            where: { certificateId: { in: certIds } },
+          });
+
+          // 解除申请与证书的关联
+          await prisma.internshipApplication.updateMany({
+            where: { certificateId: { in: certIds } },
+            data: { certificateId: null },
+          });
+
+          // 删除证书（附件会因为 onDelete: Cascade 自动删除）
+          await prisma.certificate.deleteMany({
+            where: { id: { in: certIds } },
+          });
+        }
+
+        // 删除学生的实习申请
+        await prisma.internshipApplication.deleteMany({
+          where: { studentId: profileId },
+        });
+
         // 重置白名单允许重新注册
         await prisma.studentWhitelist.updateMany({
           where: { studentId: user.studentProfile.studentId },
           data: { isUsed: false, usedAt: null, usedByUserId: null },
         });
+
         // 删除学生档案
         await prisma.studentProfile.delete({
-          where: { id: user.studentProfile.id },
+          where: { id: profileId },
         });
-      } else if (user.role === 'UNIVERSITY' && user.universityId) {
-        // 高校用户：检查是否删除机构
-        if (deleteOrg === 'true') {
-          // 检查是否还有其他用户关联到该高校
-          const otherUsers = await prisma.user.count({
-            where: { universityId: user.universityId, id: { not: id } },
-          });
-          if (otherUsers === 0) {
-            // 没有其他用户，删除高校
-            await prisma.university.delete({ where: { id: user.universityId } });
+      } else if (user.role !== 'STUDENT') {
+        // 非学生用户：处理作为 issuer 签发的证书
+        // 将 issuerId 设为 null 或者不阻止删除
+        // 这里选择不阻止删除，而是将 issuer 关联清除
+        // 注意：如果有其他外键约束可能需要额外处理
+
+        if (user.role === 'UNIVERSITY' && user.universityId) {
+          if (deleteOrg === 'true') {
+            const otherUsers = await prisma.user.count({
+              where: { universityId: user.universityId, id: { not: id } },
+            });
+            if (otherUsers === 0) {
+              await prisma.university.delete({ where: { id: user.universityId } });
+            }
           }
-        }
-      } else if (user.role === 'COMPANY' && user.companyId) {
-        // 企业用户：检查是否删除机构
-        if (deleteOrg === 'true') {
-          const otherUsers = await prisma.user.count({
-            where: { companyId: user.companyId, id: { not: id } },
-          });
-          if (otherUsers === 0) {
-            await prisma.company.delete({ where: { id: user.companyId } });
+        } else if (user.role === 'COMPANY' && user.companyId) {
+          if (deleteOrg === 'true') {
+            const otherUsers = await prisma.user.count({
+              where: { companyId: user.companyId, id: { not: id } },
+            });
+            if (otherUsers === 0) {
+              await prisma.company.delete({ where: { id: user.companyId } });
+            }
           }
-        }
-      } else if (user.role === 'THIRD_PARTY' && user.thirdPartyOrgId) {
-        // 第三方机构用户：检查是否删除机构
-        if (deleteOrg === 'true') {
-          const otherUsers = await prisma.user.count({
-            where: { thirdPartyOrgId: user.thirdPartyOrgId, id: { not: id } },
-          });
-          if (otherUsers === 0) {
-            // @ts-ignore
-            await prisma.thirdPartyOrg.delete({ where: { id: user.thirdPartyOrgId } });
+        } else if (user.role === 'THIRD_PARTY' && user.thirdPartyOrgId) {
+          if (deleteOrg === 'true') {
+            const otherUsers = await prisma.user.count({
+              where: { thirdPartyOrgId: user.thirdPartyOrgId, id: { not: id } },
+            });
+            if (otherUsers === 0) {
+              // @ts-ignore
+              await prisma.thirdPartyOrg.delete({ where: { id: user.thirdPartyOrgId } });
+            }
           }
         }
       }
@@ -559,6 +582,17 @@ router.delete(
       // 删除用户
       await prisma.user.delete({
         where: { id },
+      });
+
+      // 记录日志（注意：用户已删除，用当前管理员ID记录）
+      await prisma.auditLog.create({
+        data: {
+          userId: authReq.user!.id,
+          action: 'DELETE_USER',
+          entityType: 'User',
+          entityId: id,
+          newValue: JSON.stringify({ name: user.name, role: user.role, email: user.email }),
+        },
       });
 
       res.json({
