@@ -208,7 +208,7 @@ router.patch(
   }
 );
 
-// 删除高校
+// 删除高校（管理员强制删除，级联清理所有关联数据）
 router.delete(
   '/:id',
   authenticate,
@@ -219,17 +219,74 @@ router.delete(
       const prisma = authReq.prisma;
       const { id } = req.params;
 
-      // 检查是否有关联数据
-      const count = await prisma.certificate.count({
+      const university = await prisma.university.findUnique({
+        where: { id },
+      });
+
+      if (!university) {
+        throw new AppError('高校不存在', 404);
+      }
+
+      // 1. 获取该高校关联的所有证书
+      const certificates = await prisma.certificate.findMany({
+        where: { universityId: id },
+        select: { id: true },
+      });
+      const certIds = certificates.map((c: any) => c.id);
+
+      if (certIds.length > 0) {
+        // 删除证书的核验记录
+        await prisma.verification.deleteMany({
+          where: { certificateId: { in: certIds } },
+        });
+
+        // 解除申请与证书的关联
+        await prisma.internshipApplication.updateMany({
+          where: { certificateId: { in: certIds } },
+          data: { certificateId: null },
+        });
+
+        // 删除证书（附件会因为 onDelete: Cascade 自动删除）
+        await prisma.certificate.deleteMany({
+          where: { id: { in: certIds } },
+        });
+      }
+
+      // 2. 删除该高校关联的实习申请
+      await prisma.internshipApplication.deleteMany({
         where: { universityId: id },
       });
 
-      if (count > 0) {
-        throw new AppError('该高校存在关联证明，无法删除', 400);
-      }
+      // 3. 删除该高校关联的证书模板
+      await prisma.certificateTemplate.deleteMany({
+        where: { universityId: id },
+      });
 
+      // 4. 删除/解除该高校关联的白名单
+      await prisma.studentWhitelist.deleteMany({
+        where: { universityId: id },
+      });
+
+      // 5. 解除用户与高校的关联（不删除用户，只解除关联）
+      await prisma.user.updateMany({
+        where: { universityId: id },
+        data: { universityId: null },
+      });
+
+      // 6. 删除高校
       await prisma.university.delete({
         where: { id },
+      });
+
+      // 记录日志
+      await prisma.auditLog.create({
+        data: {
+          userId: authReq.user!.id,
+          action: 'DELETE_UNIVERSITY',
+          entityType: 'University',
+          entityId: id,
+          newValue: JSON.stringify({ name: university.name, code: university.code }),
+        },
       });
 
       res.json({
