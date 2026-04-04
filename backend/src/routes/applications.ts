@@ -841,4 +841,74 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
     }
 }
 
+// 删除申请（管理员可强制删除任何状态的申请，关联证书也会被删除）
+router.delete(
+    '/:id',
+    authenticate,
+    authorize('ADMIN'),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const authReq = req as AuthRequest;
+            const prisma = authReq.prisma;
+            const { id } = req.params;
+
+            const application = await prisma.internshipApplication.findUnique({
+                where: { id },
+                include: { certificate: true },
+            });
+
+            if (!application) {
+                throw new AppError('申请不存在', 404);
+            }
+
+            // 如果申请关联了证书，先删除证书及其关联数据
+            if (application.certificateId) {
+                // 删除证书的核验记录
+                await prisma.verification.deleteMany({
+                    where: { certificateId: application.certificateId },
+                });
+
+                // 先解除申请与证书的关联
+                await prisma.internshipApplication.update({
+                    where: { id },
+                    data: { certificateId: null },
+                });
+
+                // 删除证书（附件会因为 onDelete: Cascade 自动删除）
+                await prisma.certificate.delete({
+                    where: { id: application.certificateId },
+                });
+            }
+
+            // 删除申请
+            await prisma.internshipApplication.delete({
+                where: { id },
+            });
+
+            // 记录日志
+            await prisma.auditLog.create({
+                data: {
+                    userId: authReq.user!.id,
+                    action: 'DELETE_APPLICATION',
+                    entityType: 'InternshipApplication',
+                    entityId: id,
+                    newValue: JSON.stringify({
+                        applicationNo: application.applicationNo,
+                        status: application.status,
+                        hasCertificate: !!application.certificateId,
+                    }),
+                },
+            });
+
+            res.json({
+                success: true,
+                message: '申请已删除' + (application.certificateId ? '（关联证书已同步删除）' : ''),
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
 export default router;
+

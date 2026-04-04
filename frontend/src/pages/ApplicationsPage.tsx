@@ -8,11 +8,13 @@ import {
     CheckCircleIcon,
     XCircleIcon,
     DocumentTextIcon,
-    BuildingOfficeIcon
+    BuildingOfficeIcon,
+    TrashIcon
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useAuthStore } from '../stores/authStore'
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
 
 interface Application {
     id: string
@@ -56,6 +58,8 @@ export default function ApplicationsPage() {
     const [statusFilter, setStatusFilter] = useState('')
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [showDetailModal, setShowDetailModal] = useState(false)
+    const [deletingApp, setDeletingApp] = useState<Application | null>(null)
+    const [deleteLoading, setDeleteLoading] = useState(false)
     const [selectedApp, setSelectedApp] = useState<Application | null>(null)
 
     // 创建表单状态
@@ -206,6 +210,26 @@ export default function ApplicationsPage() {
         setShowDetailModal(true)
     }
 
+    // 删除申请
+    const handleDeleteApp = (app: Application) => {
+        setDeletingApp(app)
+    }
+
+    const confirmDeleteApp = async () => {
+        if (!deletingApp) return
+        setDeleteLoading(true)
+        try {
+            const response = await api.delete(`/applications/${deletingApp.id}`)
+            toast.success(response.data.message || '申请已删除')
+            setDeletingApp(null)
+            fetchApplications()
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || '删除失败')
+        } finally {
+            setDeleteLoading(false)
+        }
+    }
+
     const getStatusBadge = (status: string) => {
         const config = statusConfig[status] || statusConfig.DRAFT
         const Icon = config.icon
@@ -220,6 +244,7 @@ export default function ApplicationsPage() {
     const isStudent = user?.role === 'STUDENT'
     const isCompany = user?.role === 'COMPANY'
     const isUniversity = user?.role === 'UNIVERSITY' || user?.role === 'ADMIN'
+    const isAdmin = user?.role === 'ADMIN'
 
     return (
         <div className="space-y-6">
@@ -343,6 +368,15 @@ export default function ApplicationsPage() {
                                             <EyeIcon className="w-4 h-4" />
                                             {isCompany && ['SUBMITTED', 'COMPANY_REVIEWING'].includes(app.status) ? '评价' :
                                                 isUniversity && ['COMPANY_APPROVED', 'UNIVERSITY_REVIEWING'].includes(app.status) ? '审核' : '查看'}
+                                        </button>
+                                    )}
+                                    {isAdmin && (
+                                        <button
+                                            onClick={() => handleDeleteApp(app)}
+                                            className="p-2 text-dark-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                            title="删除申请"
+                                        >
+                                            <TrashIcon className="w-5 h-5" />
                                         </button>
                                     )}
                                 </div>
@@ -607,6 +641,16 @@ export default function ApplicationsPage() {
                     </motion.div>
                 </div>
             )}
+
+            {/* 删除确认框 */}
+            <ConfirmDeleteModal
+                isOpen={!!deletingApp}
+                title="确认删除申请"
+                message={`确定要删除申请 "${deletingApp?.applicationNo}"（岗位：${deletingApp?.position}）吗？${deletingApp?.certificate ? '\n⚠️ 该申请关联的证书也将被同步删除！' : ''}此操作不可撤销！`}
+                onConfirm={confirmDeleteApp}
+                onCancel={() => setDeletingApp(null)}
+                isLoading={deleteLoading}
+            />
         </div>
     )
 }
