@@ -9,12 +9,14 @@ import {
   EyeIcon,
   ArrowUpOnSquareIcon,
   DocumentDuplicateIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api, { Certificate } from '../services/api'
 import { useAuthStore } from '../stores/authStore'
 import { format } from 'date-fns'
 import clsx from 'clsx'
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
 
 const statusConfig: Record<string, { label: string; class: string }> = {
   PENDING: { label: '待上链', class: 'badge-warning' },
@@ -33,6 +35,12 @@ export default function CertificatesPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [batchLoading, setBatchLoading] = useState(false)
   const { user } = useAuthStore()
+
+  // 删除相关状态
+  const [deletingCert, setDeletingCert] = useState<Certificate | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [batchDeleteLoading, setBatchDeleteLoading] = useState(false)
+  const [showBatchDeleteModal, setShowBatchDeleteModal] = useState(false)
 
   const search = searchParams.get('search') || ''
   const status = searchParams.get('status') || ''
@@ -135,7 +143,54 @@ export default function CertificatesPage() {
     }
   }
 
+  // 删除单个证明
+  const handleDelete = (cert: Certificate) => {
+    setDeletingCert(cert)
+  }
+
+  const confirmDelete = async () => {
+    if (!deletingCert) return
+    setDeleteLoading(true)
+    try {
+      await api.delete(`/certificates/${deletingCert.id}`)
+      toast.success('证明已删除')
+      setDeletingCert(null)
+      setSelectedIds((prev) => prev.filter((id) => id !== deletingCert.id))
+      fetchCertificates()
+    } catch (error) {
+      // Error handled by interceptor
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
+  // 批量删除
+  const handleBatchDelete = () => {
+    if (selectedIds.length === 0) {
+      toast.error('请选择要删除的证明')
+      return
+    }
+    setShowBatchDeleteModal(true)
+  }
+
+  const confirmBatchDelete = async () => {
+    setBatchDeleteLoading(true)
+    try {
+      await api.post('/certificates/batch-delete', { ids: selectedIds })
+      toast.success(`成功删除 ${selectedIds.length} 条证明`)
+      setSelectedIds([])
+      setShowBatchDeleteModal(false)
+      fetchCertificates()
+    } catch (error) {
+      // Error handled by interceptor
+    } finally {
+      setBatchDeleteLoading(false)
+    }
+  }
+
   const canCreate = user?.role === 'ADMIN' || user?.role === 'UNIVERSITY' || user?.role === 'COMPANY'
+  const canDelete = user?.role === 'ADMIN' || user?.role === 'UNIVERSITY'
+  const isAdmin = user?.role === 'ADMIN'
 
   return (
     <div className="space-y-6">
@@ -217,6 +272,20 @@ export default function CertificatesPage() {
               )}
               批量上链
             </button>
+            {isAdmin && (
+              <button
+                onClick={handleBatchDelete}
+                disabled={batchDeleteLoading}
+                className="py-2 px-4 text-sm flex items-center gap-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors"
+              >
+                {batchDeleteLoading ? (
+                  <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                ) : (
+                  <TrashIcon className="w-4 h-4" />
+                )}
+                批量删除
+              </button>
+            )}
             <button
               onClick={() => setSelectedIds([])}
               className="btn-ghost py-2 text-sm"
@@ -339,6 +408,15 @@ export default function CertificatesPage() {
                           <ArrowUpOnSquareIcon className="w-5 h-5" />
                         </button>
                       )}
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDelete(cert)}
+                          className="p-2 text-dark-400 hover:text-red-400 hover:bg-dark-800 rounded-lg transition-colors"
+                          title="删除"
+                        >
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </motion.tr>
@@ -389,6 +467,26 @@ export default function CertificatesPage() {
           </div>
         </div>
       )}
+
+      {/* 单个删除确认框 */}
+      <ConfirmDeleteModal
+        isOpen={!!deletingCert}
+        title="确认删除证明"
+        message={`确定要删除证明 "${deletingCert?.certNumber}"（学生：${deletingCert?.student?.user?.name}）吗？此操作不可撤销！`}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeletingCert(null)}
+        isLoading={deleteLoading}
+      />
+
+      {/* 批量删除确认框 */}
+      <ConfirmDeleteModal
+        isOpen={showBatchDeleteModal}
+        title="确认批量删除"
+        message={`确定要删除选中的 ${selectedIds.length} 条证明吗？此操作不可撤销！`}
+        onConfirm={confirmBatchDelete}
+        onCancel={() => setShowBatchDeleteModal(false)}
+        isLoading={batchDeleteLoading}
+      />
     </div>
   )
 }

@@ -739,7 +739,7 @@ router.post(
   }
 );
 
-// 删除证明（仅限未上链的）
+// 删除证明（管理员可强制删除任何状态的证明）
 router.delete(
   '/:id',
   authenticate,
@@ -758,17 +758,109 @@ router.delete(
         throw new AppError('证明不存在', 404);
       }
 
-      if (certificate.status === 'ACTIVE') {
+      // 非管理员不能删除已上链的证明
+      if (certificate.status === 'ACTIVE' && authReq.user!.role !== 'ADMIN') {
         throw new AppError('已上链的证明不能删除，只能撤销', 400);
       }
 
+      // 删除关联的核验记录
+      await prisma.verification.deleteMany({
+        where: { certificateId: id },
+      });
+
+      // 解除关联的申请
+      await prisma.internshipApplication.updateMany({
+        where: { certificateId: id },
+        data: { certificateId: null },
+      });
+
+      // 删除证明（附件会因为 onDelete: Cascade 自动删除）
       await prisma.certificate.delete({
         where: { id },
+      });
+
+      // 记录日志
+      await prisma.auditLog.create({
+        data: {
+          userId: authReq.user!.id,
+          action: 'DELETE_CERTIFICATE',
+          entityType: 'Certificate',
+          entityId: id,
+          newValue: JSON.stringify({ certNumber: certificate.certNumber, status: certificate.status }),
+        },
       });
 
       res.json({
         success: true,
         message: '证明已删除',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 批量删除证明
+router.post(
+  '/batch-delete',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const authReq = req as AuthRequest;
+      const prisma = authReq.prisma;
+      const { ids } = req.body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw new AppError('请选择要删除的证明', 400);
+      }
+
+      if (ids.length > 50) {
+        throw new AppError('批量删除最多支持50条', 400);
+      }
+
+      // 获取要删除的证明
+      const certificates = await prisma.certificate.findMany({
+        where: { id: { in: ids } },
+      });
+
+      if (certificates.length === 0) {
+        throw new AppError('没有找到要删除的证明', 400);
+      }
+
+      // 删除关联的核验记录
+      await prisma.verification.deleteMany({
+        where: { certificateId: { in: ids } },
+      });
+
+      // 解除关联的申请
+      await prisma.internshipApplication.updateMany({
+        where: { certificateId: { in: ids } },
+        data: { certificateId: null },
+      });
+
+      // 批量删除证明
+      const result = await prisma.certificate.deleteMany({
+        where: { id: { in: ids } },
+      });
+
+      // 记录日志
+      await prisma.auditLog.create({
+        data: {
+          userId: authReq.user!.id,
+          action: 'BATCH_DELETE_CERTIFICATES',
+          entityType: 'Certificate',
+          newValue: JSON.stringify({
+            count: result.count,
+            certNumbers: certificates.map(c => c.certNumber),
+          }),
+        },
+      });
+
+      res.json({
+        success: true,
+        message: `成功删除 ${result.count} 条证明`,
+        data: { count: result.count },
       });
     } catch (error) {
       next(error);
