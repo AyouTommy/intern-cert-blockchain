@@ -11,7 +11,7 @@ const router = Router();
 router.get(
   '/',
   authenticate,
-  authorize('ADMIN'),
+  authorize('ADMIN', 'UNIVERSITY'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authReq = req as AuthRequest;
@@ -24,6 +24,11 @@ router.get(
 
       // 构建查询条件
       const where: any = {};
+
+      // 高校用户只能查看本校白名单
+      if (authReq.user!.role === 'UNIVERSITY') {
+        where.universityId = authReq.user!.universityId;
+      }
 
       if (search) {
         where.OR = [
@@ -81,7 +86,7 @@ router.get(
 router.post(
   '/',
   authenticate,
-  authorize('ADMIN'),
+  authorize('ADMIN', 'UNIVERSITY'),
   [
     body('studentId').notEmpty().withMessage('请输入学号'),
     body('name').notEmpty().withMessage('请输入姓名'),
@@ -118,7 +123,10 @@ router.post(
           department,
           enrollmentYear: enrollmentYear ? Number(enrollmentYear) : null,
           graduationYear: graduationYear ? Number(graduationYear) : null,
-          universityId,
+          // 高校用户创建时自动关联本校
+          universityId: authReq.user!.role === 'UNIVERSITY' && !universityId
+            ? authReq.user!.universityId
+            : universityId,
           idCard,
           uploadedBy: authReq.user!.id,
         },
@@ -155,7 +163,7 @@ router.post(
 router.post(
   '/batch',
   authenticate,
-  authorize('ADMIN'),
+  authorize('ADMIN', 'UNIVERSITY'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authReq = req as AuthRequest;
@@ -211,7 +219,9 @@ router.post(
               department: student.department,
               enrollmentYear: student.enrollmentYear ? Number(student.enrollmentYear) : null,
               graduationYear: student.graduationYear ? Number(student.graduationYear) : null,
-              universityId,
+            universityId: authReq.user!.role === 'UNIVERSITY'
+              ? authReq.user!.universityId
+              : universityId,
               uploadedBy: authReq.user!.id,
               batchId,
             },
@@ -317,7 +327,7 @@ router.get(
 router.delete(
   '/:id',
   authenticate,
-  authorize('ADMIN'),
+  authorize('ADMIN', 'UNIVERSITY'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authReq = req as AuthRequest;
@@ -334,6 +344,11 @@ router.delete(
 
       if (whitelistEntry.isUsed) {
         throw new AppError('该记录已被使用，无法删除', 400);
+      }
+
+      // 高校用户只能删除本校白名单
+      if (authReq.user!.role === 'UNIVERSITY' && whitelistEntry.universityId !== authReq.user!.universityId) {
+        throw new AppError('无权删除其他高校的白名单记录', 403);
       }
 
       await prisma.studentWhitelist.delete({
@@ -368,7 +383,7 @@ router.delete(
 router.delete(
   '/batch/:batchId',
   authenticate,
-  authorize('ADMIN'),
+  authorize('ADMIN', 'UNIVERSITY'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authReq = req as AuthRequest;

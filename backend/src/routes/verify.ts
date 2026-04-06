@@ -4,6 +4,29 @@ import { blockchainService } from '../services/blockchain';
 
 const router = Router();
 
+// ========== 脱敏工具函数 ==========
+
+/**
+ * 姓名脱敏：保留第一个字，其余用 * 替代
+ * 例："张三" → "张*"，"王小明" → "王**"
+ */
+function maskName(name: string): string {
+  if (!name || name.length <= 1) return name || '*';
+  return name[0] + '*'.repeat(name.length - 1);
+}
+
+/**
+ * 学号脱敏：保留前4位和后2位，中间用 * 替代
+ * 例："202420611009" → "2024******09"
+ */
+function maskStudentId(studentId: string): string {
+  if (!studentId || studentId.length <= 6) return studentId ? studentId.substring(0, 2) + '****' : '****';
+  const prefix = studentId.substring(0, 4);
+  const suffix = studentId.substring(studentId.length - 2);
+  const masked = '*'.repeat(studentId.length - 6);
+  return `${prefix}${masked}${suffix}`;
+}
+
 // 公开验证接口 - 通过验证码
 router.get(
   '/code/:code',
@@ -99,6 +122,7 @@ router.get(
       // PENDING 和 ACTIVE 状态都视为有效（待上链和已上链）
       const isValid = certificate.status === 'ACTIVE' || certificate.status === 'PENDING';
 
+      // 公开核验使用脱敏数据（最小披露原则）
       res.json({
         success: true,
         isValid,
@@ -106,8 +130,8 @@ router.get(
           id: certificate.id,
           certNumber: certificate.certNumber,
           status: certificate.status,
-          studentName: certificate.student.user.name,
-          studentId: certificate.student.studentId,
+          studentName: maskName(certificate.student.user.name),
+          studentId: maskStudentId(certificate.student.studentId),
           university: certificate.university,
           company: certificate.company,
           position: certificate.position,
@@ -115,8 +139,7 @@ router.get(
           startDate: certificate.startDate,
           endDate: certificate.endDate,
           issuedAt: certificate.issuedAt,
-          description: certificate.description,
-          evaluation: certificate.evaluation,
+          // 公开核验不返回完整评价和描述（隐私保护）
           // 区块链信息
           blockchain: certificate.certHash ? {
             certHash: certificate.certHash,
@@ -130,15 +153,13 @@ router.get(
             revokedAt: certificate.revokedAt,
             reason: certificate.revokeReason,
           } : null,
-          // 附件信息
+          // 附件基本信息（不含下载链接，保护隐私）
           attachments: certificate.attachments.map(att => ({
             id: att.id,
             name: att.originalName,
             size: att.fileSize,
             type: att.mimeType,
             category: att.category,
-            description: att.description,
-            downloadUrl: `/attachments/download/${att.id}`,
           })),
         },
       });
@@ -193,13 +214,14 @@ router.get(
 
       const isValid = certificate.status === 'ACTIVE';
 
+      // 公开核验使用脱敏数据
       res.json({
         success: true,
         isValid,
         data: {
           certNumber: certificate.certNumber,
           status: certificate.status,
-          studentName: certificate.student.user.name,
+          studentName: maskName(certificate.student.user.name),
           university: certificate.university.name,
           company: certificate.company.name,
           position: certificate.position,
@@ -263,6 +285,7 @@ router.get(
         });
       }
 
+      // 公开核验使用脱敏数据
       res.json({
         success: true,
         isValid: chainData?.isValid || certificate?.status === 'ACTIVE',
@@ -270,7 +293,7 @@ router.get(
           database: certificate ? {
             certNumber: certificate.certNumber,
             status: certificate.status,
-            studentName: certificate.student.user.name,
+            studentName: maskName(certificate.student.user.name),
             university: certificate.university.name,
             company: certificate.company.name,
             position: certificate.position,
