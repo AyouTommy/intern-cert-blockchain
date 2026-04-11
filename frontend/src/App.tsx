@@ -48,6 +48,17 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+// Admin or University Route Component
+function AdminOrUniversityRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuthStore()
+
+  if (user?.role !== 'ADMIN' && user?.role !== 'UNIVERSITY') {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return <>{children}</>
+}
+
 function App() {
   return (
     <Routes>
@@ -87,9 +98,9 @@ function App() {
           </AdminRoute>
         } />
         <Route path="/whitelist" element={
-          <AdminRoute>
+          <AdminOrUniversityRoute>
             <WhitelistPage />
-          </AdminRoute>
+          </AdminOrUniversityRoute>
         } />
         <Route path="/third-party-orgs" element={
           <AdminRoute>
