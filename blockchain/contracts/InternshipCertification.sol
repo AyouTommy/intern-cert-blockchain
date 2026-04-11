@@ -131,7 +131,7 @@ contract InternshipCertification is AccessControl, Pausable, ReentrancyGuard {
      * @param _ipfsHash IPFS哈希（可选）
      */
     // ==========================================
-    // 【合约核心函数】创建证书上链
+    //! 【合约核心函数】创建证书上链
     // 后端 blockchain.ts 调用这个函数将证书哈希写入链上
     // 只有管理员/高校/企业角色才能调用
     // ==========================================
@@ -192,7 +192,7 @@ contract InternshipCertification is AccessControl, Pausable, ReentrancyGuard {
      * @return certificate 证明详情
      */
     // ==========================================
-    // 【合约核心函数】验证证书
+    //! 【合约核心函数】验证证书
     // 后端 verify.ts 和 blockchain.ts 调用这个函数核验证书真伪
     // 任何人都可以调用，不需要权限
     // ==========================================
@@ -228,7 +228,7 @@ contract InternshipCertification is AccessControl, Pausable, ReentrancyGuard {
      * @param _reason 撤销原因
      */
     // ==========================================
-    // 【合约核心函数】撤销证书
+    //! 【合约核心函数】撤销证书
     // 只有原始签发者或管理员才能撤销
     // 撤销后链上状态永久更改，不可恢复
     // ==========================================
