@@ -1,22 +1,33 @@
+# ==========================================
+# 【部署配置】Render 后端部署配置
+# Render 读取这个文件自动配置服务
+# ==========================================
+
 services:
   - type: web
     name: intern-cert-api
     env: node
     region: singapore
-    plan: free
+    plan: free                    # 免费计划（15分钟无访问会休眠）
+
+    # 构建命令: 安装依赖 → 生成数据库客户端 → 同步表结构到 Neon
     buildCommand: npm install && npx prisma generate && npx prisma db push
+    # 启动命令: 运行编译后的后端代码
     startCommand: npm start
+    # 健康检查: Render 定期访问这个路径确认服务正常
     healthCheckPath: /health
+
+    # 环境变量 — 在 Render 后台手动配置
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
+      - key: DATABASE_URL          # Neon 数据库连接串
         sync: false
-      - key: JWT_SECRET
+      - key: JWT_SECRET            # 令牌加密密钥
         generateValue: true
-      - key: FRONTEND_URL
+      - key: FRONTEND_URL          # Vercel 前端地址（用于生成二维码）
         sync: false
-      - key: BLOCKCHAIN_RPC_URL
+      - key: BLOCKCHAIN_RPC_URL    # Alchemy Sepolia 链接地址
         sync: false
-      - key: SIGNER_PRIVATE_KEY
+      - key: SIGNER_PRIVATE_KEY    # 上链钱包私钥
         sync: false

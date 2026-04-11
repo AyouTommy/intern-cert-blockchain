@@ -172,7 +172,7 @@ export default function ApplicationsPage() {
         }
     }
 
-    // 【前端 → 后端】企业评价签章: 发请求到后端 /applications/申请ID/company-review
+    //! 【前端 → 后端】企业评价签章: 发请求到后端 /applications/申请ID/company-review
     // 参数: 评分, 评语, 是否通过
     // 后端收到后: 生成签章 → 更新状态 → 通知高校和学生
     const handleCompanyReview = async (isApproved: boolean) => {
@@ -198,7 +198,7 @@ export default function ApplicationsPage() {
         }
     }
 
-    // 【前端 → 后端】高校审核: 发请求到后端 /applications/申请ID/university-review
+    //! 【前端 → 后端】高校审核: 发请求到后端 /applications/申请ID/university-review
     // 参数: 是否通过, 是否自动上链
     // 后端收到后: 生成证书 → 生成二维码 → 写入数据库 → 异步上链
     const handleUniversityReview = async (isApproved: boolean) => {

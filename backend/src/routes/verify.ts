@@ -5,7 +5,7 @@ import { blockchainService } from '../services/blockchain';
 const router = Router();
 
 // ==========================================
-// 【流程第5步】公开核验路由
+//! 【流程第5步】公开核验路由
 // 无需登录，任何人扫码即可核验证书真伪
 // 支持3种核验方式: 验证码 / 证书编号 / 区块链哈希
 // ==========================================
@@ -92,7 +92,7 @@ router.get(
         });
       }
 
-      // 【关键】记录核验日志，方便审计追踪
+      //! 【关键】记录核验日志，方便审计追踪
       await prisma.verification.create({
         data: {
           certificateId: certificate.id,
@@ -102,7 +102,7 @@ router.get(
         },
       });
 
-      // 【关键】链上二次验证: 如果证书已上链，调用智能合约的"验证证书"方法
+      //! 【关键】链上二次验证: 如果证书已上链，调用智能合约的"验证证书"方法
       // 实现“数据库查一次 + 区块链查一次”的双重保障
       let chainVerification = null;
       if (certificate.certHash && blockchainService.isContractAvailable()) {
@@ -125,7 +125,7 @@ router.get(
       // PENDING 和 ACTIVE 状态都视为有效（待上链和已上链）
       const isValid = certificate.status === 'ACTIVE' || certificate.status === 'PENDING';
 
-      // 【关键】返回结果时对学生信息做脱敏处理（隐私保护）
+      //! 【关键】返回结果时对学生信息做脱敏处理（隐私保护）
       // 姓名只显示第一个字，学号中间用星号替代
       res.json({
         success: true,

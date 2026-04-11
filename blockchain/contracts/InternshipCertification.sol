@@ -10,6 +10,12 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * @dev 高校实习证明上链系统智能合约
  * @notice 实现证明的不可篡改存储与链上核验
  */
+// ==========================================
+// 智能合约继承了3个安全组件:
+//   AccessControl  → 基于角色的权限控制(管理员/高校/企业)
+//   Pausable       → 紧急情况可暂停合约
+//   ReentrancyGuard → 防止重入攻击
+// ==========================================
 contract InternshipCertification is AccessControl, Pausable, ReentrancyGuard {
     // 角色定义
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
@@ -124,6 +130,11 @@ contract InternshipCertification is AccessControl, Pausable, ReentrancyGuard {
      * @param _endDate 实习结束日期
      * @param _ipfsHash IPFS哈希（可选）
      */
+    // ==========================================
+    // 【合约核心函数】创建证书上链
+    // 后端 blockchain.ts 调用这个函数将证书哈希写入链上
+    // 只有管理员/高校/企业角色才能调用
+    // ==========================================
     function createCertificate(
         bytes32 _certHash,
         address _student,
@@ -180,6 +191,11 @@ contract InternshipCertification is AccessControl, Pausable, ReentrancyGuard {
      * @return isValid 是否有效
      * @return certificate 证明详情
      */
+    // ==========================================
+    // 【合约核心函数】验证证书
+    // 后端 verify.ts 和 blockchain.ts 调用这个函数核验证书真伪
+    // 任何人都可以调用，不需要权限
+    // ==========================================
     function verifyCertificate(bytes32 _certHash) 
         external 
         certificateExists(_certHash)
@@ -211,6 +227,11 @@ contract InternshipCertification is AccessControl, Pausable, ReentrancyGuard {
      * @param _certHash 证明哈希
      * @param _reason 撤销原因
      */
+    // ==========================================
+    // 【合约核心函数】撤销证书
+    // 只有原始签发者或管理员才能撤销
+    // 撤销后链上状态永久更改，不可恢复
+    // ==========================================
     function revokeCertificate(bytes32 _certHash, string memory _reason) 
         external 
         whenNotPaused

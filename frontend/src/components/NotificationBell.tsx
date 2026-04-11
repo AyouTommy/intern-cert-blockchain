@@ -1,3 +1,8 @@
+// ==========================================
+//! 【通知组件】通知铃铛 — 业务流程的“消息驱动”入口
+// 每30秒查询一次未读消息数量
+// 点击通知可以跳转到对应的申请/证书页面
+// ==========================================
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BellIcon, CheckIcon } from '@heroicons/react/24/outline'
@@ -27,7 +32,8 @@ export default function NotificationBell() {
 
     useEffect(() => {
         fetchUnreadCount()
-        // 每30秒刷新未读数量
+        //! 【关键】每30秒轮询一次未读通知数量
+        // 当上一个角色处理完操作后，下一个角色的铃铛会自动显示新消息
         const interval = setInterval(fetchUnreadCount, 30000)
         return () => clearInterval(interval)
     }, [])
@@ -81,7 +87,8 @@ export default function NotificationBell() {
         } catch (error) {
             console.error('Failed to mark as read')
         }
-        // Navigate to link if available
+        //! 【关键】点击通知后跳转到对应页面
+        // 通知里带有 link 字段（如 /applications/xxx），点击直接跳过去
         if (link) {
             setIsOpen(false)
             navigate(link)

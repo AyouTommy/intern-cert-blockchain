@@ -1,9 +1,18 @@
 import axios, { AxiosError } from 'axios'
 import toast from 'react-hot-toast'
 
-// 动态获取API地址
+// ==========================================
+//! 【前端核心】请求封装 — 所有前端请求都经过这个文件
+// 做3件事:
+//   ① 自动读取后端地址（部署时从环境变量读取）
+//   ② 自动给每个请求带上登录令牌
+//   ③ 处理Render免费服务器的冷启动重试逻辑
+// ==========================================
+
+// 动态获取后端地址
 const getApiBaseUrl = () => {
-  // 生产环境使用环境变量配置的后端地址
+  //! 【部署关键】生产环境从环境变量读取后端地址
+  // 在Vercel后台配置: VITE_API_URL = 后端 Render 地址
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL
   }
@@ -14,6 +23,7 @@ const getApiBaseUrl = () => {
 // 冷启动提示 toast ID，用于更新同一个 toast
 let coldStartToastId: string | undefined
 
+//! 【部署关键】超时设为60秒，因为Render免费服务器休眠后科启动需要30-50秒
 const api = axios.create({
   baseURL: getApiBaseUrl(),
   timeout: 60000, // 增加到 60 秒以应对 Render 冷启动
@@ -26,7 +36,9 @@ const api = axios.create({
 const MAX_RETRIES = 2
 const RETRY_DELAY = 3000
 
-// 重试请求的函数
+//! 【部署关键】冷启动重试逻辑
+// Render免费服务器休眠后第一次访问会超时，这里自动重试最多2次
+// 并显示"服务器启动中"的提示，用户体验更好
 const retryRequest = async (error: AxiosError, retryCount: number = 0): Promise<unknown> => {
   const config = error.config
   if (!config) return Promise.reject(error)

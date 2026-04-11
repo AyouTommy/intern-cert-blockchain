@@ -2,6 +2,15 @@ import { ethers } from "hardhat";
 import * as fs from "fs";
 import * as path from "path";
 
+// ==========================================
+//! 【部署脚本】智能合约部署到以太坊测试网
+// 命令: npx hardhat run scripts/deploy.ts --network sepolia
+// 做3件事:
+//   ① 编译并部署合约到链上
+//   ② 保存部署信息(合约地址、网络等)
+//   ③ 复制合约ABI到后端目录，后端启动时自动加载
+// ==========================================
+
 async function main() {
   console.log("🚀 开始部署实习证明智能合约...\n");
 
@@ -12,7 +21,7 @@ async function main() {
   const balance = await ethers.provider.getBalance(deployer.address);
   console.log("💰 账户余额:", ethers.formatEther(balance), "ETH\n");
 
-  // 部署合约
+  //! 【第1步】编译并部署合约到链上
   console.log("📦 正在部署 InternshipCertification 合约...");
   const InternshipCertification = await ethers.getContractFactory("InternshipCertification");
   const contract = await InternshipCertification.deploy();
@@ -33,7 +42,7 @@ async function main() {
     }
   }
 
-  // 保存部署信息
+  //! 【第2步】保存部署信息(合约地址、网络、部署者等)
   const deploymentInfo = {
     network: (await ethers.provider.getNetwork()).name,
     chainId: Number((await ethers.provider.getNetwork()).chainId),
@@ -52,7 +61,8 @@ async function main() {
   fs.writeFileSync(deploymentPath, JSON.stringify(deploymentInfo, null, 2));
   console.log("\n💾 部署信息已保存到:", deploymentPath);
 
-  // 复制ABI到后端
+  //! 【第3步】复制合约ABI到后端目录
+  // 后端 blockchain.ts 启动时会读取这个文件，获取合约地址和接口定义
   const artifactPath = path.join(__dirname, "../artifacts/contracts/InternshipCertification.sol/InternshipCertification.json");
   const backendAbiDir = path.join(__dirname, "../../backend/src/contracts");
   

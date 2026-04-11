@@ -1,3 +1,9 @@
+// ==========================================
+//! 【前端状态管理】用户登录状态存储
+// 用 Zustand 管理登录状态，配合 sessionStorage 持久化
+// 用 sessionStorage 而不是 localStorage 的原因:
+//   每个浏览器标签页独立，可以同时登录不同角色演示
+// ==========================================
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import api from '../services/api'
@@ -80,6 +86,8 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           })
 
+          //! 【关键】登录成功后，把令牌设置到请求头里
+          // 之后所有请求都会自动带上这个令牌，后端的认证中间件会验证它
           api.defaults.headers.common['Authorization'] = `Bearer ${token}`
         } catch (error) {
           set({ isLoading: false })
@@ -149,6 +157,8 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      //! 【部署关键】使用 sessionStorage 存储令牌
+      // 而不是 localStorage，这样每个标签页独立，可以同时开多个标签页登录不同角色
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({ token: state.token }) as AuthState,
     }
