@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import api from '../services/api'
 
 interface User {
@@ -149,19 +149,8 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      storage: {
-        getItem: (name) => {
-          const str = sessionStorage.getItem(name)
-          return str ? JSON.parse(str) : null
-        },
-        setItem: (name, value) => {
-          sessionStorage.setItem(name, JSON.stringify(value))
-        },
-        removeItem: (name) => {
-          sessionStorage.removeItem(name)
-        },
-      },
-      partialize: (state) => ({ token: state.token }),
+      storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => ({ token: state.token }) as AuthState,
     }
   )
 )
