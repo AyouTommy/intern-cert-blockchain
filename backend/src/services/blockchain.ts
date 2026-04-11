@@ -71,7 +71,7 @@ class BlockchainService {
 
   // ==========================================
   // 【上链第1步】生成证书哈希（“数字指纹”）
-  // 将学号、高校编码、企业编码、岗位、起止时间、证书编号7个字段编码后哈希
+  // 将学号、高校编码、企业编码、岗位、起止时间、证书编号 7个字段编码后哈希
   // 任何一个字段变了，哈希就完全不同 — 这就是防篡改的核心原理
   // ==========================================
   generateCertHash(data: {
@@ -83,7 +83,7 @@ class BlockchainService {
     endDate: number;
     certNumber: string;
   }): string {
-    // 用以太坊的ABI编码方式将数据打包
+    // 用以太坊的标准编码方式将数据打包
     const encoded = ethers.AbiCoder.defaultAbiCoder().encode(
       ['string', 'string', 'string', 'string', 'uint256', 'uint256', 'string'],
       [
@@ -96,14 +96,14 @@ class BlockchainService {
         data.certNumber,
       ]
     );
-    // 用凯卡克256哈希算法计算出唯一的256位哈希值
+    // 用“凯卡克256”哈希算法计算出唯一的256位哈希值
     return ethers.keccak256(encoded);
   }
 
   // ==========================================
-  // 【上链第2步】调用智能合约的createCertificate方法
+  // 【上链第2步】调用智能合约的"创建证书"方法
   // 将哈希值和证书信息写入以太坊区块链
-  // tx.wait() 等待交易被矿工确认，确认后返回交易哈希和区块高度
+  // 发起交易后等待矿工确认，确认后返回交易哈希和区块高度
   // ==========================================
   async createCertificate(params: {
     certHash: string;
@@ -125,7 +125,7 @@ class BlockchainService {
     }
 
     try {
-      // 调用合约的createCertificate函数，发起链上交易
+      // 调用合约的"创建证书"函数，发起链上交易
       const tx = await this.contract.createCertificate(
         params.certHash,
         params.studentAddress || ethers.ZeroAddress,

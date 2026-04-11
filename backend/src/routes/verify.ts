@@ -28,7 +28,7 @@ function maskStudentId(studentId: string): string {
 }
 
 // 核验方式一: 通过验证码核验（扫二维码时调用）
-// 前端 PublicVerifyPage 调 GET /verify/code/验证码
+// 前端 公开核验页面 发请求到 /verify/code/验证码
 // 做4件事: ①查数据库 ②链上二次验证 ③脱敏处理 ④记录核验日志
 router.get(
   '/code/:code',
@@ -102,7 +102,7 @@ router.get(
         },
       });
 
-      // 【关键】链上二次验证: 如果证书已上链，调用智能合约的verifyCertificate方法
+      // 【关键】链上二次验证: 如果证书已上链，调用智能合约的"验证证书"方法
       // 实现“数据库查一次 + 区块链查一次”的双重保障
       let chainVerification = null;
       if (certificate.certHash && blockchainService.isContractAvailable()) {
