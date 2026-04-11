@@ -4,22 +4,15 @@
   "description": "高校实习证明上链系统 - 基于区块链的不可篡改证明存储与核验平台",
   "private": true,
   "scripts": {
-    "setup": "bash scripts/setup.sh",
-    "dev": "bash scripts/start-dev.sh",
-    "install:all": "pnpm -r install",
-    "blockchain:node": "cd blockchain && pnpm node",
-    "blockchain:deploy": "cd blockchain && pnpm deploy:local",
-    "blockchain:test": "cd blockchain && pnpm test",
-    "backend:dev": "cd backend && pnpm dev",
-    "backend:build": "cd backend && pnpm build",
-    "backend:migrate": "cd backend && pnpm prisma:migrate",
-    "backend:seed": "cd backend && pnpm prisma:seed",
-    "frontend:dev": "cd frontend && pnpm dev",
-    "frontend:build": "cd frontend && pnpm build",
+    "dev:all": "concurrently -k -n chain,back,front -c blue,green,cyan \"cd blockchain && npx hardhat node\" \"cd backend && npx tsx watch src/index.ts\" \"cd frontend && npx vite --host\"",
+    "dev:app": "concurrently -k -n back,front -c green,cyan \"cd backend && npx tsx watch src/index.ts\" \"cd frontend && npx vite --host\"",
+    "blockchain:node": "cd blockchain && npx hardhat node",
+    "blockchain:deploy": "cd blockchain && npx hardhat run scripts/deploy.ts --network localhost",
+    "backend:dev": "cd backend && npx tsx watch src/index.ts",
+    "frontend:dev": "cd frontend && npx vite",
     "batch:upchain": "npx tsx scripts/batch-upchain.ts",
     "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f"
+    "docker:down": "docker-compose down"
   },
   "keywords": [
     "blockchain",
@@ -34,5 +27,8 @@
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }
