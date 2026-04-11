@@ -24,8 +24,10 @@ interface Application {
     startDate: string
     endDate: string
     status: string
+    description?: string
     companyScore?: number
-    student: { user: { name: string } }
+    companyEvaluation?: string
+    student: { studentId: string; user: { name: string } }
     company: { id: string; name: string }
     university: { id: string; name: string }
     certificate?: { id: string; certNumber: string; status: string }
@@ -170,17 +172,21 @@ export default function ApplicationsPage() {
         }
     }
 
-    const handleCompanyReview = async () => {
+    const handleCompanyReview = async (isApproved: boolean) => {
         if (!selectedApp) return
+        if (isApproved && !reviewData.evaluation) {
+            toast.error('请填写评语')
+            return
+        }
         try {
             const response = await api.post(`/applications/${selectedApp.id}/company-review`, {
                 score: reviewData.score,
                 evaluation: reviewData.evaluation,
-                approved: reviewData.approved,
+                approved: isApproved,
                 rejectReason: reviewData.rejectReason,
             })
             if (response.data.success) {
-                toast.success(reviewData.approved ? '评价已完成' : '已拒绝申请')
+                toast.success(isApproved ? '评价已完成' : '已拒绝申请')
                 setShowDetailModal(false)
                 fetchApplications()
             }
@@ -189,12 +195,15 @@ export default function ApplicationsPage() {
         }
     }
 
-    const handleUniversityReview = async () => {
+    const handleUniversityReview = async (isApproved: boolean) => {
         if (!selectedApp) return
         try {
-            const response = await api.post(`/applications/${selectedApp.id}/university-review`, approvalData)
+            const response = await api.post(`/applications/${selectedApp.id}/university-review`, {
+                ...approvalData,
+                approved: isApproved,
+            })
             if (response.data.success) {
-                toast.success(approvalData.approved ? '审核通过，证书已创建' : '已拒绝申请')
+                toast.success(isApproved ? '审核通过，证书已创建' : '已拒绝申请')
                 setShowDetailModal(false)
                 fetchApplications()
             }
@@ -258,17 +267,31 @@ export default function ApplicationsPage() {
                         {isStudent ? '管理您的实习证明申请' : isCompany ? '评价学生实习表现' : '审核实习证明申请'}
                     </p>
                 </div>
-                {isStudent && (
+                <div className="flex items-center gap-2">
                     <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => setShowCreateModal(true)}
-                        className="btn-primary flex items-center gap-2"
+                        onClick={() => fetchApplications()}
+                        className="btn-secondary flex items-center gap-2"
+                        title="刷新列表"
                     >
-                        <PlusIcon className="w-5 h-5" />
-                        新建申请
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        刷新
                     </motion.button>
-                )}
+                    {isStudent && (
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setShowCreateModal(true)}
+                            className="btn-primary flex items-center gap-2"
+                        >
+                            <PlusIcon className="w-5 h-5" />
+                            新建申请
+                        </motion.button>
+                    )}
+                </div>
             </div>
 
             {/* Filters */}
@@ -508,6 +531,10 @@ export default function ApplicationsPage() {
                                 <span className="text-dark-100">{selectedApp.student.user.name}</span>
                             </div>
                             <div className="flex justify-between text-sm">
+                                <span className="text-dark-400">学号</span>
+                                <span className="text-dark-100 font-mono">{selectedApp.student.studentId}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
                                 <span className="text-dark-400">实习企业</span>
                                 <span className="text-dark-100">{selectedApp.company.name}</span>
                             </div>
@@ -515,6 +542,12 @@ export default function ApplicationsPage() {
                                 <span className="text-dark-400">实习岗位</span>
                                 <span className="text-dark-100">{selectedApp.position}</span>
                             </div>
+                            {selectedApp.department && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-dark-400">实习部门</span>
+                                    <span className="text-dark-100">{selectedApp.department}</span>
+                                </div>
+                            )}
                             <div className="flex justify-between text-sm">
                                 <span className="text-dark-400">实习期间</span>
                                 <span className="text-dark-100">
@@ -525,6 +558,12 @@ export default function ApplicationsPage() {
                                 <span className="text-dark-400">状态</span>
                                 {getStatusBadge(selectedApp.status)}
                             </div>
+                            {selectedApp.description && (
+                                <div className="pt-2 border-t border-dark-700">
+                                    <span className="text-dark-400 text-sm">实习内容描述</span>
+                                    <p className="text-dark-200 text-sm mt-1 leading-relaxed">{selectedApp.description}</p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Company Review Form */}
@@ -554,23 +593,13 @@ export default function ApplicationsPage() {
                                 </div>
                                 <div className="flex gap-3">
                                     <button
-                                        onClick={() => {
-                                            setReviewData(r => ({ ...r, approved: false }))
-                                            handleCompanyReview()
-                                        }}
+                                        onClick={() => handleCompanyReview(false)}
                                         className="btn-secondary flex-1 text-red-400"
                                     >
                                         拒绝
                                     </button>
                                     <button
-                                        onClick={() => {
-                                            if (!reviewData.evaluation) {
-                                                toast.error('请填写评语')
-                                                return
-                                            }
-                                            setReviewData(r => ({ ...r, approved: true }))
-                                            handleCompanyReview()
-                                        }}
+                                        onClick={() => handleCompanyReview(true)}
                                         className="btn-primary flex-1"
                                     >
                                         确认并签章
@@ -583,9 +612,17 @@ export default function ApplicationsPage() {
                         {isUniversity && ['COMPANY_APPROVED', 'UNIVERSITY_REVIEWING'].includes(selectedApp.status) && (
                             <div className="border-t border-dark-700 pt-4 space-y-4">
                                 <h3 className="font-semibold text-dark-100">高校审核</h3>
-                                {selectedApp.companyScore && (
-                                    <div className="p-3 bg-dark-800 rounded-lg">
-                                        <p className="text-sm text-dark-400">企业评分：<span className="text-primary-400">{selectedApp.companyScore}分</span></p>
+                                {(selectedApp.companyScore || selectedApp.companyEvaluation) && (
+                                    <div className="p-3 bg-dark-800 rounded-lg space-y-2">
+                                        {selectedApp.companyScore && (
+                                            <p className="text-sm text-dark-400">企业评分：<span className="text-primary-400 font-medium">{selectedApp.companyScore}分</span></p>
+                                        )}
+                                        {selectedApp.companyEvaluation && (
+                                            <div>
+                                                <p className="text-sm text-dark-400 mb-1">企业评语：</p>
+                                                <p className="text-sm text-dark-200 leading-relaxed">{selectedApp.companyEvaluation}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                                 <div>
@@ -608,19 +645,13 @@ export default function ApplicationsPage() {
                                 </div>
                                 <div className="flex gap-3">
                                     <button
-                                        onClick={() => {
-                                            setApprovalData(a => ({ ...a, approved: false }))
-                                            handleUniversityReview()
-                                        }}
+                                        onClick={() => handleUniversityReview(false)}
                                         className="btn-secondary flex-1 text-red-400"
                                     >
                                         拒绝
                                     </button>
                                     <button
-                                        onClick={() => {
-                                            setApprovalData(a => ({ ...a, approved: true }))
-                                            handleUniversityReview()
-                                        }}
+                                        onClick={() => handleUniversityReview(true)}
                                         className="btn-primary flex-1"
                                     >
                                         批准

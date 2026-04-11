@@ -11,10 +11,14 @@ interface Notification {
     content: string
     type: string
     isRead: boolean
+    link?: string
     createdAt: string
 }
 
+import { useNavigate } from 'react-router-dom'
+
 export default function NotificationBell() {
+    const navigate = useNavigate()
     const [isOpen, setIsOpen] = useState(false)
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [unreadCount, setUnreadCount] = useState(0)
@@ -67,7 +71,7 @@ export default function NotificationBell() {
         setIsOpen(!isOpen)
     }
 
-    const markAsRead = async (id: string) => {
+    const markAsRead = async (id: string, link?: string) => {
         try {
             await api.patch(`/notifications/${id}/read`)
             setNotifications(notifications.map(n =>
@@ -76,6 +80,11 @@ export default function NotificationBell() {
             setUnreadCount(Math.max(0, unreadCount - 1))
         } catch (error) {
             console.error('Failed to mark as read')
+        }
+        // Navigate to link if available
+        if (link) {
+            setIsOpen(false)
+            navigate(link)
         }
     }
 
@@ -157,7 +166,14 @@ export default function NotificationBell() {
                                 {notifications.map((notification) => (
                                     <div
                                         key={notification.id}
-                                        onClick={() => !notification.isRead && markAsRead(notification.id)}
+                                        onClick={() => {
+                                            if (!notification.isRead) {
+                                                markAsRead(notification.id, notification.link)
+                                            } else if (notification.link) {
+                                                setIsOpen(false)
+                                                navigate(notification.link)
+                                            }
+                                        }}
                                         className={`p-3 border-b border-dark-700/50 hover:bg-dark-800/50 cursor-pointer transition-colors ${!notification.isRead ? 'bg-primary-500/5' : ''
                                             }`}
                                     >

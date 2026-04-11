@@ -349,18 +349,34 @@ export default function DashboardPage() {
       <div className="glass-card p-6">
         <h2 className="section-title">快捷操作</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link
-            to="/certificates/new"
-            className="flex items-center gap-4 p-4 rounded-xl bg-surface-2 hover:bg-surface-2 transition-colors group"
-          >
-            <div className="p-3 rounded-xl bg-primary-500/10 group-hover:bg-primary-500/20 transition-colors">
-              <DocumentTextIcon className="w-6 h-6 text-primary-600" />
-            </div>
-            <div>
-              <p className="font-medium text-primary-700">创建证明</p>
-              <p className="text-sm text-dark-500">新建实习证明</p>
-            </div>
-          </Link>
+          {(user?.role === 'ADMIN' || user?.role === 'UNIVERSITY' || user?.role === 'COMPANY') && (
+            <Link
+              to="/certificates/new"
+              className="flex items-center gap-4 p-4 rounded-xl bg-surface-2 hover:bg-surface-2 transition-colors group"
+            >
+              <div className="p-3 rounded-xl bg-primary-500/10 group-hover:bg-primary-500/20 transition-colors">
+                <DocumentTextIcon className="w-6 h-6 text-primary-600" />
+              </div>
+              <div>
+                <p className="font-medium text-primary-700">创建证明</p>
+                <p className="text-sm text-dark-500">新建实习证明</p>
+              </div>
+            </Link>
+          )}
+          {user?.role === 'STUDENT' && (
+            <Link
+              to="/applications"
+              className="flex items-center gap-4 p-4 rounded-xl bg-surface-2 hover:bg-surface-2 transition-colors group"
+            >
+              <div className="p-3 rounded-xl bg-primary-500/10 group-hover:bg-primary-500/20 transition-colors">
+                <DocumentTextIcon className="w-6 h-6 text-primary-600" />
+              </div>
+              <div>
+                <p className="font-medium text-primary-700">我的申请</p>
+                <p className="text-sm text-dark-500">管理实习申请</p>
+              </div>
+            </Link>
+          )}
           <Link
             to="/verify"
             className="flex items-center gap-4 p-4 rounded-xl bg-surface-2 hover:bg-surface-2 transition-colors group"
@@ -381,24 +397,26 @@ export default function DashboardPage() {
               <ClockIcon className="w-6 h-6 text-amber-600" />
             </div>
             <div>
-              <p className="font-medium text-primary-700">待处理</p>
+              <p className="font-medium text-primary-700">实习证明</p>
               <p className="text-sm text-dark-500">
                 {stats?.overview.pendingCertificates || 0} 条待上链
               </p>
             </div>
           </Link>
-          <Link
-            to="/settings"
-            className="flex items-center gap-4 p-4 rounded-xl bg-surface-2 hover:bg-surface-2 transition-colors group"
-          >
-            <div className="p-3 rounded-xl bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
-              <CubeIcon className="w-6 h-6 text-purple-600" />
-            </div>
-            <div>
-              <p className="font-medium text-primary-700">系统设置</p>
-              <p className="text-sm text-dark-500">配置与管理</p>
-            </div>
-          </Link>
+          {(user?.role === 'ADMIN' || user?.role === 'UNIVERSITY' || user?.role === 'COMPANY') && (
+            <Link
+              to="/settings"
+              className="flex items-center gap-4 p-4 rounded-xl bg-surface-2 hover:bg-surface-2 transition-colors group"
+            >
+              <div className="p-3 rounded-xl bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
+                <CubeIcon className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <p className="font-medium text-primary-700">系统设置</p>
+                <p className="text-sm text-dark-500">配置与管理</p>
+              </div>
+            </Link>
+          )}
         </div>
       </div>
     </div>

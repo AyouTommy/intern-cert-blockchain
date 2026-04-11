@@ -824,12 +824,34 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
                 },
             });
 
+            // 通知学生上链成功
+            await prisma.notification.create({
+                data: {
+                    userId: certificate.student.user.id,
+                    title: '实习证明已上链成功',
+                    content: `您的实习证明（${certificate.certNumber}）已成功上链至区块链，可随时核验。`,
+                    type: 'CERTIFICATE_UPCHAIN',
+                    link: `/certificates/${certificateId}`,
+                },
+            });
+
             // 上链成功后生成PDF证书
             // 注意：PDF现在通过动态接口 GET /api/certificates/:id/pdf 生成
         } else {
             await prisma.certificate.update({
                 where: { id: certificateId },
                 data: { status: 'FAILED' },
+            });
+
+            // 通知学生上链失败
+            await prisma.notification.create({
+                data: {
+                    userId: certificate.student.user.id,
+                    title: '实习证明上链失败',
+                    content: `您的实习证明（${certificate.certNumber}）上链失败，管理员将会重新处理。`,
+                    type: 'CERTIFICATE_UPCHAIN_FAILED',
+                    link: `/certificates/${certificateId}`,
+                },
             });
         }
     } catch (error) {
