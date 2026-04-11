@@ -123,7 +123,12 @@ router.get(
     }
 );
 
-// 创建申请（学生）
+// ==========================================
+// 【流程第1步】学生创建申请
+// 前端 ApplicationsPage 调POST /applications
+// 中间件: authenticate(验证登录) → authorize(验证角色=学生)
+// 创建后状态为 DRAFT(草稿)，需要再调 submit 接口才正式提交
+// ==========================================
 router.post(
     '/',
     authenticate,
@@ -356,7 +361,12 @@ router.put(
     }
 );
 
-// 提交申请（学生）
+// ==========================================
+// 【流程第1.5步】学生提交申请
+// 前端调 POST /applications/:id/submit
+// 状态从 DRAFT → SUBMITTED
+// 关键动作: 提交后自动通知企业(往通知表插记录)
+// ==========================================
 router.post(
     '/:id/submit',
     authenticate,
@@ -388,7 +398,7 @@ router.post(
                 throw new AppError('只能提交草稿状态的申请', 400);
             }
 
-            // 更新状态为已提交
+            // 【关键】状态更新: DRAFT → SUBMITTED
             await prisma.internshipApplication.update({
                 where: { id },
                 data: {
@@ -397,7 +407,8 @@ router.post(
                 },
             });
 
-            // 通知企业有新的申请
+            // 【关键】通知驱动: 查找企业下所有用户，逐一创建通知记录
+            // 企业端的NotificationBell组件每30秒轮询一次，会自动显示新消息
             const companyUsers = await prisma.user.findMany({
                 where: { companyId: application.companyId, role: 'COMPANY', isActive: true },
                 select: { id: true },
@@ -482,7 +493,12 @@ router.post(
     }
 );
 
-// 企业评价和签章
+// ==========================================
+// 【流程第2步】企业评价签章
+// 前端调 POST /applications/:id/company-review
+// 企业填写评分(1-100)和评语后提交
+// 做3件事: ①生成电子签章 ②更新状态为COMPANY_APPROVED ③通知高校+学生
+// ==========================================
 router.post(
     '/:id/company-review',
     authenticate,
@@ -624,7 +640,13 @@ router.post(
     }
 );
 
-// 高校审核
+// ==========================================
+// 【流程第3步】高校审核 — 整个系统最核心的接口
+// 前端调 POST /applications/:id/university-review
+// 审核通过后做4件事:
+//   ①生成证书编号+验证码  ②生成二维码
+//   ③证书写入数据库(状态PENDING)  ④异步调用上链函数
+// ==========================================
 router.post(
     '/:id/university-review',
     authenticate,
@@ -685,19 +707,21 @@ router.post(
                 });
             }
 
-            // 审核通过 - 创建证书
+            // 【审核通过】以下是证书生成的核心逻辑
+            // 第1步: 生成证书编号(CERT+年月+随机字符) 和 16位验证码
             const certNumber = generateCertNumber();
             const verifyCode = generateVerifyCode();
+            // 拼接核验链接: 前端地址/verify/验证码 → 用于生成二维码
             const verifyUrl = `${config.getVerifyBaseUrl()}/${verifyCode}`;
 
-            // 生成二维码
+            // 第2步: 将核验链接编码成二维码图片(Base64)
             const qrCode = await QRCode.toDataURL(verifyUrl, {
                 width: 200,
                 margin: 1,
                 color: { dark: '#1a1a2e', light: '#ffffff' },
             });
 
-            // 创建证书
+            // 第3步: 证书写入数据库，初始状态为 PENDING(待上链)
             const certificate = await prisma.certificate.create({
                 data: {
                     certNumber,
@@ -730,9 +754,9 @@ router.post(
                 },
             });
 
-            // 如果需要自动上链
+            // 第4步: 如果勾选了自动上链，异步调用 processUpchain
+            // 注意: 使用 .catch() 让上链在后台执行，接口立即返回，不阻塞用户
             if (autoUpchain && blockchainService.isContractAvailable()) {
-                // 异步上链
                 processUpchain(prisma, certificate.id).catch(console.error);
             }
 
@@ -769,7 +793,11 @@ router.post(
     }
 );
 
-// 上链处理函数
+// ==========================================
+// 【流程第4步】区块链上链处理函数
+// 由高校审核接口异步调用，在后台执行
+// 做3件事: ①生成证书哈希 ②调用智能合约写入链上 ③更新数据库状态+通知学生
+// ==========================================
 async function processUpchain(prisma: PrismaClient, certificateId: string) {
     const certificate = await prisma.certificate.findUnique({
         where: { id: certificateId },

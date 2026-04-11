@@ -4,21 +4,21 @@ import { blockchainService } from '../services/blockchain';
 
 const router = Router();
 
-// ========== 脱敏工具函数 ==========
+// ==========================================
+// 【流程第5步】公开核验路由
+// 无需登录，任何人扫码即可核验证书真伪
+// 支持3种核验方式: 验证码 / 证书编号 / 区块链哈希
+// ==========================================
 
-/**
- * 姓名脱敏：保留第一个字，其余用 * 替代
- * 例："张三" → "张*"，"王小明" → "王**"
- */
+// 脱敏工具函数 — 保护学生隐私
+
+// 姓名脱敏: 保留第一个字，其余用*替代（例: "张三" → "张*"）
 function maskName(name: string): string {
   if (!name || name.length <= 1) return name || '*';
   return name[0] + '*'.repeat(name.length - 1);
 }
 
-/**
- * 学号脱敏：保留前4位和后2位，中间用 * 替代
- * 例："202420611009" → "2024******09"
- */
+// 学号脱敏: 保留前4位和后2位，中间用*替代（例: "202420611009" → "2024******09"）
 function maskStudentId(studentId: string): string {
   if (!studentId || studentId.length <= 6) return studentId ? studentId.substring(0, 2) + '****' : '****';
   const prefix = studentId.substring(0, 4);
@@ -27,7 +27,9 @@ function maskStudentId(studentId: string): string {
   return `${prefix}${masked}${suffix}`;
 }
 
-// 公开验证接口 - 通过验证码
+// 核验方式一: 通过验证码核验（扫二维码时调用）
+// 前端 PublicVerifyPage 调 GET /verify/code/验证码
+// 做4件事: ①查数据库 ②链上二次验证 ③脱敏处理 ④记录核验日志
 router.get(
   '/code/:code',
   async (req: Request, res: Response, next: NextFunction) => {
@@ -90,7 +92,7 @@ router.get(
         });
       }
 
-      // 记录验证
+      // 【关键】记录核验日志，方便审计追踪
       await prisma.verification.create({
         data: {
           certificateId: certificate.id,
@@ -100,7 +102,8 @@ router.get(
         },
       });
 
-      // 链上验证（如果已上链）
+      // 【关键】链上二次验证: 如果证书已上链，调用智能合约的verifyCertificate方法
+      // 实现“数据库查一次 + 区块链查一次”的双重保障
       let chainVerification = null;
       if (certificate.certHash && blockchainService.isContractAvailable()) {
         try {
@@ -122,7 +125,8 @@ router.get(
       // PENDING 和 ACTIVE 状态都视为有效（待上链和已上链）
       const isValid = certificate.status === 'ACTIVE' || certificate.status === 'PENDING';
 
-      // 公开核验使用脱敏数据（最小披露原则）
+      // 【关键】返回结果时对学生信息做脱敏处理（隐私保护）
+      // 姓名只显示第一个字，学号中间用星号替代
       res.json({
         success: true,
         isValid,

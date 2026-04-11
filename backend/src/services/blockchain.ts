@@ -69,7 +69,11 @@ class BlockchainService {
     return this.contractConfig?.chainId || 31337;
   }
 
-  // 生成证明哈希
+  // ==========================================
+  // 【上链第1步】生成证书哈希（“数字指纹”）
+  // 将学号、高校编码、企业编码、岗位、起止时间、证书编号7个字段编码后哈希
+  // 任何一个字段变了，哈希就完全不同 — 这就是防篡改的核心原理
+  // ==========================================
   generateCertHash(data: {
     studentId: string;
     universityId: string;
@@ -79,6 +83,7 @@ class BlockchainService {
     endDate: number;
     certNumber: string;
   }): string {
+    // 用以太坊的ABI编码方式将数据打包
     const encoded = ethers.AbiCoder.defaultAbiCoder().encode(
       ['string', 'string', 'string', 'string', 'uint256', 'uint256', 'string'],
       [
@@ -91,10 +96,15 @@ class BlockchainService {
         data.certNumber,
       ]
     );
+    // 用凯卡克256哈希算法计算出唯一的256位哈希值
     return ethers.keccak256(encoded);
   }
 
-  // 创建证明上链
+  // ==========================================
+  // 【上链第2步】调用智能合约的createCertificate方法
+  // 将哈希值和证书信息写入以太坊区块链
+  // tx.wait() 等待交易被矿工确认，确认后返回交易哈希和区块高度
+  // ==========================================
   async createCertificate(params: {
     certHash: string;
     studentAddress: string;
@@ -115,6 +125,7 @@ class BlockchainService {
     }
 
     try {
+      // 调用合约的createCertificate函数，发起链上交易
       const tx = await this.contract.createCertificate(
         params.certHash,
         params.studentAddress || ethers.ZeroAddress,
@@ -126,6 +137,7 @@ class BlockchainService {
         params.ipfsHash || ''
       );
 
+      // 等待区块链网络确认这笔交易（可能需要几秒到几十秒）
       const receipt = await tx.wait();
 
       return {
@@ -188,7 +200,11 @@ class BlockchainService {
     }
   }
 
-  // 验证证明
+  // ==========================================
+  // 【流程第5步】链上验证证书
+  // 核验时调用，拿着哈希值去区块链上确认证书是否存在且有效
+  // 实现“数据库+区块链”双重验证
+  // ==========================================
   async verifyCertificate(certHash: string): Promise<{
     isValid: boolean;
     certificate?: {
