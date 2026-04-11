@@ -123,7 +123,7 @@ api.interceptors.response.use(
         toast.error(message)
       } else {
         // Token expired or invalid - 非登录页面的401错误，说明token过期
-        localStorage.removeItem('auth-storage')
+        sessionStorage.removeItem('auth-storage')
         window.location.href = '/login'
         toast.error('登录已过期，请重新登录')
       }
