@@ -104,7 +104,7 @@ intern-cert-blockchain/
 ├── frontend/                      # 前端项目（React + Vite）
 │   ├── src/
 │   │   ├── components/            # 可复用 UI 组件
-│   │   ├── pages/                 # 19 个页面组件
+│   │   ├── pages/                 # 页面组件
 │   │   │   ├── DashboardPage      # 数据统计看板
 │   │   │   ├── LoginPage          # 登录页
 │   │   │   ├── RegisterPage       # 注册页（含角色选择）
@@ -251,10 +251,13 @@ cd frontend && npm run dev
 
 | 方法 | 端点 | 描述 | 认证 |
 |------|------|------|------|
-| GET | `/api/applications` | 获取申请列表 | ✅ |
-| POST | `/api/applications` | 提交实习申请 | ✅ 学生 |
-| PATCH | `/api/applications/:id/company-sign` | 企业签章 | ✅ 企业 |
-| PATCH | `/api/applications/:id/university-approve` | 高校审核 | ✅ 高校 |
+| GET | `/api/applications` | 获取申请列表（按角色过滤） | ✅ |
+| POST | `/api/applications` | 创建实习申请 | ✅ 学生 |
+| POST | `/api/applications/:id/submit` | 提交申请（草稿→已提交） | ✅ 学生 |
+| POST | `/api/applications/:id/company-review` | 企业评价签章 | ✅ 企业 |
+| POST | `/api/applications/:id/university-review` | 高校审核（自动生成证书+上链） | ✅ 高校/管理员 |
+| POST | `/api/applications/:id/withdraw` | 撤回申请 | ✅ 学生 |
+| DELETE | `/api/applications/:id` | 删除申请（含关联证书） | ✅ 管理员 |
 
 ### 证书管理
 
@@ -262,13 +265,18 @@ cd frontend && npm run dev
 |------|------|------|------|
 | GET | `/api/certificates` | 获取证书列表 | ✅ |
 | POST | `/api/certificates` | 创建并上链证书 | ✅ 高校 |
-| GET | `/api/certificates/:id/pdf` | 导出证书 PDF | ✅ |
+| POST | `/api/certificates/:id/upchain` | 手动上链 | ✅ 高校/管理员 |
+| POST | `/api/certificates/:id/revoke` | 撤销证书 | ✅ 高校/管理员 |
+| GET | `/api/certificates/:id/pdf` | 导出证书 PDF | 公开 |
 
 ### 公开核验
 
 | 方法 | 端点 | 描述 | 认证 |
 |------|------|------|------|
-| GET | `/api/verify/:code` | 核验证书真伪 | ❌ |
+| GET | `/api/verify/code/:code` | 通过验证码核验 | ❌ |
+| GET | `/api/verify/number/:certNumber` | 通过证书编号核验 | ❌ |
+| GET | `/api/verify/hash/:hash` | 通过区块链哈希核验 | ❌ |
+| GET | `/api/verify/contract-info` | 获取合约信息 | ❌ |
 
 ### 机构管理
 
