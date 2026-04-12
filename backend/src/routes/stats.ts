@@ -358,4 +358,63 @@ router.get(
   }
 );
 
+// 区块链详细信息 API（Settings页面用）
+router.get(
+  '/blockchain-info',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const isAvailable = blockchainService.isContractAvailable();
+      const address = blockchainService.getContractAddress();
+
+      let networkInfo = { chainId: 0, name: 'unknown', blockNumber: 0 };
+      let wallets = { adminAddr: '', universityAddr: '', companyAddr: '' };
+      let contractStats = null;
+
+      if (isAvailable) {
+        try { networkInfo = await blockchainService.getNetworkInfo(); } catch {}
+        wallets = blockchainService.getMultiPartyInfo();
+        try {
+          const result = await blockchainService.getStatistics();
+          if (result.success) contractStats = result.stats;
+        } catch {}
+      }
+
+      res.json({
+        success: true,
+        data: {
+          connected: isAvailable,
+          network: {
+            name: networkInfo.chainId === 11155111 ? 'Sepolia Testnet'
+              : networkInfo.chainId === 31337 ? 'Hardhat Local'
+              : networkInfo.name,
+            chainId: networkInfo.chainId,
+            blockNumber: networkInfo.blockNumber,
+          },
+          contract: {
+            address: address,
+            deployed: isAvailable,
+          },
+          wallets: {
+            admin: wallets.adminAddr,
+            university: wallets.universityAddr,
+            company: wallets.companyAddr,
+          },
+          features: {
+            multiPartyConfirmation: true,
+            autoRetry: { enabled: true, maxRetries: 3 },
+          },
+          gas: {
+            deployGasUsed: 3975426,
+            estimatePerCert: 185000,
+            estimateVerify: 45000,
+          },
+          stats: contractStats,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;

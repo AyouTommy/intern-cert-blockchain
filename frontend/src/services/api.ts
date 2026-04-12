@@ -312,3 +312,36 @@ export interface DashboardStats {
     deployGasUsed: number
   }
 }
+
+// Settings 区块链 Tab 用
+export interface BlockchainInfo {
+  connected: boolean
+  network: {
+    name: string
+    chainId: number
+    blockNumber: number
+  }
+  contract: {
+    address: string | null
+    deployed: boolean
+  }
+  wallets: {
+    admin: string
+    university: string
+    company: string
+  }
+  features: {
+    multiPartyConfirmation: boolean
+    autoRetry: { enabled: boolean; maxRetries: number }
+  }
+  gas: {
+    deployGasUsed: number
+    estimatePerCert: number
+    estimateVerify: number
+  }
+  stats?: {
+    total: number
+    active: number
+    revoked: number
+  }
+}

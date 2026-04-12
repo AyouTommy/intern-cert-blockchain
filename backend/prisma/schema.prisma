@@ -269,6 +269,11 @@ model Verification {
   verifierAgent String?
   isValid       Boolean
 
+  // 核验来源追踪
+  verifySource  String?   // PUBLIC | STUDENT | UNIVERSITY | COMPANY | THIRD_PARTY
+  verifierName  String?   // 核验人: "张老师(北京大学)" / null(公开)
+  verifierId    String?   // 核验人用户ID
+
   createdAt DateTime @default(now())
 
   @@index([certificateId])

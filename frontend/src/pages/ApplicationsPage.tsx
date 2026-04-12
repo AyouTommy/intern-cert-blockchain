@@ -209,7 +209,7 @@ export default function ApplicationsPage() {
                 approved: isApproved,
             })
             if (response.data.success) {
-                toast.success(isApproved ? '审核通过，证书已创建' : '已拒绝申请')
+                toast.success(isApproved ? '审核通过，证书已创建并发起链上确认' : '已拒绝申请')
                 setShowDetailModal(false)
                 fetchApplications()
             }
@@ -660,9 +660,12 @@ export default function ApplicationsPage() {
                                         onClick={() => handleUniversityReview(true)}
                                         className="btn-primary flex-1"
                                     >
-                                        批准
+                                        批准并发起链上确认
                                     </button>
                                 </div>
+                                <p className="text-xs text-dark-500 mt-2">
+                                    ℹ️ 批准后系统将自动创建证书并发起链上多方确认流程（高校签名 → 企业签名 → 上链完成）
+                                </p>
                             </div>
                         )}
 

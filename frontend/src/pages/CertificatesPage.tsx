@@ -315,6 +315,7 @@ export default function CertificatesPage() {
               <th className="table-cell text-left">实习岗位</th>
               <th className="table-cell text-left">实习时间</th>
               <th className="table-cell text-left">状态</th>
+              <th className="table-cell text-left">链上确认</th>
               <th className="table-cell text-right">操作</th>
             </tr>
           </thead>
@@ -322,14 +323,14 @@ export default function CertificatesPage() {
             {loading ? (
               [...Array(5)].map((_, i) => (
                 <tr key={i} className="table-row">
-                  <td colSpan={8} className="table-cell">
+                  <td colSpan={9} className="table-cell">
                     <div className="h-12 skeleton rounded" />
                   </td>
                 </tr>
               ))
             ) : certificates.length === 0 ? (
               <tr>
-                <td colSpan={8} className="table-cell text-center py-12">
+                <td colSpan={9} className="table-cell text-center py-12">
                   <DocumentDuplicateIcon className="w-12 h-12 mx-auto text-dark-600 mb-4" />
                   <p className="text-dark-400">暂无证明数据</p>
                   {canCreate && (
@@ -389,6 +390,15 @@ export default function CertificatesPage() {
                     <span className={statusConfig[cert.status]?.class || 'badge-neutral'}>
                       {statusConfig[cert.status]?.label || cert.status}
                     </span>
+                  </td>
+                  <td className="table-cell">
+                    {(cert as any).universityAddr ? (
+                      <span className="text-xs text-emerald-400">🏫✓ 🏢✓</span>
+                    ) : cert.certHash ? (
+                      <span className="text-xs text-dark-400">—</span>
+                    ) : (
+                      <span className="text-xs text-dark-600">—</span>
+                    )}
                   </td>
                   <td className="table-cell text-right">
                     <div className="flex items-center justify-end gap-2">

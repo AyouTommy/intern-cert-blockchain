@@ -125,3 +125,51 @@ export const authorize = (...roles: string[]) => {
     next();
   };
 };
+
+//! 【可选认证中间件】有 token 就解析用户，没有就跳过
+// 用于核验路由：登录用户可获得完整权限，未登录用户按公开处理
+export const optionalAuth = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET || 'default-secret'
+      ) as { id: string; email: string; role: Role; universityId?: string; companyId?: string; name?: string };
+
+      const prisma = (req as any).prisma as PrismaClient;
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: {
+          id: true, email: true, name: true, role: true, isActive: true,
+          universityId: true, companyId: true,
+          university: { select: { name: true } },
+          company: { select: { name: true } },
+          studentProfile: { select: { studentId: true } },
+        },
+      });
+
+      if (user && user.isActive) {
+        (req as any).optionalUser = {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role as Role,
+          universityId: user.universityId || undefined,
+          companyId: user.companyId || undefined,
+          universityName: user.university?.name,
+          companyName: user.company?.name,
+          studentId: user.studentProfile?.studentId,
+        };
+      }
+    }
+  } catch {
+    // token无效不报错，当作公开访问
+  }
+  next();
+};

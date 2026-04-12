@@ -257,6 +257,10 @@ router.get(
           verifications: {
             take: 10,
             orderBy: { createdAt: 'desc' },
+            select: {
+              id: true, isValid: true, createdAt: true,
+              verifySource: true, verifierName: true,
+            },
           },
           attachments: {
             orderBy: { createdAt: 'desc' },

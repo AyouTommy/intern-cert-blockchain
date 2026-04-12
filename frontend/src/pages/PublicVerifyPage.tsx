@@ -13,9 +13,7 @@ import {
   ArrowLeftIcon,
 } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
-import toast from 'react-hot-toast'
 import api from '../services/api'
-import PublicCertificatePreview from '../components/PublicCertificatePreview'
 
 interface VerifyResult {
   success: boolean
@@ -76,18 +74,18 @@ export default function PublicVerifyPage() {
   const { code } = useParams()
   const [loading, setLoading] = useState(true)
   const [result, setResult] = useState<VerifyResult | null>(null)
-  const [disclosureLevel, setDisclosureLevel] = useState<'basic' | 'standard' | 'detailed'>('standard')
 
   useEffect(() => {
     if (code) {
-      verifyCode(disclosureLevel)
+      verifyCode()
     }
-  }, [code, disclosureLevel])
+  }, [code])
 
-  const verifyCode = async (level: string) => {
+  const verifyCode = async () => {
     setLoading(true)
     try {
-      const response = await api.get(`/verify/code/${code}?level=${level}`)
+      // 公开核验：不带 JWT，不带 level 参数
+      const response = await api.get(`/verify/code/${code}`)
       setResult(response.data)
     } catch (error: any) {
       setResult({
@@ -100,51 +98,7 @@ export default function PublicVerifyPage() {
     }
   }
 
-  // PDF下载函数 - 直接使用fetch和Blob下载
-  const downloadPdf = async (certId: string, studentName: string, studentId: string = '') => {
-    const loadingToast = toast.loading('正在生成PDF...')
-    try {
-      const baseUrl = import.meta.env.VITE_API_URL || ''
-      const pdfUrl = `${baseUrl}/certificates/${certId}/pdf?download`
-
-      const response = await fetch(pdfUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/pdf',
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const blob = await response.blob()
-
-      // 创建下载文件名
-      const fileName = `${studentName}${studentId ? '_' + studentId : ''}_实习证书.pdf`
-
-      // 使用FileSaver逻辑
-      const blobUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.style.display = 'none'
-      link.href = blobUrl
-      link.setAttribute('download', fileName)
-
-      document.body.appendChild(link)
-      link.click()
-
-      // 清理
-      setTimeout(() => {
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(blobUrl)
-      }, 100)
-
-      toast.success('PDF下载成功', { id: loadingToast })
-    } catch (error) {
-      console.error('PDF下载失败:', error)
-      toast.error('PDF下载失败，请稍后重试', { id: loadingToast })
-    }
-  }
+  // 公开核验不提供 PDF 下载
 
   if (loading) {
     return (
@@ -236,40 +190,7 @@ export default function PublicVerifyPage() {
             )}
           </div>
 
-          {/* 披露级别选择器 */}
-          {result?.isValid && result.data && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
-              className="glass-card p-4"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <ShieldCheckIcon className="w-5 h-5 text-primary-400" />
-                <span className="text-sm font-medium text-dark-200">信息披露级别</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { key: 'basic' as const, label: '基础验证', desc: '仅有效性' },
-                  { key: 'standard' as const, label: '标准验证', desc: '+实习信息' },
-                  { key: 'detailed' as const, label: '深度验证', desc: '+区块链详情' },
-                ].map(item => (
-                  <button
-                    key={item.key}
-                    onClick={() => setDisclosureLevel(item.key)}
-                    className={`p-3 rounded-xl text-center transition-all ${
-                      disclosureLevel === item.key
-                        ? 'bg-primary-500/20 border border-primary-500/40 text-primary-400'
-                        : 'bg-dark-800/50 border border-dark-700/50 text-dark-400 hover:border-dark-600'
-                    }`}
-                  >
-                    <div className="text-sm font-medium">{item.label}</div>
-                    <div className="text-xs mt-1 opacity-70">{item.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          )}
+
 
           {/* Certificate Details */}
           {result?.isValid && result.data && (
@@ -551,40 +472,29 @@ export default function PublicVerifyPage() {
                 </motion.div>
               )}
 
-              {/* PDF Certificate Download - 动态生成 */}
-              {result.data.status === 'ACTIVE' && result.data.id && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.9 }}
-                  className="glass-card p-6"
+              {/* 公开核验提示：登录查看完整信息 */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.95 }}
+                className="glass-card p-6 border border-amber-500/20 bg-amber-500/5"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-xl bg-amber-500/10">
+                    <ShieldCheckIcon className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <h3 className="text-dark-200 font-medium">公开核验模式</h3>
+                </div>
+                <p className="text-sm text-amber-300/80">
+                  🔒 当前为公开核验，部分信息已脱敏保护。如需查看完整信息或下载PDF证书，请登录系统后在「证明核验」页面操作。
+                </p>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-2 mt-3 text-sm text-primary-400 hover:text-primary-300"
                 >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-3 rounded-xl bg-amber-500/10">
-                      <DocumentTextIcon className="w-6 h-6 text-amber-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-dark-100">证书文件</h3>
-                  </div>
-
-                  {/* 证书预览 - A4纸样式 */}
-                  <div className="flex justify-center mb-4 overflow-auto">
-                    <PublicCertificatePreview data={result.data as any} verifyUrl={window.location.href} />
-                  </div>
-
-                  {/* 下载按钮 */}
-                  <button
-                    onClick={() => downloadPdf(result.data!.id, result.data!.studentName, result.data!.studentId)}
-                    className="btn-primary w-full flex items-center justify-center gap-2"
-                  >
-                    <DocumentTextIcon className="w-5 h-5" />
-                    下载PDF证书
-                  </button>
-
-                  <p className="text-center text-sm text-dark-400 mt-3">
-                    点击上方按钮下载完整PDF文件
-                  </p>
-                </motion.div>
-              )}
+                  前往登录 →
+                </Link>
+              </motion.div>
             </>
           )}
         </motion.div>

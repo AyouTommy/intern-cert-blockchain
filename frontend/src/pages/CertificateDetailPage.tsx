@@ -444,7 +444,19 @@ export default function CertificateDetailPage() {
             </motion.div>
           )}
 
-          {/* 上链失败重试信息 */}
+          {/* 旧证书兼容提示：已上链但无多方确认 */}
+          {certificate.status === 'ACTIVE' && certificate.certHash && !certificate.universityAddr && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55 }}
+              className="glass-card p-4 border border-dark-600/50"
+            >
+              <p className="text-sm text-dark-400">
+                ℹ️ 此证书在多方确认机制启用前上链，使用传统单方验证模式。证书内容已通过哈希上链保护，不可篡改。
+              </p>
+            </motion.div>
+          )}
           {certificate.status === 'FAILED' && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -653,16 +665,27 @@ export default function CertificateDetailPage() {
               <div className="mt-4 pt-4 border-t border-dark-700">
                 <p className="text-sm text-dark-400 mb-3">最近核验记录</p>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {certificate.verifications.slice(0, 5).map((v, idx) => (
+                  {certificate.verifications.slice(0, 5).map((v: any, idx: number) => {
+                    const sourceIcon = v.verifySource === 'UNIVERSITY' ? '🏫'
+                      : v.verifySource === 'COMPANY' ? '🏢'
+                      : v.verifySource === 'STUDENT' ? '👤'
+                      : v.verifySource === 'THIRD_PARTY' ? '🏬'
+                      : '🌐';
+                    const sourceLabel = v.verifierName || '公开核验';
+                    return (
                     <div key={v.id || idx} className="flex items-center justify-between text-xs p-2 rounded-lg bg-dark-800/50">
                       <span className="text-dark-300">
                         {format(new Date(v.createdAt), 'MM/dd HH:mm')}
                       </span>
+                      <span className="text-dark-400 truncate mx-2 max-w-[120px]" title={sourceLabel}>
+                        {sourceIcon} {sourceLabel}
+                      </span>
                       <span className={v.isValid ? 'text-emerald-400' : 'text-red-400'}>
-                        {v.isValid ? '✓ 验证通过' : '✗ 验证失败'}
+                        {v.isValid ? '✓ 通过' : '✗ 失败'}
                       </span>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
