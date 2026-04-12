@@ -15,6 +15,9 @@ import {
   QrCodeIcon,
   ClipboardDocumentIcon,
   ArrowTopRightOnSquareIcon,
+  LinkIcon,
+  ArrowPathIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
 import { QRCodeSVG } from 'qrcode.react'
 import toast from 'react-hot-toast'
@@ -395,6 +398,100 @@ export default function CertificateDetailPage() {
                   </a>
                 )}
               </div>
+            </motion.div>
+          )}
+
+          {/* 多方确认记录 */}
+          {certificate.universityAddr && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55 }}
+              className="glass-card p-6"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/20 to-blue-500/20">
+                  <LinkIcon className="w-6 h-6 text-emerald-400" />
+                </div>
+                <h2 className="card-title">链上多方确认记录</h2>
+                <div className="flex items-center gap-2 text-sm text-emerald-400 ml-auto">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  双方已确认
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-dark-800/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-dark-400">🏫 高校确认</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400">✓ 已确认</span>
+                  </div>
+                  <p className="font-mono text-xs text-primary-400 break-all">{certificate.universityAddr}</p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-dark-800/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-dark-400">🏢 企业确认</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400">✓ 已确认</span>
+                  </div>
+                  <p className="font-mono text-xs text-primary-400 break-all">{certificate.companyAddr}</p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center">
+                  <p className="text-sm font-medium text-emerald-400">✅ 高校和企业双方已在链上独立确认，证书合法有效</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 上链失败重试信息 */}
+          {certificate.status === 'FAILED' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55 }}
+              className="glass-card p-6 border border-red-500/30"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 rounded-xl bg-red-500/10">
+                  <ExclamationTriangleIcon className="w-6 h-6 text-red-400" />
+                </div>
+                <h2 className="card-title text-red-400">上链状态</h2>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-dark-400">状态</span>
+                  <span className="text-red-400 font-medium">上链失败</span>
+                </div>
+                {certificate.retryCount !== undefined && certificate.retryCount > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-dark-400">已重试</span>
+                    <span className="text-dark-200">{certificate.retryCount}/3 次</span>
+                  </div>
+                )}
+                {certificate.failReason && (
+                  <div className="flex justify-between">
+                    <span className="text-dark-400">失败原因</span>
+                    <span className="text-dark-200 text-sm">{certificate.failReason}</span>
+                  </div>
+                )}
+                {certificate.lastRetryAt && (
+                  <div className="flex justify-between">
+                    <span className="text-dark-400">最后重试</span>
+                    <span className="text-dark-200 text-sm">{format(new Date(certificate.lastRetryAt), 'yyyy/MM/dd HH:mm:ss')}</span>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={handleUpchain}
+                disabled={actionLoading}
+                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-primary-500/20 to-accent-500/20 border border-primary-500/30 text-primary-400 hover:border-primary-500/50 transition-all"
+              >
+                <ArrowPathIcon className="w-5 h-5" />
+                {actionLoading ? '重试中...' : '手动重试上链'}
+              </button>
             </motion.div>
           )}
 

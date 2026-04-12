@@ -192,6 +192,16 @@ model Certificate {
   chainId     Int?
   ipfsHash    String?
 
+  // 多方确认信息
+  universityAddr  String?   // 高校链上确认地址
+  companyAddr     String?   // 企业链上确认地址
+  contentHash     String?   // 内容完整性哈希
+
+  // 上链重试信息
+  retryCount   Int       @default(0)   // 重试次数
+  lastRetryAt  DateTime?               // 上次重试时间
+  failReason   String?                 // 失败原因
+
   // 核验信息
   verifyCode String  @unique
   verifyUrl  String? @db.Text

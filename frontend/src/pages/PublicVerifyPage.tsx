@@ -20,6 +20,7 @@ import PublicCertificatePreview from '../components/PublicCertificatePreview'
 interface VerifyResult {
   success: boolean
   isValid: boolean
+  disclosureLevel?: string
   data?: {
     id: string
     certNumber: string
@@ -54,6 +55,11 @@ interface VerifyResult {
       verificationMethod: string
       message: string
     }
+    multiPartyConfirmation?: {
+      universityAddr: string
+      companyAddr: string
+      isConfirmed: boolean
+    }
     attachments?: {
       id: string
       name: string
@@ -70,16 +76,18 @@ export default function PublicVerifyPage() {
   const { code } = useParams()
   const [loading, setLoading] = useState(true)
   const [result, setResult] = useState<VerifyResult | null>(null)
+  const [disclosureLevel, setDisclosureLevel] = useState<'basic' | 'standard' | 'detailed'>('standard')
 
   useEffect(() => {
     if (code) {
-      verifyCode()
+      verifyCode(disclosureLevel)
     }
-  }, [code])
+  }, [code, disclosureLevel])
 
-  const verifyCode = async () => {
+  const verifyCode = async (level: string) => {
+    setLoading(true)
     try {
-      const response = await api.get(`/verify/code/${code}`)
+      const response = await api.get(`/verify/code/${code}?level=${level}`)
       setResult(response.data)
     } catch (error: any) {
       setResult({
@@ -227,6 +235,41 @@ export default function PublicVerifyPage() {
               </motion.div>
             )}
           </div>
+
+          {/* 披露级别选择器 */}
+          {result?.isValid && result.data && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="glass-card p-4"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <ShieldCheckIcon className="w-5 h-5 text-primary-400" />
+                <span className="text-sm font-medium text-dark-200">信息披露级别</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { key: 'basic' as const, label: '基础验证', desc: '仅有效性' },
+                  { key: 'standard' as const, label: '标准验证', desc: '+实习信息' },
+                  { key: 'detailed' as const, label: '深度验证', desc: '+区块链详情' },
+                ].map(item => (
+                  <button
+                    key={item.key}
+                    onClick={() => setDisclosureLevel(item.key)}
+                    className={`p-3 rounded-xl text-center transition-all ${
+                      disclosureLevel === item.key
+                        ? 'bg-primary-500/20 border border-primary-500/40 text-primary-400'
+                        : 'bg-dark-800/50 border border-dark-700/50 text-dark-400 hover:border-dark-600'
+                    }`}
+                  >
+                    <div className="text-sm font-medium">{item.label}</div>
+                    <div className="text-xs mt-1 opacity-70">{item.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
           {/* Certificate Details */}
           {result?.isValid && result.data && (
@@ -467,6 +510,43 @@ export default function PublicVerifyPage() {
                       : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                   }`}>
                     {result.data.consistencyCheck.message}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* 多方确认记录 */}
+              {result.data.multiPartyConfirmation && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.9 }}
+                  className="glass-card p-6 border border-emerald-500/30"
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/20 to-blue-500/20">
+                      <ShieldCheckIcon className="w-6 h-6 text-emerald-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-dark-100">链上多方确认</h3>
+                      <p className="text-sm text-dark-400">两个独立地址分别确认</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-xl bg-dark-800/50">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm text-dark-400">🏫 高校确认地址</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">✓ 已确认</span>
+                      </div>
+                      <p className="font-mono text-xs text-primary-400 break-all">{result.data.multiPartyConfirmation.universityAddr}</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-dark-800/50">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm text-dark-400">🏢 企业确认地址</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">✓ 已确认</span>
+                      </div>
+                      <p className="font-mono text-xs text-primary-400 break-all">{result.data.multiPartyConfirmation.companyAddr}</p>
+                    </div>
                   </div>
                 </motion.div>
               )}

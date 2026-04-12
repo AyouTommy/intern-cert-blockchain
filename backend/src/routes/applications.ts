@@ -835,8 +835,7 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
             certNumber: certificate.certNumber,
         });
 
-        //! 【改进】生成内容完整性哈希（替代空的IPFS哈希）
-        // 将证书全部核心字段编码后哈希，用于链上内容完整性校验
+        // 生成内容完整性哈希
         const contentHash = SignatureService.generateContentHash({
             studentId: certificate.student.studentId,
             universityCode: certificate.university.code,
@@ -849,66 +848,116 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
             certNumber: certificate.certNumber,
         });
 
-        // 上链（传入内容哈希用于完整性验证）
-        const result = await blockchainService.createCertificate({
-            certHash,
-            studentAddress: certificate.student.user.walletAddress || '0x0000000000000000000000000000000000000000',
-            studentId: certificate.student.studentId,
-            universityId: certificate.university.code,
-            companyId: certificate.company.code,
-            startDate: Math.floor(certificate.startDate.getTime() / 1000),
-            endDate: Math.floor(certificate.endDate.getTime() / 1000),
-            contentHash,
-        });
+        //! 【多方确认上链】带自动重试的两步确认流程
+        const MAX_RETRIES = 3;
+        let lastError = '';
 
-        if (result.success) {
-            await prisma.certificate.update({
-                where: { id: certificateId },
-                data: {
-                    status: 'ACTIVE',
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                // 第1步：高校钱包提交请求（自动确认高校方）
+                const submitResult = await blockchainService.submitCertificateRequest({
                     certHash,
-                    txHash: result.txHash,
-                    blockNumber: result.blockNumber,
-                    chainId: blockchainService.getChainId(),
-                    issuedAt: new Date(),
-                },
-            });
+                    studentId: certificate.student.studentId,
+                    universityId: certificate.university.code,
+                    companyId: certificate.company.code,
+                    startDate: Math.floor(certificate.startDate.getTime() / 1000),
+                    endDate: Math.floor(certificate.endDate.getTime() / 1000),
+                    contentHash,
+                });
 
-            // 通知学生上链成功
-            await prisma.notification.create({
-                data: {
-                    userId: certificate.student.user.id,
-                    title: '实习证明已上链成功',
-                    content: `您的实习证明（${certificate.certNumber}）已成功上链至区块链，可随时核验。`,
-                    type: 'CERTIFICATE_UPCHAIN',
-                    link: `/certificates/${certificateId}`,
-                },
-            });
+                if (!submitResult.success) {
+                    throw new Error(submitResult.error || '高校提交请求失败');
+                }
 
-            // 上链成功后生成PDF证书
-            // 注意：PDF现在通过动态接口 GET /api/certificates/:id/pdf 生成
-        } else {
-            await prisma.certificate.update({
-                where: { id: certificateId },
-                data: { status: 'FAILED' },
-            });
+                // 第2步：企业钱包确认（双方确认后自动 finalize）
+                const confirmResult = await blockchainService.companyConfirmCertificate(certHash);
 
-            // 通知学生上链失败
-            await prisma.notification.create({
-                data: {
-                    userId: certificate.student.user.id,
-                    title: '实习证明上链失败',
-                    content: `您的实习证明（${certificate.certNumber}）上链失败，管理员将会重新处理。`,
-                    type: 'CERTIFICATE_UPCHAIN_FAILED',
-                    link: `/certificates/${certificateId}`,
-                },
-            });
+                if (!confirmResult.success) {
+                    throw new Error(confirmResult.error || '企业确认失败');
+                }
+
+                // 上链成功 — 更新数据库
+                await prisma.certificate.update({
+                    where: { id: certificateId },
+                    data: {
+                        status: 'ACTIVE',
+                        certHash,
+                        txHash: confirmResult.txHash,
+                        blockNumber: confirmResult.blockNumber,
+                        chainId: blockchainService.getChainId(),
+                        issuedAt: new Date(),
+                        universityAddr: submitResult.universityAddr,
+                        companyAddr: confirmResult.companyAddr,
+                        contentHash,
+                        retryCount: attempt - 1,
+                        failReason: null,
+                    },
+                });
+
+                // 通知学生上链成功
+                await prisma.notification.create({
+                    data: {
+                        userId: certificate.student.user.id,
+                        title: '实习证明已上链成功',
+                        content: `您的实习证明（${certificate.certNumber}）已通过高校和企业双方确认，成功上链至区块链。`,
+                        type: 'CERTIFICATE_UPCHAIN',
+                        link: `/certificates/${certificateId}`,
+                    },
+                });
+
+                console.log(`✅ 证书 ${certificate.certNumber} 多方确认上链成功（第${attempt}次尝试）`);
+                return; // 成功，退出
+
+            } catch (retryError: any) {
+                lastError = retryError.message || '上链失败';
+                console.warn(`⚠️ 上链第${attempt}/${MAX_RETRIES}次尝试失败:`, lastError);
+
+                // 更新重试信息
+                await prisma.certificate.update({
+                    where: { id: certificateId },
+                    data: {
+                        retryCount: attempt,
+                        lastRetryAt: new Date(),
+                        failReason: lastError,
+                    },
+                });
+
+                if (attempt < MAX_RETRIES) {
+                    // 指数退避：2s → 4s → 8s
+                    const delay = Math.pow(2, attempt) * 1000;
+                    console.log(`⏳ ${delay / 1000}秒后重试...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
         }
-    } catch (error) {
-        console.error('上链失败:', error);
+
+        // 所有重试都失败了
         await prisma.certificate.update({
             where: { id: certificateId },
-            data: { status: 'FAILED' },
+            data: {
+                status: 'FAILED',
+                failReason: lastError,
+            },
+        });
+
+        // 通知学生上链失败
+        await prisma.notification.create({
+            data: {
+                userId: certificate.student.user.id,
+                title: '实习证明上链失败',
+                content: `您的实习证明（${certificate.certNumber}）上链失败（已重试${MAX_RETRIES}次），管理员将会重新处理。`,
+                type: 'CERTIFICATE_UPCHAIN_FAILED',
+                link: `/certificates/${certificateId}`,
+            },
+        });
+    } catch (error: any) {
+        console.error('上链流程异常:', error);
+        await prisma.certificate.update({
+            where: { id: certificateId },
+            data: {
+                status: 'FAILED',
+                failReason: error.message || '上链流程异常',
+            },
         });
     }
 }

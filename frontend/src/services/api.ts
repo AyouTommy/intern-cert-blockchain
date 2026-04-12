@@ -235,6 +235,14 @@ export interface Certificate {
   evaluatedAt?: string  // 企业评价时间
   approvedAt?: string   // 高校审核时间
   revokeReason?: string
+  // 多方确认信息
+  universityAddr?: string  // 高校链上确认地址
+  companyAddr?: string     // 企业链上确认地址
+  contentHash?: string     // 内容完整性哈希
+  // 上链重试信息
+  retryCount?: number
+  lastRetryAt?: string
+  failReason?: string
 }
 
 export interface University {

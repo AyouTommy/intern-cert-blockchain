@@ -11,20 +11,43 @@ interface ContractConfig {
 class BlockchainService {
   private provider: ethers.JsonRpcProvider;
   private signer: ethers.Wallet;
+  private universityWallet: ethers.Wallet;
+  private companyWallet: ethers.Wallet;
   private contract: ethers.Contract | null = null;
+  private universityContract: ethers.Contract | null = null;
+  private companyContract: ethers.Contract | null = null;
   private contractConfig: ContractConfig | null = null;
+  private rolesSetup = false;
+
+  // Hardhat 默认测试账户私钥（仅开发环境用）
+  private static DEFAULT_KEYS = {
+    admin: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+    university: '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d',
+    company: '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a',
+  };
 
   constructor() {
     const rpcUrl = process.env.BLOCKCHAIN_RPC_URL || 'http://127.0.0.1:8545';
     this.provider = new ethers.JsonRpcProvider(rpcUrl);
     
-    let privateKey = process.env.SIGNER_PRIVATE_KEY || 
-      '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'; // Hardhat默认私钥
-    // 确保私钥有 0x 前缀
-    if (privateKey && !privateKey.startsWith('0x')) {
-      privateKey = '0x' + privateKey;
-    }
+    // 管理员钱包
+    let privateKey = process.env.SIGNER_PRIVATE_KEY || BlockchainService.DEFAULT_KEYS.admin;
+    if (privateKey && !privateKey.startsWith('0x')) privateKey = '0x' + privateKey;
     this.signer = new ethers.Wallet(privateKey, this.provider);
+
+    // 高校钱包（独立地址，用于多方确认）
+    let uniKey = process.env.UNIVERSITY_PRIVATE_KEY || BlockchainService.DEFAULT_KEYS.university;
+    if (uniKey && !uniKey.startsWith('0x')) uniKey = '0x' + uniKey;
+    this.universityWallet = new ethers.Wallet(uniKey, this.provider);
+
+    // 企业钱包（独立地址，用于多方确认）
+    let compKey = process.env.COMPANY_PRIVATE_KEY || BlockchainService.DEFAULT_KEYS.company;
+    if (compKey && !compKey.startsWith('0x')) compKey = '0x' + compKey;
+    this.companyWallet = new ethers.Wallet(compKey, this.provider);
+
+    console.log('🔑 管理员地址:', this.signer.address);
+    console.log('🏫 高校钱包地址:', this.universityWallet.address);
+    console.log('🏢 企业钱包地址:', this.companyWallet.address);
     
     this.loadContract();
   }
@@ -35,19 +58,51 @@ class BlockchainService {
       if (fs.existsSync(contractPath)) {
         const config = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
         this.contractConfig = config;
-        this.contract = new ethers.Contract(
-          config.address,
-          config.abi,
-          this.signer
-        );
+        this.contract = new ethers.Contract(config.address, config.abi, this.signer);
+        // 为高校和企业钱包分别创建合约实例
+        this.universityContract = new ethers.Contract(config.address, config.abi, this.universityWallet);
+        this.companyContract = new ethers.Contract(config.address, config.abi, this.companyWallet);
         console.log('✅ 区块链合约已加载:', config.address);
         // 启动事件监听
         this.listenForEvents();
+        // 自动授予角色
+        this.setupRoles();
       } else {
         console.log('⚠️ 合约配置文件不存在，请先部署合约');
       }
     } catch (error) {
       console.error('❌ 加载合约失败:', error);
+    }
+  }
+
+  // ==========================================
+  //! 【角色初始化】启动时自动给高校和企业钱包授予链上角色
+  // ==========================================
+  private async setupRoles() {
+    if (!this.contract || this.rolesSetup) return;
+    try {
+      const UNIVERSITY_ROLE = ethers.keccak256(ethers.toUtf8Bytes('UNIVERSITY_ROLE'));
+      const COMPANY_ROLE = ethers.keccak256(ethers.toUtf8Bytes('COMPANY_ROLE'));
+
+      // 检查是否已有角色
+      const uniHasRole = await this.contract.hasRole(UNIVERSITY_ROLE, this.universityWallet.address);
+      if (!uniHasRole) {
+        const tx = await this.contract.grantUniversityRole(this.universityWallet.address, 'DEFAULT_UNIVERSITY');
+        await tx.wait();
+        console.log('✅ 高校角色已授予:', this.universityWallet.address);
+      }
+
+      const compHasRole = await this.contract.hasRole(COMPANY_ROLE, this.companyWallet.address);
+      if (!compHasRole) {
+        const tx = await this.contract.grantCompanyRole(this.companyWallet.address, 'DEFAULT_COMPANY');
+        await tx.wait();
+        console.log('✅ 企业角色已授予:', this.companyWallet.address);
+      }
+
+      this.rolesSetup = true;
+      console.log('🔐 链上角色初始化完成');
+    } catch (error) {
+      console.warn('⚠️ 角色初始化失败（不影响核心功能）:', (error as Error).message);
     }
   }
 
@@ -431,6 +486,92 @@ class BlockchainService {
   // 获取签名者地址
   getSignerAddress(): string {
     return this.signer.address;
+  }
+
+  // ==========================================
+  //! 【多方确认 - 第1步】高校钱包提交证书请求
+  // 用高校的独立钱包地址调用合约，链上记录高校地址
+  // ==========================================
+  async submitCertificateRequest(params: {
+    certHash: string;
+    studentId: string;
+    universityId: string;
+    companyId: string;
+    startDate: number;
+    endDate: number;
+    contentHash: string;
+  }): Promise<{
+    success: boolean;
+    txHash?: string;
+    universityAddr?: string;
+    error?: string;
+  }> {
+    if (!this.universityContract) {
+      return { success: false, error: '高校合约实例未加载' };
+    }
+    try {
+      const tx = await this.universityContract.submitCertificateRequest(
+        params.certHash,
+        params.studentId,
+        params.universityId,
+        params.companyId,
+        params.startDate,
+        params.endDate,
+        params.contentHash
+      );
+      await tx.wait();
+      return {
+        success: true,
+        txHash: tx.hash,
+        universityAddr: this.universityWallet.address,
+      };
+    } catch (error: any) {
+      console.error('高校提交请求失败:', error);
+      return { success: false, error: error.reason || error.message };
+    }
+  }
+
+  // ==========================================
+  //! 【多方确认 - 第2步】企业钱包确认证书
+  // 用企业的独立钱包地址调用合约，链上记录企业地址
+  // 双方都确认后合约自动 finalize
+  // ==========================================
+  async companyConfirmCertificate(certHash: string): Promise<{
+    success: boolean;
+    txHash?: string;
+    blockNumber?: number;
+    companyAddr?: string;
+    error?: string;
+  }> {
+    if (!this.companyContract) {
+      return { success: false, error: '企业合约实例未加载' };
+    }
+    try {
+      const tx = await this.companyContract.companyConfirm(certHash);
+      const receipt = await tx.wait();
+      return {
+        success: true,
+        txHash: receipt.hash,
+        blockNumber: receipt.blockNumber,
+        companyAddr: this.companyWallet.address,
+      };
+    } catch (error: any) {
+      console.error('企业确认失败:', error);
+      return { success: false, error: error.reason || error.message };
+    }
+  }
+
+  // 获取多方确认地址信息（给前端展示用）
+  getMultiPartyInfo(): {
+    adminAddr: string;
+    universityAddr: string;
+    companyAddr: string;
+  } {
+    return {
+      adminAddr: this.signer.address,
+      universityAddr: this.universityWallet.address,
+      companyAddr: this.companyWallet.address,
+    };
   }
 
   // 获取网络信息

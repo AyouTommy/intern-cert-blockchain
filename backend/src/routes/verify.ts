@@ -153,48 +153,76 @@ router.get(
         message: certificate.certHash ? '区块链服务暂不可用，仅完成数据库验证' : '证书尚未上链，仅完成数据库验证',
       };
 
-      //! 【关键】返回结果时对学生信息做脱敏处理（隐私保护）
-      // 姓名只显示第一个字，学号中间用星号替代
+      //! 【选择性披露】根据 level 参数控制返回字段，降低隐私暴露
+      const level = (req.query.level as string) || 'standard';
+
+      // basic 级别：仅返回有效性 + 证书编号
+      if (level === 'basic') {
+        return res.json({
+          success: true,
+          isValid,
+          disclosureLevel: 'basic',
+          data: {
+            certNumber: certificate.certNumber,
+            status: certificate.status,
+            university: { name: certificate.university.name },
+            company: { name: certificate.company.name },
+          },
+        });
+      }
+
+      // standard 级别（默认）：脱敏学生 + 实习信息
+      const standardData: any = {
+        id: certificate.id,
+        certNumber: certificate.certNumber,
+        status: certificate.status,
+        studentName: maskName(certificate.student.user.name),
+        studentId: maskStudentId(certificate.student.studentId),
+        university: certificate.university,
+        company: certificate.company,
+        position: certificate.position,
+        department: certificate.department,
+        startDate: certificate.startDate,
+        endDate: certificate.endDate,
+        issuedAt: certificate.issuedAt,
+        // 撤销信息
+        revocation: certificate.status === 'REVOKED' ? {
+          revokedAt: certificate.revokedAt,
+          reason: certificate.revokeReason,
+        } : null,
+      };
+
+      if (level === 'detailed') {
+        // detailed 级别：完整区块链信息 + 一致性检查 + 多方确认
+        standardData.blockchain = certificate.certHash ? {
+          certHash: certificate.certHash,
+          txHash: certificate.txHash,
+          blockNumber: certificate.blockNumber,
+          chainId: certificate.chainId,
+          verification: chainVerification,
+        } : null;
+        standardData.consistencyCheck = consistencyCheck;
+        // 多方确认地址展示
+        standardData.multiPartyConfirmation = (certificate as any).universityAddr ? {
+          universityAddr: (certificate as any).universityAddr,
+          companyAddr: (certificate as any).companyAddr,
+          isConfirmed: !!(certificate as any).universityAddr && !!(certificate as any).companyAddr,
+        } : null;
+        // 附件基本信息
+        standardData.attachments = certificate.attachments.map(att => ({
+          id: att.id,
+          name: att.originalName,
+          size: att.fileSize,
+          type: att.mimeType,
+          category: att.category,
+        }));
+      }
+
       res.json({
         success: true,
         isValid,
-        data: {
-          id: certificate.id,
-          certNumber: certificate.certNumber,
-          status: certificate.status,
-          studentName: maskName(certificate.student.user.name),
-          studentId: maskStudentId(certificate.student.studentId),
-          university: certificate.university,
-          company: certificate.company,
-          position: certificate.position,
-          department: certificate.department,
-          startDate: certificate.startDate,
-          endDate: certificate.endDate,
-          issuedAt: certificate.issuedAt,
-          // 区块链信息
-          blockchain: certificate.certHash ? {
-            certHash: certificate.certHash,
-            txHash: certificate.txHash,
-            blockNumber: certificate.blockNumber,
-            chainId: certificate.chainId,
-            verification: chainVerification,
-          } : null,
-          // 一致性检查结果
-          consistencyCheck,
-          // 撤销信息
-          revocation: certificate.status === 'REVOKED' ? {
-            revokedAt: certificate.revokedAt,
-            reason: certificate.revokeReason,
-          } : null,
-          // 附件基本信息（不含下载链接，保护隐私）
-          attachments: certificate.attachments.map(att => ({
-            id: att.id,
-            name: att.originalName,
-            size: att.fileSize,
-            type: att.mimeType,
-            category: att.category,
-          })),
-        },
+        disclosureLevel: level,
+        data: standardData,
       });
     } catch (error) {
       next(error);
