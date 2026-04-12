@@ -294,7 +294,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Blockchain Status */}
+        {/* Blockchain Status - 增强版 */}
         <div className="glass-card p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-3 rounded-xl bg-gradient-to-br from-primary-500/20 to-accent-500/20">
@@ -308,24 +308,122 @@ export default function DashboardPage() {
 
           {stats?.blockchain ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-xl bg-surface-2">
-                <span className="text-dark-400">链上证明总数</span>
-                <span className="text-xl font-semibold text-primary-700">
-                  {stats.blockchain.total.toLocaleString()}
-                </span>
+              {/* 网络信息 */}
+              <div className="p-4 rounded-xl bg-surface-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-dark-400">网络</span>
+                  <span className="text-sm font-medium text-primary-600">{stats.blockchain.network.name}</span>
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-dark-400">链ID</span>
+                  <span className="text-sm font-mono text-dark-600">{stats.blockchain.network.chainId}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-dark-400">最新区块</span>
+                  <span className="text-sm font-mono text-dark-600">#{stats.blockchain.network.blockNumber.toLocaleString()}</span>
+                </div>
               </div>
-              <div className="flex items-center justify-between p-4 rounded-xl bg-surface-2">
-                <span className="text-dark-400">有效证明</span>
-                <span className="text-xl font-semibold text-emerald-600">
-                  {stats.blockchain.active.toLocaleString()}
-                </span>
+
+              {/* 合约地址 */}
+              <div className="p-4 rounded-xl bg-surface-2">
+                <div className="text-sm text-dark-400 mb-1">合约地址</div>
+                <p className="font-mono text-xs text-primary-600 break-all">{stats.blockchain.contractAddress}</p>
+                {stats.blockchain.network.chainId === 11155111 && (
+                  <a
+                    href={`https://sepolia.etherscan.io/address/${stats.blockchain.contractAddress}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 mt-2 text-xs text-primary-500 hover:text-primary-400 transition-colors"
+                  >
+                    在 Etherscan 上查看 →
+                  </a>
+                )}
               </div>
-              <div className="flex items-center justify-between p-4 rounded-xl bg-surface-2">
-                <span className="text-dark-400">已撤销</span>
-                <span className="text-xl font-semibold text-red-600">
-                  {stats.blockchain.revoked.toLocaleString()}
-                </span>
+
+              {/* 链上证明统计 */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-3 rounded-xl bg-surface-2">
+                  <p className="text-xl font-bold text-primary-700">{stats.blockchain.total}</p>
+                  <p className="text-xs text-dark-400">链上总数</p>
+                </div>
+                <div className="text-center p-3 rounded-xl bg-surface-2">
+                  <p className="text-xl font-bold text-emerald-600">{stats.blockchain.active}</p>
+                  <p className="text-xs text-dark-400">有效</p>
+                </div>
+                <div className="text-center p-3 rounded-xl bg-surface-2">
+                  <p className="text-xl font-bold text-red-600">{stats.blockchain.revoked}</p>
+                  <p className="text-xs text-dark-400">已撤销</p>
+                </div>
               </div>
+
+              {/* Gas 消耗统计 */}
+              <div className="p-4 rounded-xl bg-surface-2">
+                <div className="text-sm text-dark-400 mb-3">Gas 消耗分析</div>
+                <div className="space-y-2">
+                  <div>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-dark-500">合约部署</span>
+                      <span className="font-mono text-dark-600">{stats.blockchain.deployGasUsed.toLocaleString()} Gas</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-dark-200 overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: '100%' }}
+                        transition={{ duration: 1, delay: 0.5 }}
+                        className="h-full rounded-full bg-gradient-to-r from-primary-500 to-accent-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-dark-500">证书上链 (预估)</span>
+                      <span className="font-mono text-dark-600">~250,000 Gas</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-dark-200 overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: '6.3%' }}
+                        transition={{ duration: 1, delay: 0.7 }}
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-dark-500">证书核验</span>
+                      <span className="font-mono text-dark-600">0 Gas (view)</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-dark-200 overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: '0%' }}
+                        transition={{ duration: 1, delay: 0.9 }}
+                        className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 多方钱包地址 */}
+              <div className="p-4 rounded-xl bg-surface-2">
+                <div className="text-sm text-dark-400 mb-3">多方确认钱包</div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-dark-500">🔑 管理员</span>
+                    <span className="font-mono text-xs text-dark-600">{stats.blockchain.wallets.admin.slice(0, 6)}...{stats.blockchain.wallets.admin.slice(-4)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-dark-500">🏫 高校</span>
+                    <span className="font-mono text-xs text-dark-600">{stats.blockchain.wallets.university.slice(0, 6)}...{stats.blockchain.wallets.university.slice(-4)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-dark-500">🏢 企业</span>
+                    <span className="font-mono text-xs text-dark-600">{stats.blockchain.wallets.company.slice(0, 6)}...{stats.blockchain.wallets.company.slice(-4)}</span>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-center gap-2 text-sm text-emerald-600">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 智能合约运行正常

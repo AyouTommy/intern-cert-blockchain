@@ -298,5 +298,17 @@ export interface DashboardStats {
     total: number
     active: number
     revoked: number
+    contractAddress: string
+    network: {
+      chainId: number
+      name: string
+      blockNumber: number
+    }
+    wallets: {
+      admin: string
+      university: string
+      company: string
+    }
+    deployGasUsed: number
   }
 }

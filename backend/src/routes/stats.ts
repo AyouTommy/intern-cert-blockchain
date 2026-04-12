@@ -86,12 +86,31 @@ router.get(
         .map(([date, stats]) => ({ date, ...stats }))
         .reverse();
 
-      // 区块链统计
-      let blockchainStats = null;
+      // 区块链统计（增强版）
+      let blockchainStats: any = null;
       if (blockchainService.isContractAvailable()) {
         const result = await blockchainService.getStatistics();
         if (result.success) {
-          blockchainStats = result.stats;
+          // 获取网络信息
+          let networkInfo = { chainId: 0, name: 'unknown', blockNumber: 0 };
+          try { networkInfo = await blockchainService.getNetworkInfo(); } catch {}
+          // 获取多方地址
+          const multiParty = blockchainService.getMultiPartyInfo();
+          blockchainStats = {
+            ...result.stats,
+            contractAddress: blockchainService.getContractAddress(),
+            network: {
+              chainId: networkInfo.chainId,
+              name: networkInfo.chainId === 11155111 ? 'Sepolia Testnet' : networkInfo.chainId === 31337 ? 'Hardhat Local' : networkInfo.name,
+              blockNumber: networkInfo.blockNumber,
+            },
+            wallets: {
+              admin: multiParty.adminAddr,
+              university: multiParty.universityAddr,
+              company: multiParty.companyAddr,
+            },
+            deployGasUsed: 3975426, // 部署时记录的 Gas 消耗
+          };
         }
       }
 
