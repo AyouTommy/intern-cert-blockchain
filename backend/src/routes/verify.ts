@@ -103,19 +103,21 @@ router.get(
       });
 
       //! 【关键】链上二次验证: 如果证书已上链，调用智能合约的"验证证书"方法
-      // 实现“数据库查一次 + 区块链查一次”的双重保障
-      let chainVerification = null;
+      // 实现"数据库查一次 + 区块链查一次"的双重保障
+      let chainVerification: any = null;
       if (certificate.certHash && blockchainService.isContractAvailable()) {
         try {
           const chainResult = await blockchainService.verifyCertificate(certificate.certHash);
           chainVerification = {
             isValid: chainResult.isValid,
+            isExpired: chainResult.isExpired,
             onChain: true,
             chainData: chainResult.certificate,
           };
         } catch (error) {
           chainVerification = {
             isValid: false,
+            isExpired: false,
             onChain: false,
             error: '链上验证失败',
           };
@@ -123,7 +125,33 @@ router.get(
       }
 
       // PENDING 和 ACTIVE 状态都视为有效（待上链和已上链）
-      const isValid = certificate.status === 'ACTIVE' || certificate.status === 'PENDING';
+      const dbIsValid = certificate.status === 'ACTIVE' || certificate.status === 'PENDING';
+      const chainIsValid = chainVerification?.isValid ?? null;
+      
+      // 最终有效性判定：如果有链上数据则取交集，否则只看数据库
+      const isValid = chainIsValid !== null 
+        ? (dbIsValid && chainIsValid) 
+        : dbIsValid;
+
+      //! 【关键】一致性检查: 数据库与区块链状态对比
+      // 让核验者看到双重验证的完整结果
+      const consistencyCheck = chainVerification ? {
+        databaseValid: dbIsValid,
+        blockchainValid: chainVerification.isValid,
+        isExpired: chainVerification.isExpired || false,
+        isConsistent: dbIsValid === chainVerification.isValid,
+        verificationMethod: 'DATABASE_AND_BLOCKCHAIN',
+        message: dbIsValid === chainVerification.isValid
+          ? '数据库与区块链验证一致'
+          : '⚠️ 数据库与区块链状态不一致，请联系管理员',
+      } : {
+        databaseValid: dbIsValid,
+        blockchainValid: null,
+        isExpired: false,
+        isConsistent: true,
+        verificationMethod: 'DATABASE_ONLY',
+        message: certificate.certHash ? '区块链服务暂不可用，仅完成数据库验证' : '证书尚未上链，仅完成数据库验证',
+      };
 
       //! 【关键】返回结果时对学生信息做脱敏处理（隐私保护）
       // 姓名只显示第一个字，学号中间用星号替代
@@ -143,7 +171,6 @@ router.get(
           startDate: certificate.startDate,
           endDate: certificate.endDate,
           issuedAt: certificate.issuedAt,
-          // 公开核验不返回完整评价和描述（隐私保护）
           // 区块链信息
           blockchain: certificate.certHash ? {
             certHash: certificate.certHash,
@@ -152,6 +179,8 @@ router.get(
             chainId: certificate.chainId,
             verification: chainVerification,
           } : null,
+          // 一致性检查结果
+          consistencyCheck,
           // 撤销信息
           revocation: certificate.status === 'REVOKED' ? {
             revokedAt: certificate.revokedAt,
@@ -268,16 +297,17 @@ router.get(
       });
 
       // 链上验证
-      let chainData = null;
+      let chainData: any = null;
       if (blockchainService.isContractAvailable()) {
         try {
           const result = await blockchainService.verifyCertificate(hash);
           chainData = {
             isValid: result.isValid,
+            isExpired: result.isExpired,
             certificate: result.certificate,
           };
         } catch (error) {
-          chainData = { isValid: false, error: '链上查询失败' };
+          chainData = { isValid: false, isExpired: false, error: '链上查询失败' };
         }
       }
 

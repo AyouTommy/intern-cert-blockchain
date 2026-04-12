@@ -41,11 +41,62 @@ class BlockchainService {
           this.signer
         );
         console.log('✅ 区块链合约已加载:', config.address);
+        // 启动事件监听
+        this.listenForEvents();
       } else {
         console.log('⚠️ 合约配置文件不存在，请先部署合约');
       }
     } catch (error) {
       console.error('❌ 加载合约失败:', error);
+    }
+  }
+
+  // ==========================================
+  //! 【区块链事件监听】实时监听链上事件
+  // 当链上有证书创建、撤销等操作时自动输出日志
+  // 可用于未来实现 WebSocket 推送或数据库同步
+  // ==========================================
+  private listenForEvents() {
+    if (!this.contract) return;
+
+    try {
+      this.contract.on('CertificateCreated',
+        (certHash: string, issuer: string, student: string, studentId: string, timestamp: bigint) => {
+          console.log(`📢 链上事件 [证书创建]`);
+          console.log(`   Hash: ${certHash}`);
+          console.log(`   发证方: ${issuer}`);
+          console.log(`   学号: ${studentId}`);
+          console.log(`   时间: ${new Date(Number(timestamp) * 1000).toISOString()}`);
+        }
+      );
+
+      this.contract.on('CertificateRevoked',
+        (certHash: string, revoker: string, reason: string, timestamp: bigint) => {
+          console.log(`📢 链上事件 [证书撤销]`);
+          console.log(`   Hash: ${certHash}`);
+          console.log(`   撤销者: ${revoker}`);
+          console.log(`   原因: ${reason}`);
+        }
+      );
+
+      this.contract.on('CertificateFinalized',
+        (certHash: string, universityAddr: string, companyAddr: string, timestamp: bigint) => {
+          console.log(`📢 链上事件 [多方确认完成]`);
+          console.log(`   Hash: ${certHash}`);
+          console.log(`   高校地址: ${universityAddr}`);
+          console.log(`   企业地址: ${companyAddr}`);
+        }
+      );
+
+      this.contract.on('ConfirmationReceived',
+        (certHash: string, confirmer: string, role: string, timestamp: bigint) => {
+          console.log(`📢 链上事件 [确认收到] ${role} - ${confirmer}`);
+        }
+      );
+
+      console.log('👂 区块链事件监听已启动');
+    } catch (error) {
+      console.warn('⚠️ 事件监听启动失败（不影响核心功能）:', error);
     }
   }
 
@@ -70,7 +121,7 @@ class BlockchainService {
   }
 
   // ==========================================
-  //! 【上链第1步】生成证书哈希（“数字指纹”）
+  //! 【上链第1步】生成证书哈希（"数字指纹"）
   // 将学号、高校编码、企业编码、岗位、起止时间、证书编号 7个字段编码后哈希
   // 任何一个字段变了，哈希就完全不同 — 这就是防篡改的核心原理
   // ==========================================
@@ -96,7 +147,7 @@ class BlockchainService {
         data.certNumber,
       ]
     );
-    // 用“凯卡克256”哈希算法计算出唯一的256位哈希值
+    // 用"凯卡克256"哈希算法计算出唯一的256位哈希值
     return ethers.keccak256(encoded);
   }
 
@@ -113,7 +164,7 @@ class BlockchainService {
     companyId: string;
     startDate: number;
     endDate: number;
-    ipfsHash?: string;
+    contentHash?: string;
   }): Promise<{
     success: boolean;
     txHash?: string;
@@ -134,7 +185,7 @@ class BlockchainService {
         params.companyId,
         params.startDate,
         params.endDate,
-        params.ipfsHash || ''
+        params.contentHash || ''
       );
 
       // 等待区块链网络确认这笔交易（可能需要几秒到几十秒）
@@ -201,12 +252,13 @@ class BlockchainService {
   }
 
   // ==========================================
-  //! 【流程第5步】链上验证证书
+  //! 【链上验证】验证证书（view函数，不花Gas）
   // 核验时调用，拿着哈希值去区块链上确认证书是否存在且有效
-  // 实现“数据库+区块链”双重验证
+  // 同时返回过期状态，实现完整的证书状态检查
   // ==========================================
   async verifyCertificate(certHash: string): Promise<{
     isValid: boolean;
+    isExpired: boolean;
     certificate?: {
       issuer: string;
       student: string;
@@ -217,20 +269,22 @@ class BlockchainService {
       startDate: number;
       endDate: number;
       status: number;
-      ipfsHash: string;
+      contentHash: string;
     };
     error?: string;
   }> {
     if (!this.contract) {
-      return { isValid: false, error: '合约未加载' };
+      return { isValid: false, isExpired: false, error: '合约未加载' };
     }
 
     try {
-      const result = await this.contract.verifyCertificate.staticCall(certHash);
-      const [isValid, cert] = result;
+      // verifyCertificate 现在是 view 函数，不花Gas，不需要 staticCall
+      const result = await this.contract.verifyCertificate(certHash);
+      const [isValid, cert, isExpired] = result;
 
       return {
         isValid,
+        isExpired,
         certificate: {
           issuer: cert.issuer,
           student: cert.student,
@@ -241,15 +295,30 @@ class BlockchainService {
           startDate: Number(cert.startDate),
           endDate: Number(cert.endDate),
           status: Number(cert.status),
-          ipfsHash: cert.ipfsHash,
+          contentHash: cert.contentHash,
         },
       };
     } catch (error: any) {
       console.error('验证失败:', error);
       return {
         isValid: false,
+        isExpired: false,
         error: error.reason || error.message || '验证失败',
       };
+    }
+  }
+
+  // ==========================================
+  //! 【内容完整性验证】对比链上存储的内容哈希
+  // 重新计算内容哈希，与链上存储的哈希对比
+  // 如果不一致说明链下数据被篡改
+  // ==========================================
+  async verifyContentIntegrity(certHash: string, contentHash: string): Promise<boolean> {
+    if (!this.contract) return false;
+    try {
+      return await this.contract.verifyContentIntegrity(certHash, contentHash);
+    } catch {
+      return false;
     }
   }
 
@@ -278,7 +347,7 @@ class BlockchainService {
           startDate: Number(cert.startDate),
           endDate: Number(cert.endDate),
           status: Number(cert.status),
-          ipfsHash: cert.ipfsHash,
+          contentHash: cert.contentHash,
           createdAt: Number(cert.createdAt),
           updatedAt: Number(cert.updatedAt),
         },
@@ -349,7 +418,7 @@ class BlockchainService {
     }
   }
 
-  // 检查证明是否有效
+  // 检查证明是否有效（含过期检测）
   async isValidCertificate(certHash: string): Promise<boolean> {
     if (!this.contract) return false;
     try {

@@ -126,6 +126,23 @@ async function main() {
         data: { status: 'PROCESSING' },
       });
 
+      // 生成内容完整性哈希
+      const contentEncoded = ethers.AbiCoder.defaultAbiCoder().encode(
+        ['string', 'string', 'string', 'string', 'string', 'uint256', 'uint256', 'string', 'string'],
+        [
+          cert.student.studentId,
+          cert.university.code,
+          cert.company.code,
+          cert.position,
+          '',
+          Math.floor(cert.startDate.getTime() / 1000),
+          Math.floor(cert.endDate.getTime() / 1000),
+          '',
+          cert.certNumber,
+        ]
+      );
+      const contentHash = ethers.keccak256(contentEncoded);
+
       // 调用合约
       const tx = await contract.createCertificate(
         certHash,
@@ -135,7 +152,7 @@ async function main() {
         cert.company.code,
         Math.floor(cert.startDate.getTime() / 1000),
         Math.floor(cert.endDate.getTime() / 1000),
-        ''
+        contentHash
       );
 
       const receipt = await tx.wait();

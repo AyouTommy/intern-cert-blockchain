@@ -42,8 +42,17 @@ interface VerifyResult {
       chainId: number
       verification?: {
         isValid: boolean
+        isExpired: boolean
         onChain: boolean
       }
+    }
+    consistencyCheck?: {
+      databaseValid: boolean
+      blockchainValid: boolean | null
+      isExpired: boolean
+      isConsistent: boolean
+      verificationMethod: string
+      message: string
     }
     attachments?: {
       id: string
@@ -389,6 +398,75 @@ export default function PublicVerifyPage() {
                         </p>
                       </div>
                     </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Consistency Check - 双重验证一致性 */}
+              {result.data.consistencyCheck && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.85 }}
+                  className={`glass-card p-6 border ${
+                    result.data.consistencyCheck.isConsistent
+                      ? 'border-emerald-500/30'
+                      : 'border-amber-500/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/20 to-blue-500/20">
+                      <ShieldCheckIcon className="w-6 h-6 text-emerald-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-dark-100">双重验证一致性检查</h3>
+                      <p className="text-sm text-dark-400">
+                        验证方式: {result.data.consistencyCheck.verificationMethod === 'DATABASE_AND_BLOCKCHAIN'
+                          ? '数据库 + 区块链'
+                          : '仅数据库'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="p-4 rounded-xl bg-dark-800/50 text-center">
+                      <div className="text-sm text-dark-500 mb-2">数据库验证</div>
+                      <div className={`text-xl font-bold ${
+                        result.data.consistencyCheck.databaseValid ? 'text-emerald-400' : 'text-red-400'
+                      }`}>
+                        {result.data.consistencyCheck.databaseValid ? '✓ 通过' : '✗ 未通过'}
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-xl bg-dark-800/50 text-center">
+                      <div className="text-sm text-dark-500 mb-2">区块链验证</div>
+                      <div className={`text-xl font-bold ${
+                        result.data.consistencyCheck.blockchainValid === null
+                          ? 'text-dark-400'
+                          : result.data.consistencyCheck.blockchainValid
+                            ? 'text-emerald-400'
+                            : 'text-red-400'
+                      }`}>
+                        {result.data.consistencyCheck.blockchainValid === null
+                          ? '— 未上链'
+                          : result.data.consistencyCheck.blockchainValid
+                            ? '✓ 通过'
+                            : '✗ 未通过'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {result.data.consistencyCheck.isExpired && (
+                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-4">
+                      <p className="text-amber-400 text-sm">⏰ 该证书已超过有效期</p>
+                    </div>
+                  )}
+
+                  <div className={`p-3 rounded-lg text-center text-sm font-medium ${
+                    result.data.consistencyCheck.isConsistent
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                  }`}>
+                    {result.data.consistencyCheck.message}
                   </div>
                 </motion.div>
               )}

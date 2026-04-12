@@ -6,6 +6,7 @@ import QRCode from 'qrcode';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 import { blockchainService } from '../services/blockchain';
+import { SignatureService } from '../services/signatureService';
 import { config } from '../config';
 
 const router = Router();
@@ -567,15 +568,21 @@ router.post(
                 });
             }
 
-            // 生成企业签章（使用时间戳和用户ID生成签名）
-            const signatureData = {
+            //! 【关键改进】使用ECDSA椭圆曲线数字签名算法生成企业签章
+            // 替代之前的Base64编码，提供真正的密码学不可伪造性
+            const signTimestamp = Math.floor(Date.now() / 1000);
+            const company = await prisma.company.findUnique({ where: { id: authReq.user!.companyId! } });
+            const messageHash = SignatureService.generateSignMessage({
                 applicationId: id,
-                companyId: authReq.user!.companyId,
-                signedBy: authReq.user!.id,
-                signedAt: new Date().toISOString(),
+                companyCode: company?.code || '',
                 score,
-            };
-            const signature = Buffer.from(JSON.stringify(signatureData)).toString('base64');
+                evaluation,
+                timestamp: signTimestamp,
+            });
+            // 使用系统签名私钥进行ECDSA签名（生产环境应为企业独立私钥）
+            const signerKey = process.env.SIGNER_PRIVATE_KEY || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+            const signature = await SignatureService.signMessage(messageHash, signerKey);
+            const signerAddress = SignatureService.getSignerAddress(signerKey);
 
             // 更新申请
             await prisma.internshipApplication.update({
@@ -626,7 +633,7 @@ router.post(
                     action: 'COMPANY_REVIEW',
                     entityType: 'InternshipApplication',
                     entityId: id,
-                    newValue: JSON.stringify({ score, evaluation: evaluation.substring(0, 100) }),
+                    newValue: JSON.stringify({ score, evaluation: evaluation.substring(0, 100), signerAddress }),
                 },
             });
 
@@ -817,7 +824,7 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
     });
 
     try {
-        // 生成证明哈希
+        // 生成证明哈希（数字指纹）
         const certHash = blockchainService.generateCertHash({
             studentId: certificate.student.studentId,
             universityId: certificate.university.code,
@@ -828,7 +835,21 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
             certNumber: certificate.certNumber,
         });
 
-        // 上链
+        //! 【改进】生成内容完整性哈希（替代空的IPFS哈希）
+        // 将证书全部核心字段编码后哈希，用于链上内容完整性校验
+        const contentHash = SignatureService.generateContentHash({
+            studentId: certificate.student.studentId,
+            universityCode: certificate.university.code,
+            companyCode: certificate.company.code,
+            position: certificate.position,
+            department: certificate.department || undefined,
+            startDate: Math.floor(certificate.startDate.getTime() / 1000),
+            endDate: Math.floor(certificate.endDate.getTime() / 1000),
+            evaluation: certificate.evaluation || undefined,
+            certNumber: certificate.certNumber,
+        });
+
+        // 上链（传入内容哈希用于完整性验证）
         const result = await blockchainService.createCertificate({
             certHash,
             studentAddress: certificate.student.user.walletAddress || '0x0000000000000000000000000000000000000000',
@@ -837,6 +858,7 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
             companyId: certificate.company.code,
             startDate: Math.floor(certificate.startDate.getTime() / 1000),
             endDate: Math.floor(certificate.endDate.getTime() / 1000),
+            contentHash,
         });
 
         if (result.success) {

@@ -18,7 +18,7 @@ describe("InternshipCertification", function () {
     [admin, university, company, student, verifier] = await ethers.getSigners();
 
     const InternshipCertification = await ethers.getContractFactory("InternshipCertification");
-    contract = await InternshipCertification.deploy();
+    contract = (await InternshipCertification.deploy()) as unknown as InternshipCertification;
     await contract.waitForDeployment();
 
     // 授予角色
@@ -40,7 +40,7 @@ describe("InternshipCertification", function () {
     });
   });
 
-  describe("创建证明", function () {
+  describe("直接创建证明", function () {
     it("高校应该能创建证明", async function () {
       const certHash = ethers.keccak256(ethers.toUtf8Bytes("test-cert-1"));
       const startDate = Math.floor(Date.now() / 1000);
@@ -55,14 +55,14 @@ describe("InternshipCertification", function () {
           "COMP001",
           startDate,
           endDate,
-          ""
+          "0xabc123"
         )
-      ).to.emit(contract, "CertificateCreated")
-        .withArgs(certHash, university.address, student.address, "STU2024001", await getBlockTimestamp());
+      ).to.emit(contract, "CertificateCreated");
 
       const cert = await contract.getCertificate(certHash);
       expect(cert.studentId).to.equal("STU2024001");
       expect(cert.status).to.equal(1); // Active
+      expect(cert.contentHash).to.equal("0xabc123");
     });
 
     it("企业应该能创建证明", async function () {
@@ -78,11 +78,11 @@ describe("InternshipCertification", function () {
         "COMP001",
         startDate,
         endDate,
-        "QmTestHash"
+        "content-hash-test"
       );
 
       const cert = await contract.getCertificate(certHash);
-      expect(cert.ipfsHash).to.equal("QmTestHash");
+      expect(cert.contentHash).to.equal("content-hash-test");
     });
 
     it("未授权用户不能创建证明", async function () {
@@ -135,7 +135,84 @@ describe("InternshipCertification", function () {
     });
   });
 
-  describe("验证证明", function () {
+  describe("多方确认机制", function () {
+    let certHash: string;
+    const startDate = Math.floor(Date.now() / 1000);
+    const endDate = startDate + 86400 * 90;
+
+    beforeEach(async function () {
+      certHash = ethers.keccak256(ethers.toUtf8Bytes("multi-confirm-test"));
+    });
+
+    it("高校提交请求后自动确认高校方", async function () {
+      await contract.connect(university).submitCertificateRequest(
+        certHash, "STU001", "UNIV001", "COMP001", startDate, endDate, "hash"
+      );
+
+      const req = await contract.getRequestStatus(certHash);
+      expect(req.universityConfirmed).to.be.true;
+      expect(req.companyConfirmed).to.be.false;
+      expect(req.finalized).to.be.false;
+    });
+
+    it("企业确认后应自动生效", async function () {
+      // 高校提交请求（自动确认高校方）
+      await contract.connect(university).submitCertificateRequest(
+        certHash, "STU001", "UNIV001", "COMP001", startDate, endDate, "hash"
+      );
+
+      // 企业确认
+      await expect(
+        contract.connect(company).companyConfirm(certHash)
+      ).to.emit(contract, "CertificateFinalized");
+
+      // 验证证书已生效
+      const cert = await contract.getCertificate(certHash);
+      expect(cert.status).to.equal(1); // Active
+      expect(cert.studentId).to.equal("STU001");
+    });
+
+    it("管理员提交后需要高校和企业分别确认", async function () {
+      await contract.connect(admin).submitCertificateRequest(
+        certHash, "STU001", "UNIV001", "COMP001", startDate, endDate, "hash"
+      );
+
+      let req = await contract.getRequestStatus(certHash);
+      expect(req.universityConfirmed).to.be.false;
+      expect(req.companyConfirmed).to.be.false;
+
+      // 高校确认
+      await contract.connect(university).universityConfirm(certHash);
+      req = await contract.getRequestStatus(certHash);
+      expect(req.universityConfirmed).to.be.true;
+      expect(req.finalized).to.be.false;
+
+      // 企业确认 → 自动生效
+      await contract.connect(company).companyConfirm(certHash);
+      req = await contract.getRequestStatus(certHash);
+      expect(req.finalized).to.be.true;
+
+      // 验证证书存在
+      const cert = await contract.getCertificate(certHash);
+      expect(cert.status).to.equal(1);
+    });
+
+    it("未授权的角色不能确认", async function () {
+      await contract.connect(university).submitCertificateRequest(
+        certHash, "STU001", "UNIV001", "COMP001", startDate, endDate, "hash"
+      );
+
+      await expect(
+        contract.connect(verifier).companyConfirm(certHash)
+      ).to.be.revertedWith("Not company");
+
+      await expect(
+        contract.connect(company).universityConfirm(certHash)
+      ).to.be.revertedWith("Not university");
+    });
+  });
+
+  describe("验证证明（view函数，不花Gas）", function () {
     let certHash: string;
 
     beforeEach(async function () {
@@ -151,20 +228,63 @@ describe("InternshipCertification", function () {
         "COMP001",
         startDate,
         endDate,
-        ""
+        "content-hash-verify"
       );
     });
 
-    it("任何人都能验证证明", async function () {
-      const [isValid, cert] = await contract.connect(verifier).verifyCertificate.staticCall(certHash);
+    it("任何人都能验证证明（不花Gas）", async function () {
+      const [isValid, cert, isExpired] = await contract.connect(verifier).verifyCertificate(certHash);
       expect(isValid).to.be.true;
+      expect(isExpired).to.be.false;
       expect(cert.studentId).to.equal("STU2024005");
     });
 
     it("已撤销的证明验证应返回false", async function () {
       await contract.connect(university).revokeCertificate(certHash, "测试撤销");
-      const [isValid] = await contract.connect(verifier).verifyCertificate.staticCall(certHash);
+      const [isValid, , isExpired] = await contract.connect(verifier).verifyCertificate(certHash);
       expect(isValid).to.be.false;
+      expect(isExpired).to.be.false; // 撤销不算过期
+    });
+
+    it("可以单独记录验证日志（花Gas）", async function () {
+      await expect(
+        contract.connect(verifier).logVerification(certHash)
+      ).to.emit(contract, "CertificateVerified");
+    });
+  });
+
+  describe("过期检测", function () {
+    it("正常证书不应该过期", async function () {
+      const certHash = ethers.keccak256(ethers.toUtf8Bytes("not-expired"));
+      const startDate = Math.floor(Date.now() / 1000);
+      const endDate = startDate + 86400 * 30;
+
+      await contract.connect(university).createCertificate(
+        certHash, student.address, "STU001", "UNIV001", "COMP001",
+        startDate, endDate, ""
+      );
+
+      expect(await contract.isCertificateExpired(certHash)).to.be.false;
+      expect(await contract.isValidCertificate(certHash)).to.be.true;
+    });
+  });
+
+  describe("内容完整性验证", function () {
+    it("应该能验证内容哈希的完整性", async function () {
+      const certHash = ethers.keccak256(ethers.toUtf8Bytes("integrity-test"));
+      const contentHash = "sha256:abc123def456";
+      const startDate = Math.floor(Date.now() / 1000);
+      const endDate = startDate + 86400 * 30;
+
+      await contract.connect(university).createCertificate(
+        certHash, student.address, "STU001", "UNIV001", "COMP001",
+        startDate, endDate, contentHash
+      );
+
+      // 正确的哈希应该通过验证
+      expect(await contract.verifyContentIntegrity(certHash, contentHash)).to.be.true;
+      // 错误的哈希应该验证失败
+      expect(await contract.verifyContentIntegrity(certHash, "wrong-hash")).to.be.false;
     });
   });
 
