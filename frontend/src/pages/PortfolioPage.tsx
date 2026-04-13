@@ -16,6 +16,7 @@ import { useAuthStore } from '../stores/authStore'
 interface PortfolioCert {
   id: string
   certNumber: string
+  verificationCode?: string
   position: string
   status: string
   startDate: string
@@ -202,7 +203,8 @@ export default function PortfolioPage() {
               <button
                 key={cert.id}
                 onClick={() => {
-                  const url = `${window.location.origin}/verify/${cert.certNumber}`
+                  const code = cert.verificationCode || cert.certNumber
+                  const url = `${window.location.origin}/verify/${code}`
                   const copyText = (text: string) => {
                     if (navigator.clipboard?.writeText) {
                       return navigator.clipboard.writeText(text)
