@@ -89,9 +89,14 @@ export default function NotificationBell() {
         }
         //! 【关键】点击通知后跳转到对应页面
         // 通知里带有 link 字段（如 /applications/xxx），点击直接跳过去
+        // 注意：/applications/:id 没有独立页面，跳到列表页即可
         if (link) {
             setIsOpen(false)
-            navigate(link)
+            // /applications/:id → /applications（列表页已含详情弹窗）
+            const normalizedLink = link.match(/^\/applications\/[^/]+$/)
+                ? '/applications'
+                : link
+            navigate(normalizedLink)
         }
     }
 
@@ -178,7 +183,10 @@ export default function NotificationBell() {
                                                 markAsRead(notification.id, notification.link)
                                             } else if (notification.link) {
                                                 setIsOpen(false)
-                                                navigate(notification.link)
+                                                const normalizedLink = notification.link.match(/^\/applications\/[^/]+$/)
+                                                    ? '/applications'
+                                                    : notification.link
+                                                navigate(normalizedLink)
                                             }
                                         }}
                                         className={`p-3 border-b border-dark-700/50 hover:bg-dark-800/50 cursor-pointer transition-colors ${!notification.isRead ? 'bg-primary-500/5' : ''
