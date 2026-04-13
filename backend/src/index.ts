@@ -135,6 +135,50 @@ httpServer.listen(PORT, () => {
 
   // 启动链上状态定时对账服务
   startReconciliationJob();
+
+  // 为已有机构补生成独立钱包
+  migrateOrgWallets();
 });
+
+// 启动时检查并补全机构独立钱包
+async function migrateOrgWallets() {
+  try {
+    const blockchain = new BlockchainService();
+
+    // 补全高校钱包
+    const unisMissing = await prisma.university.findMany({
+      where: { walletAddress: null },
+    });
+    for (const uni of unisMissing) {
+      const { address, encryptedPrivKey } = blockchain.generateInstitutionWallet();
+      await prisma.university.update({
+        where: { id: uni.id },
+        data: { walletAddress: address, encryptedPrivKey, keyCreatedAt: new Date() },
+      });
+      await blockchain.grantInstitutionRole(address, 'university', uni.id);
+      console.log(`🔑 [迁移] 高校 ${uni.name} 独立钱包已补生成: ${address}`);
+    }
+
+    // 补全企业钱包
+    const compsMissing = await prisma.company.findMany({
+      where: { walletAddress: null },
+    });
+    for (const comp of compsMissing) {
+      const { address, encryptedPrivKey } = blockchain.generateInstitutionWallet();
+      await prisma.company.update({
+        where: { id: comp.id },
+        data: { walletAddress: address, encryptedPrivKey, keyCreatedAt: new Date() },
+      });
+      await blockchain.grantInstitutionRole(address, 'company', comp.id);
+      console.log(`🔑 [迁移] 企业 ${comp.name} 独立钱包已补生成: ${address}`);
+    }
+
+    if (unisMissing.length || compsMissing.length) {
+      console.log(`✅ 机构钱包迁移完成: ${unisMissing.length} 所高校, ${compsMissing.length} 家企业`);
+    }
+  } catch (error) {
+    console.warn('⚠️ 机构钱包迁移跳过（可能区块链未连接）:', (error as any).message);
+  }
+}
 
 export { prisma };
