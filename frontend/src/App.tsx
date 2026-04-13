@@ -27,6 +27,7 @@ import TermsPage from './pages/TermsPage'
 import PrivacyPage from './pages/PrivacyPage'
 import PortfolioPage from './pages/PortfolioPage'
 import PositionsPage from './pages/PositionsPage'
+import LandingPage from './pages/LandingPage'
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -65,6 +66,7 @@ function App() {
   return (
     <Routes>
       {/* Public Routes */}
+      <Route path="/" element={<LandingPage />} />
       <Route path="/verify/:code" element={<PublicVerifyPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />

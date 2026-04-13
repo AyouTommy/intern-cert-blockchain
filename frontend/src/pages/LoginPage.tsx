@@ -34,18 +34,6 @@ export default function LoginPage() {
 
   return (
     <div>
-      {/* Mobile logo */}
-      <div className="lg:hidden mb-8 text-center">
-        <div className="inline-flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
-            <svg className="w-7 h-7 text-dark-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          </div>
-          <span className="text-xl font-display font-bold text-dark-100">链证通</span>
-        </div>
-        <h2 className="text-2xl font-bold text-dark-100">高校实习证明上链系统</h2>
-      </div>
 
       <div className="glass-card p-8">
         <div className="text-center mb-8">
@@ -143,27 +131,6 @@ export default function LoginPage() {
               立即注册
             </Link>
           </p>
-        </div>
-
-        {/* 角色说明 */}
-        <div className="mt-6 pt-5 border-t border-dark-800/50">
-          <p className="text-xs text-dark-500 text-center mb-3">本系统支持以下角色</p>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { icon: '🎓', label: '学生', desc: '发起申请' },
-              { icon: '🏛️', label: '高校', desc: '审核签名' },
-              { icon: '🏢', label: '企业', desc: '评价确认' },
-              { icon: '🔍', label: '第三方', desc: '核验真伪' },
-            ].map((r) => (
-              <div key={r.label} className="flex items-center gap-2 p-2 rounded-lg bg-dark-800/30">
-                <span className="text-base">{r.icon}</span>
-                <div>
-                  <p className="text-xs font-medium text-dark-300">{r.label}</p>
-                  <p className="text-xs text-dark-500">{r.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>
