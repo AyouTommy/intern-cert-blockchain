@@ -10,6 +10,7 @@ import {
   CubeIcon,
 } from '@heroicons/react/24/outline'
 import api from '../services/api'
+import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
 
 interface PortfolioCert {
@@ -196,9 +197,25 @@ export default function PortfolioPage() {
           <button
             onClick={() => {
               const url = `${window.location.origin}/portfolio`
-              navigator.clipboard?.writeText(url)
-                .then(() => alert('履历链接已复制'))
-                .catch(() => {})
+              const copyText = (text: string) => {
+                // 优先用 Clipboard API
+                if (navigator.clipboard?.writeText) {
+                  return navigator.clipboard.writeText(text)
+                }
+                // 降级方案
+                const ta = document.createElement('textarea')
+                ta.value = text
+                ta.style.position = 'fixed'
+                ta.style.opacity = '0'
+                document.body.appendChild(ta)
+                ta.select()
+                document.execCommand('copy')
+                document.body.removeChild(ta)
+                return Promise.resolve()
+              }
+              copyText(url)
+                .then(() => toast.success('履历链接已复制到剪贴板'))
+                .catch(() => toast.error('复制失败，请手动复制'))
             }}
             className="btn-secondary inline-flex items-center gap-2"
           >
