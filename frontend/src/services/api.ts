@@ -186,6 +186,7 @@ export interface Certificate {
   certHash?: string
   txHash?: string
   blockNumber?: number
+  ipfsHash?: string
   chainId?: number
   verifyCode: string
   verifyUrl?: string

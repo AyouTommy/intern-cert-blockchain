@@ -26,6 +26,7 @@ interface CertificateFull {
     createdAt: Date;
     issuerId: string;
     status: string;
+    ipfsHash?: string | null;
     student: {
         studentId: string;
         user: { name: string };
@@ -388,6 +389,19 @@ export async function generateCertificatePdf(certificate: CertificateFull): Prom
             const timestamp = certificate.issuedAt ? new Date(certificate.issuedAt).toISOString() : 'N/A';
             doc.font('Courier').fontSize(10).fillColor('#333333')
                 .text(timestamp, 90, currentY);
+
+            // IPFS 去中心化存储
+            if (certificate.ipfsHash) {
+                currentY += 30;
+                doc.font(fontName).fontSize(11).fillColor('#1e3a5f')
+                    .text('IPFS CID (去中心化存储)', 90, currentY);
+                currentY += 18;
+                doc.font('Courier').fontSize(9).fillColor('#333333')
+                    .text(certificate.ipfsHash, 90, currentY, { width: contentWidth - 60 });
+                currentY += 18;
+                doc.font('Courier').fontSize(8).fillColor('#1565c0')
+                    .text(`https://gateway.pinata.cloud/ipfs/${certificate.ipfsHash}`, 90, currentY, { width: contentWidth - 60 });
+            }
 
             // 二维码验证区域
             currentY = cardY + cardHeight + 40;

@@ -25,6 +25,7 @@ interface PortfolioCert {
   university: { name: string; logo?: string }
   company: { name: string; logo?: string }
   blockchain?: { certHash: string; txHash: string }
+  ipfsHash?: string
 }
 
 /**
@@ -164,11 +165,16 @@ export default function PortfolioPage() {
 
                   {/* 链上信息 */}
                   {cert.blockchain?.txHash && (
-                    <div className="mt-3 pt-3 border-t border-dark-800/50 flex items-center gap-2">
+                    <div className="mt-3 pt-3 border-t border-dark-800/50 flex items-center gap-2 flex-wrap">
                       <CubeIcon className="w-3.5 h-3.5 text-primary-500/50" />
                       <span className="text-xs font-mono text-dark-600">
                         TX: {cert.blockchain.txHash.slice(0, 16)}...
                       </span>
+                      {(cert as any).ipfsHash && (
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-mono">
+                          📦 IPFS
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>

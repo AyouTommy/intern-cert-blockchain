@@ -356,8 +356,41 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
         },
       });
 
-      // 上链成功后生成PDF证书
-      // 注意：PDF现在通过动态接口生成，不再保存到文件系统
+      // 上链成功后异步上传 IPFS（不阻塞响应）
+      (async () => {
+        try {
+          const { uploadToIPFS, getIPFSUrl, isConfigured } = require('../services/ipfsService');
+          if (!isConfigured()) return;
+
+          // 重新查询完整证书数据（包含关联）
+          const fullCert = await prisma.certificate.findUnique({
+            where: { id: certificateId },
+            include: {
+              student: { include: { user: true } },
+              university: true,
+              company: true,
+            },
+          });
+          if (!fullCert) return;
+
+          // 生成 PDF
+          const { buffer } = await generateCertificatePdf(fullCert as any);
+
+          // 上传到 IPFS
+          const cid = await uploadToIPFS(buffer, `${fullCert.certNumber}.pdf`);
+
+          // 更新数据库
+          await prisma.certificate.update({
+            where: { id: certificateId },
+            data: { ipfsHash: cid },
+          });
+
+          console.log(`📦 IPFS 上传成功: ${fullCert.certNumber} → ${cid}`);
+          console.log(`🔗 查看: ${getIPFSUrl(cid)}`);
+        } catch (err) {
+          console.error('⚠️ IPFS 上传失败（不影响核心功能）:', err);
+        }
+      })();
     } else {
       await prisma.certificate.update({
         where: { id: certificateId },

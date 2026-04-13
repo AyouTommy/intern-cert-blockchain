@@ -408,6 +408,39 @@ export default function CertificateDetailPage() {
                     <span>在 Etherscan 上查看完整交易信息</span>
                   </a>
                 )}
+
+                {/* IPFS 去中心化存储 */}
+                {certificate.ipfsHash && (
+                  <div className="mt-3 p-4 rounded-xl bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border border-emerald-500/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-lg">📦</span>
+                      <span className="text-sm font-semibold text-emerald-400">IPFS 去中心化存储</span>
+                    </div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-dark-400">IPFS CID</span>
+                      <button
+                        onClick={() => copyToClipboard(certificate.ipfsHash!, 'IPFS CID')}
+                        className="text-xs text-dark-400 hover:text-primary-400 transition-colors flex items-center gap-1"
+                      >
+                        <ClipboardDocumentIcon className="w-3 h-3" />
+                        复制
+                      </button>
+                    </div>
+                    <p className="blockchain-hash text-xs mb-3">{certificate.ipfsHash}</p>
+                    <a
+                      href={`https://gateway.pinata.cloud/ipfs/${certificate.ipfsHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:text-emerald-300 hover:border-emerald-500/40 transition-all text-sm"
+                    >
+                      <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                      <span>在 IPFS 查看完整证书 PDF</span>
+                    </a>
+                    <p className="text-xs text-dark-600 mt-2 text-center">
+                      证书已永久存储在 IPFS 去中心化网络，即使本系统离线仍可通过 CID 访问
+                    </p>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
