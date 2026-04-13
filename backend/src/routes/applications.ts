@@ -742,6 +742,8 @@ router.post(
                     endDate: application.endDate,
                     description: application.description,
                     evaluation: application.companyEvaluation,
+                    companyScore: application.companyScore,
+                    companyEvaluation: application.companyEvaluation,
                     status: 'PENDING',
                     verifyCode,
                     verifyUrl,

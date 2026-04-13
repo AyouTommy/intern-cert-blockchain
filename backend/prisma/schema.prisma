@@ -186,6 +186,10 @@ model Certificate {
   description String?  @db.Text
   evaluation  String?  @db.Text
 
+  // 企业评价
+  companyScore      Int?      // 企业综合评分 (1-100)
+  companyEvaluation String?   @db.Text // 企业评语
+
   // 证明内容
   content String? @db.Text
 

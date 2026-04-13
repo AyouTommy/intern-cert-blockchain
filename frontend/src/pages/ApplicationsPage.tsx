@@ -216,8 +216,16 @@ export default function ApplicationsPage() {
     const submitCompanyReview = async (isApproved: boolean, signature: string) => {
         if (!selectedApp) return
         try {
+            // 从多维评分计算综合分
+            const computedScore = Math.round(
+                (((reviewData as any).score_professional || 7) +
+                ((reviewData as any).score_teamwork || 7) +
+                ((reviewData as any).score_attendance || 7) +
+                ((reviewData as any).score_innovation || 7) +
+                ((reviewData as any).score_communication || 7)) * 2
+            )
             const response = await api.post(`/applications/${selectedApp.id}/company-review`, {
-                score: reviewData.score,
+                score: computedScore,
                 evaluation: reviewData.evaluation,
                 approved: isApproved,
                 rejectReason: reviewData.rejectReason,
@@ -605,11 +613,11 @@ export default function ApplicationsPage() {
 
             {/* Detail/Review Modal */}
             {showDetailModal && selectedApp && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto py-8">
+                <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 overflow-y-auto py-8">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="glass-card p-6 w-full max-w-lg mx-4"
+                        className="glass-card p-6 w-full max-w-lg mx-4 my-auto max-h-[85vh] overflow-y-auto"
                     >
                         <h2 className="text-xl font-bold text-dark-100 mb-4">申请详情</h2>
 
