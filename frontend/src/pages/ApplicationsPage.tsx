@@ -522,11 +522,14 @@ export default function ApplicationsPage() {
                             <div>
                                 <label className="input-label">实习岗位 *</label>
                                 <select
-                                    value={formData.position}
+                                    value={
+                                        formData.position && !positions.find(p => p.title === formData.position)
+                                            ? '__custom__'
+                                            : formData.position
+                                    }
                                     onChange={(e) => {
                                         if (e.target.value === '__custom__') {
-                                            const custom = prompt('请输入自定义岗位名称：')
-                                            if (custom) setFormData(f => ({ ...f, position: custom }))
+                                            setFormData(f => ({ ...f, position: '' }))
                                         } else {
                                             setFormData(f => ({ ...f, position: e.target.value }))
                                         }
@@ -539,9 +542,18 @@ export default function ApplicationsPage() {
                                     ))}
                                     <option value="__custom__">✏️ 自定义岗位...</option>
                                 </select>
-                                {formData.position && !positions.find(p => p.title === formData.position) && (
-                                    <p className="text-xs text-primary-400 mt-1">自定义: {formData.position}</p>
-                                )}
+                                {(formData.position === '' && positions.length === 0) ||
+                                 (!positions.find(p => p.title === formData.position) && formData.position !== '') ||
+                                 (positions.length > 0 && !positions.find(p => p.title === formData.position)) ? (
+                                    <input
+                                        type="text"
+                                        value={formData.position}
+                                        onChange={(e) => setFormData(f => ({ ...f, position: e.target.value }))}
+                                        placeholder="请输入自定义岗位名称，如：前端开发实习生"
+                                        className="input-field w-full mt-2"
+                                        autoFocus
+                                    />
+                                ) : null}
                             </div>
                             <div>
                                 <label className="input-label">实习部门</label>
