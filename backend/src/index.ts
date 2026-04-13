@@ -23,6 +23,9 @@ import orgAdminRoutes from './routes/orgAdmins';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 
+// 服务导入
+import { startReconciliationJob } from './services/reconciliation';
+
 dotenv.config();
 
 const app = express();
@@ -108,6 +111,9 @@ app.listen(PORT, () => {
 ║                                                            ║
 ╚════════════════════════════════════════════════════════════╝
   `);
+
+  // 启动链上状态定时对账服务
+  startReconciliationJob();
 });
 
 export { prisma };

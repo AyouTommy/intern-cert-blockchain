@@ -443,6 +443,16 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* 企业：链上确认感知卡片 (F2) */}
+      {user?.role === 'COMPANY' && (
+        <CompanyChainConfirmCard />
+      )}
+
+      {/* 第三方机构：核验记录面板 (F3) */}
+      {user?.role === 'THIRD_PARTY' && (
+        <ThirdPartyVerifyPanel />
+      )}
+
       {/* Quick Actions */}
       <div className="glass-card p-6">
         <h2 className="section-title">快捷操作</h2>
@@ -537,3 +547,169 @@ function DashboardSkeleton() {
     </div>
   )
 }
+
+// F2: 企业链上确认感知卡片
+function CompanyChainConfirmCard() {
+  const [pendingCerts, setPendingCerts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/certificates?status=PENDING&limit=5')
+      .then(res => setPendingCerts(res.data.data?.certificates || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+      className="glass-card p-6"
+    >
+      <div className="flex items-center gap-3 mb-4">
+        <div className="p-3 rounded-xl bg-amber-500/10">
+          <CubeIcon className="w-6 h-6 text-amber-500" />
+        </div>
+        <div>
+          <h2 className="section-title mb-0">链上确认任务</h2>
+          <p className="text-sm text-dark-500">等待贵企业链上确认的实习证明</p>
+        </div>
+        {pendingCerts.length > 0 && (
+          <span className="ml-auto px-3 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600">
+            {pendingCerts.length} 条待确认
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="space-y-3">
+          {[1,2].map(i => <div key={i} className="h-16 skeleton rounded-xl" />)}
+        </div>
+      ) : pendingCerts.length === 0 ? (
+        <div className="text-center py-6 text-dark-500">
+          <CheckBadgeIcon className="w-12 h-12 mx-auto mb-2 text-emerald-400" />
+          <p>暂无待确认的链上操作</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {pendingCerts.map(cert => (
+            <Link
+              key={cert.id}
+              to={`/certificates/${cert.id}`}
+              className="flex items-center justify-between p-4 rounded-xl bg-surface-2 hover:bg-surface-3 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <div>
+                  <p className="text-sm font-medium text-primary-700">{cert.certNumber}</p>
+                  <p className="text-xs text-dark-500">{cert.position} · {cert.student?.user?.name || '学生'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {cert.universityAddr ? (
+                  <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600">🏫 高校已确认</span>
+                ) : (
+                  <span className="text-xs px-2 py-0.5 rounded bg-dark-200 text-dark-500">🏫 待高校确认</span>
+                )}
+                {cert.companyAddr ? (
+                  <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600">🏢 企业已确认</span>
+                ) : (
+                  <span className="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 animate-pulse">🏢 待企业确认</span>
+                )}
+              </div>
+            </Link>
+          ))}
+          <Link to="/certificates" className="block text-center text-sm text-primary-500 hover:text-primary-400 mt-2">
+            查看全部证明 →
+          </Link>
+        </div>
+      )}
+
+      <div className="mt-4 p-3 rounded-lg bg-primary-500/5 border border-primary-500/10">
+        <p className="text-xs text-dark-500">
+          💡 <strong>流程说明</strong>：高校批准实习申请后自动发起链上请求，企业需确认签名后证书才在区块链上正式生效。
+        </p>
+      </div>
+    </motion.div>
+  )
+}
+
+// F3: 第三方机构核验记录面板
+function ThirdPartyVerifyPanel() {
+  const [records, setRecords] = useState<any[]>([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/verify/my-records?limit=10')
+      .then(res => {
+        setRecords(res.data.data?.records || [])
+        setTotalCount(res.data.data?.total || 0)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+      className="glass-card p-6"
+    >
+      <div className="flex items-center gap-3 mb-4">
+        <div className="p-3 rounded-xl bg-cyan-500/10">
+          <ShieldCheckIcon className="w-6 h-6 text-cyan-500" />
+        </div>
+        <div>
+          <h2 className="section-title mb-0">我的核验记录</h2>
+          <p className="text-sm text-dark-500">您已核验 {totalCount} 份实习证明</p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="space-y-3">
+          {[1,2,3].map(i => <div key={i} className="h-14 skeleton rounded-xl" />)}
+        </div>
+      ) : records.length === 0 ? (
+        <div className="text-center py-6 text-dark-500">
+          <ShieldCheckIcon className="w-12 h-12 mx-auto mb-2 text-dark-300" />
+          <p>暂无核验记录</p>
+          <Link to="/verify" className="text-sm text-primary-500 hover:text-primary-400 mt-2 inline-block">
+            前往核验证明 →
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {records.map((record: any) => (
+            <div key={record.id} className="flex items-center justify-between p-3 rounded-xl bg-surface-2">
+              <div className="flex items-center gap-3">
+                <div className={`w-2 h-2 rounded-full ${record.isValid ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                <div>
+                  <p className="text-sm font-medium text-primary-700">
+                    {record.certificate?.certNumber || '证书'}
+                  </p>
+                  <p className="text-xs text-dark-500">
+                    {new Date(record.createdAt).toLocaleString('zh-CN')}
+                  </p>
+                </div>
+              </div>
+              <span className={`text-xs px-2 py-0.5 rounded ${
+                record.isValid
+                  ? 'bg-emerald-500/10 text-emerald-600'
+                  : 'bg-red-500/10 text-red-600'
+              }`}>
+                {record.isValid ? '✅ 有效' : '❌ 无效'}
+              </span>
+            </div>
+          ))}
+          <Link to="/verify" className="block text-center text-sm text-primary-500 hover:text-primary-400 mt-3">
+            前往核验更多证明 →
+          </Link>
+        </div>
+      )}
+    </motion.div>
+  )
+}
+

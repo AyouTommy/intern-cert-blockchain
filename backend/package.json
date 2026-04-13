@@ -37,6 +37,7 @@
     "express-validator": "^7.0.1",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
+    "node-cron": "^4.2.1",
     "pdfkit": "^0.17.2",
     "prisma": "^5.7.0",
     "qrcode": "^1.5.3",
@@ -44,5 +45,8 @@
     "typescript": "^5.3.0",
     "uuid": "^9.0.1",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node-cron": "^3.0.11"
   }
 }

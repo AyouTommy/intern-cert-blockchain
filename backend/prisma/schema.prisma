@@ -92,8 +92,10 @@ model University {
   address       String?
   logo          String?
   website       String?
-  walletAddress String?
-  isVerified    Boolean @default(false)
+  walletAddress    String?
+  encryptedPrivKey String?   @db.Text // AES-256-GCM 加密的独立私钥
+  keyCreatedAt     DateTime?          // 密钥创建时间
+  isVerified       Boolean  @default(false)
 
   users        User[]
   certificates Certificate[]
@@ -124,8 +126,10 @@ model Company {
   contactPerson String?
   contactPhone  String?
   contactEmail  String?
-  walletAddress String?
-  isVerified    Boolean @default(false)
+  walletAddress    String?
+  encryptedPrivKey String?   @db.Text // AES-256-GCM 加密的独立私钥
+  keyCreatedAt     DateTime?          // 密钥创建时间
+  isVerified       Boolean  @default(false)
 
   users        User[]
   certificates Certificate[]
@@ -212,6 +216,11 @@ model Certificate {
   revokeReason String?
   revokedBy    String?
 
+  // R-UNI #22: 撤销工作流
+  revokeRequestedAt  DateTime?           // 撤销申请时间
+  revokeRequestedBy  String?             // 撤销申请人
+  revokeApproval     String?  @default("NONE") // NONE | PENDING | APPROVED | REJECTED
+
   // 时间戳
   issuedAt  DateTime?
   createdAt DateTime  @default(now())
@@ -286,13 +295,15 @@ model AuditLog {
   user   User?   @relation(fields: [userId], references: [id])
   userId String?
 
-  action     String
-  entityType String
-  entityId   String?
-  oldValue   String? @db.Text
-  newValue   String? @db.Text
-  ipAddress  String?
-  userAgent  String? @db.Text
+  action          String
+  entityType      String
+  entityId        String?
+  oldValue        String? @db.Text
+  newValue        String? @db.Text
+  ipAddress       String?
+  userAgent       String? @db.Text
+  signatureMethod String?            // EIP712_CUSTODIAL | WEB3AUTH | LEGACY_PROXY
+  gasUsed         String?            // 链上交易 Gas 消耗
 
   createdAt DateTime @default(now())
 
@@ -429,12 +440,19 @@ model InternshipApplication {
   status String @default("DRAFT")
 
   // 企业评价
-  companyScore        Int? // 企业评分 (1-100)
+  companyScore        Int? // 企业综合评分 (1-100)
   companyEvaluation   String?   @db.Text // 企业评语
-  companySignature    String?   @db.Text // 企业数字签章（签名数据）
+  companySignature    String?   @db.Text // 企业数字签章
   companySignedAt     DateTime? // 企业签章时间
-  companySignedBy     String? // 企业签章人ID
+  companySignedBy     String? // 企业签章人
   companyRejectReason String?   @db.Text // 企业拒绝原因
+
+  // R-COM #23: 多维评价字段
+  scoreProfessional   Int?  // 专业能力 (1-10)
+  scoreTeamwork       Int?  // 团队协作 (1-10)
+  scoreAttendance     Int?  // 出勤表现 (1-10)
+  scoreInnovation     Int?  // 创新能力 (1-10)
+  scoreCommunication  Int?  // 沟通能力 (1-10)
 
   // 高校审核
   universityApproval     String?   @db.Text // 高校审批意见

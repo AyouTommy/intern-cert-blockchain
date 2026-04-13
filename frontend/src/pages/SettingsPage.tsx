@@ -376,6 +376,28 @@ export default function SettingsPage() {
                         );
                       })}
                     </div>
+
+                    {/* 签名架构说明 */}
+                    <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-primary-500/5 to-accent-500/5 border border-primary-500/10">
+                      <div className="flex items-start gap-3">
+                        <span className="text-lg">🔐</span>
+                        <div>
+                          <p className="text-sm font-medium text-primary-600 mb-1">
+                            EIP-712 签名架构 (v2)
+                          </p>
+                          <p className="text-xs text-dark-500 leading-relaxed">
+                            系统采用「EIP-712 授权签名 + 机构独立密钥托管」混合架构。
+                            每个机构拥有独立的链上身份，操作时需通过 EIP-712 结构化签名提供不可伪造的授权，
+                            后端验证授权后使用对应机构的密钥代发交易，全过程记录完整审计链。
+                          </p>
+                          <div className="flex items-center gap-4 mt-2">
+                            <span className="text-xs text-emerald-500">✅ 独立密钥</span>
+                            <span className="text-xs text-emerald-500">✅ 授权不可伪造</span>
+                            <span className="text-xs text-emerald-500">✅ 完整审计</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* 上链机制 */}

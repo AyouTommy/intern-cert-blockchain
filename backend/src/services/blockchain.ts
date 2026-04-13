@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 
 interface ContractConfig {
   address: string;
@@ -107,39 +108,80 @@ class BlockchainService {
   }
 
   // ==========================================
-  //! 【区块链事件监听】实时监听链上事件
-  // 当链上有证书创建、撤销等操作时自动输出日志
-  // 可用于未来实现 WebSocket 推送或数据库同步
+  //! 【区块链事件监听】实时监听链上事件 + DB 补偿同步
+  // 当链上有证书创建、撤销等操作时自动检查并修正数据库状态
   // ==========================================
   private listenForEvents() {
     if (!this.contract) return;
 
     try {
       this.contract.on('CertificateCreated',
-        (certHash: string, issuer: string, student: string, studentId: string, timestamp: bigint) => {
-          console.log(`📢 链上事件 [证书创建]`);
-          console.log(`   Hash: ${certHash}`);
-          console.log(`   发证方: ${issuer}`);
-          console.log(`   学号: ${studentId}`);
-          console.log(`   时间: ${new Date(Number(timestamp) * 1000).toISOString()}`);
+        async (certHash: string, issuer: string, student: string, studentId: string, timestamp: bigint) => {
+          console.log(`📢 链上事件 [证书创建] Hash: ${certHash}, 学号: ${studentId}`);
+          // DB 补偿：确保链上已创建的证书在数据库中也是 ACTIVE
+          try {
+            const { PrismaClient } = require('@prisma/client');
+            const prisma = new PrismaClient();
+            const cert = await prisma.certificate.findFirst({ where: { certHash } });
+            if (cert && cert.status === 'PENDING') {
+              await prisma.certificate.update({
+                where: { id: cert.id },
+                data: { status: 'ACTIVE' }
+              });
+              console.log(`🔄 [事件补偿] 证书 ${certHash.slice(0, 10)}... 状态同步为 ACTIVE`);
+            }
+            await prisma.$disconnect();
+          } catch (err) {
+            console.error('[事件补偿-创建] 失败:', err);
+          }
         }
       );
 
       this.contract.on('CertificateRevoked',
-        (certHash: string, revoker: string, reason: string, timestamp: bigint) => {
-          console.log(`📢 链上事件 [证书撤销]`);
-          console.log(`   Hash: ${certHash}`);
-          console.log(`   撤销者: ${revoker}`);
-          console.log(`   原因: ${reason}`);
+        async (certHash: string, revoker: string, reason: string, timestamp: bigint) => {
+          console.log(`📢 链上事件 [证书撤销] Hash: ${certHash}, 原因: ${reason}`);
+          // DB 补偿：确保撤销状态同步
+          try {
+            const { PrismaClient } = require('@prisma/client');
+            const prisma = new PrismaClient();
+            const cert = await prisma.certificate.findFirst({ where: { certHash } });
+            if (cert && cert.status !== 'REVOKED') {
+              await prisma.certificate.update({
+                where: { id: cert.id },
+                data: { status: 'REVOKED', revokeReason: reason, revokedAt: new Date() }
+              });
+              console.log(`🔄 [事件补偿] 证书 ${certHash.slice(0, 10)}... 状态同步为 REVOKED`);
+            }
+            await prisma.$disconnect();
+          } catch (err) {
+            console.error('[事件补偿-撤销] 失败:', err);
+          }
         }
       );
 
       this.contract.on('CertificateFinalized',
-        (certHash: string, universityAddr: string, companyAddr: string, timestamp: bigint) => {
-          console.log(`📢 链上事件 [多方确认完成]`);
-          console.log(`   Hash: ${certHash}`);
-          console.log(`   高校地址: ${universityAddr}`);
-          console.log(`   企业地址: ${companyAddr}`);
+        async (certHash: string, universityAddr: string, companyAddr: string, timestamp: bigint) => {
+          console.log(`📢 链上事件 [多方确认完成] Hash: ${certHash}`);
+          // DB 补偿：确保双方确认信息写入数据库
+          try {
+            const { PrismaClient } = require('@prisma/client');
+            const prisma = new PrismaClient();
+            const cert = await prisma.certificate.findFirst({ where: { certHash } });
+            if (cert && (cert.status !== 'ACTIVE' || !cert.universityAddr || !cert.companyAddr)) {
+              await prisma.certificate.update({
+                where: { id: cert.id },
+                data: {
+                  status: 'ACTIVE',
+                  universityAddr,
+                  companyAddr,
+                }
+              });
+              console.log(`🔄 [事件补偿] 证书 ${certHash.slice(0, 10)}... 多方确认信息已同步`);
+            }
+            await prisma.$disconnect();
+          } catch (err) {
+            console.error('[事件补偿-确认] 失败:', err);
+          }
         }
       );
 
@@ -149,7 +191,7 @@ class BlockchainService {
         }
       );
 
-      console.log('👂 区块链事件监听已启动');
+      console.log('👂 区块链事件监听已启动（含 DB 补偿）');
     } catch (error) {
       console.warn('⚠️ 事件监听启动失败（不影响核心功能）:', error);
     }
@@ -240,11 +282,12 @@ class BlockchainService {
         params.companyId,
         params.startDate,
         params.endDate,
-        params.contentHash || ''
+        params.contentHash || '',
+        { gasLimit: 500000 }
       );
 
-      // 等待区块链网络确认这笔交易（可能需要几秒到几十秒）
-      const receipt = await tx.wait();
+      // 等待区块链网络确认这笔交易，指定 1 个区块确认
+      const receipt = await tx.wait(1);
 
       return {
         success: true,
@@ -287,10 +330,11 @@ class BlockchainService {
         params.universityId,
         params.companyId,
         params.startDates,
-        params.endDates
+        params.endDates,
+        { gasLimit: 1500000 }
       );
 
-      const receipt = await tx.wait();
+      const receipt = await tx.wait(1);
 
       return {
         success: true,
@@ -426,8 +470,8 @@ class BlockchainService {
     }
 
     try {
-      const tx = await this.contract.revokeCertificate(certHash, reason);
-      const receipt = await tx.wait();
+      const tx = await this.contract.revokeCertificate(certHash, reason, { gasLimit: 200000 });
+      const receipt = await tx.wait(1);
 
       return {
         success: true,
@@ -517,9 +561,10 @@ class BlockchainService {
         params.companyId,
         params.startDate,
         params.endDate,
-        params.contentHash
+        params.contentHash,
+        { gasLimit: 600000 }
       );
-      await tx.wait();
+      await tx.wait(1);
       return {
         success: true,
         txHash: tx.hash,
@@ -547,8 +592,8 @@ class BlockchainService {
       return { success: false, error: '企业合约实例未加载' };
     }
     try {
-      const tx = await this.companyContract.companyConfirm(certHash);
-      const receipt = await tx.wait();
+      const tx = await this.companyContract.companyConfirm(certHash, { gasLimit: 500000 });
+      const receipt = await tx.wait(1);
       return {
         success: true,
         txHash: receipt.hash,
@@ -587,6 +632,162 @@ class BlockchainService {
       name: network.name,
       blockNumber,
     };
+  }
+  // ==========================================
+  //! 【机构独立密钥管理】为机构生成独立的以太坊钱包
+  // 注册/审核通过时调用，密钥 AES-256-GCM 加密后存储
+  // ==========================================
+  generateInstitutionWallet(): { address: string; encryptedPrivKey: string } {
+    const wallet = ethers.Wallet.createRandom();
+    const encryptedPrivKey = BlockchainService.encryptPrivateKey(wallet.privateKey);
+    return { address: wallet.address, encryptedPrivKey };
+  }
+
+  // AES-256-GCM 加密私钥
+  static encryptPrivateKey(privateKey: string): string {
+    const secret = process.env.KEY_ENCRYPTION_SECRET || 'default-dev-secret-key-32-bytes!';
+    const key = crypto.scryptSync(secret, 'salt', 32);
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    let encrypted = cipher.update(privateKey, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    const authTag = cipher.getAuthTag().toString('hex');
+    return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+  }
+
+  // AES-256-GCM 解密私钥
+  static decryptPrivateKey(encryptedData: string): string {
+    const secret = process.env.KEY_ENCRYPTION_SECRET || 'default-dev-secret-key-32-bytes!';
+    const key = crypto.scryptSync(secret, 'salt', 32);
+    const [ivHex, authTagHex, encrypted] = encryptedData.split(':');
+    const iv = Buffer.from(ivHex, 'hex');
+    const authTag = Buffer.from(authTagHex, 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(authTag);
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  }
+
+  // 为机构钱包授予链上角色
+  async grantInstitutionRole(
+    address: string,
+    type: 'university' | 'company',
+    entityId: string
+  ): Promise<{ success: boolean; error?: string }> {
+    if (!this.contract) {
+      return { success: false, error: '合约未加载' };
+    }
+    try {
+      const fn = type === 'university' ? 'grantUniversityRole' : 'grantCompanyRole';
+      const tx = await this.contract[fn](address, entityId, { gasLimit: 200000 });
+      await tx.wait(1);
+      console.log(`✅ ${type} 角色已授予: ${address}`);
+      return { success: true };
+    } catch (error: any) {
+      console.error(`角色授予失败 (${type}):`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // 使用机构独立密钥创建合约实例
+  getInstitutionContract(encryptedPrivKey: string): ethers.Contract | null {
+    if (!this.contractConfig) return null;
+    try {
+      const privateKey = BlockchainService.decryptPrivateKey(encryptedPrivKey);
+      const wallet = new ethers.Wallet(privateKey, this.provider);
+      return new ethers.Contract(this.contractConfig.address, this.contractConfig.abi, wallet);
+    } catch (error) {
+      console.error('解密机构密钥失败:', error);
+      return null;
+    }
+  }
+
+  // ==========================================
+  //! 【EIP-712 签名验证】验证用户通过前端签名的授权消息
+  // ==========================================
+  verifyEIP712Signature(
+    message: { action: string; certHash: string; timestamp: number },
+    signature: string
+  ): { valid: boolean; signer?: string; error?: string } {
+    try {
+      const domain = {
+        name: 'InternshipCertification',
+        version: '1',
+        chainId: this.getChainId(),
+        verifyingContract: this.getContractAddress() || ethers.ZeroAddress,
+      };
+      const types = {
+        CertificateAction: [
+          { name: 'action', type: 'string' },
+          { name: 'certHash', type: 'bytes32' },
+          { name: 'timestamp', type: 'uint256' },
+        ],
+      };
+      const recovered = ethers.verifyTypedData(domain, types, message, signature);
+      return { valid: true, signer: recovered };
+    } catch (error: any) {
+      return { valid: false, error: error.message };
+    }
+  }
+
+  // ==========================================
+  //! 【签名接口抽象层】预留 Web3Auth 等签名通道
+  // 根据签名方式选择不同的执行路径
+  // ==========================================
+  async executeWithSignature(params: {
+    signatureMethod: 'EIP712_CUSTODIAL' | 'WEB3AUTH' | 'LEGACY_PROXY';
+    institutionContract?: ethers.Contract | null;
+    functionName: string;
+    args: any[];
+    gasLimit?: number;
+  }): Promise<{
+    success: boolean;
+    txHash?: string;
+    blockNumber?: number;
+    gasUsed?: string;
+    error?: string;
+  }> {
+    let contract: ethers.Contract | null = null;
+
+    switch (params.signatureMethod) {
+      case 'EIP712_CUSTODIAL':
+        contract = params.institutionContract || null;
+        break;
+      case 'WEB3AUTH':
+        // 预留：Web3Auth 签名通道
+        // 当前降级到 LEGACY_PROXY
+        console.log('⚠️ Web3Auth 通道尚未实现，降级为 LEGACY_PROXY');
+        contract = this.contract;
+        break;
+      case 'LEGACY_PROXY':
+      default:
+        contract = this.contract;
+        break;
+    }
+
+    if (!contract) {
+      return { success: false, error: '合约实例不可用' };
+    }
+
+    try {
+      const tx = await contract[params.functionName](
+        ...params.args,
+        { gasLimit: params.gasLimit || 500000 }
+      );
+      const receipt = await tx.wait(1);
+      return {
+        success: true,
+        txHash: receipt.hash,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed?.toString(),
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.reason || error.message || '交易执行失败',
+      };
+    }
   }
 }
 

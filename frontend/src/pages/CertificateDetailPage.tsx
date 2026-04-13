@@ -587,6 +587,109 @@ export default function CertificateDetailPage() {
             </div>
           </motion.div>
 
+          {/* R-STU: 证书分享卡片 */}
+          {certificate.status === 'ACTIVE' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="glass-card p-6"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 rounded-xl bg-purple-500/10">
+                  <ShareIcon className="w-6 h-6 text-purple-400" />
+                </div>
+                <h2 className="card-title">分享证书</h2>
+              </div>
+              <p className="text-sm text-dark-400 mb-4">
+                将您的实习证明通过链接分享给招聘方或其他需要核验的人。
+              </p>
+              <div className="space-y-2">
+                <button
+                  onClick={() => {
+                    const shareText = `【实习证明】${certificate.student.user.name} 在 ${(certificate as any).company?.name || '企业'} 的实习已通过区块链认证。\n核验链接: ${verifyUrl}`
+                    if (navigator.share) {
+                      navigator.share({ title: '实习证明核验', text: shareText, url: verifyUrl })
+                    } else {
+                      navigator.clipboard.writeText(shareText)
+                      toast.success('分享内容已复制到剪贴板')
+                    }
+                  }}
+                  className="w-full btn-primary flex items-center justify-center gap-2"
+                >
+                  <ShareIcon className="w-4 h-4" />
+                  一键分享
+                </button>
+                <button
+                  onClick={() => copyToClipboard(verifyUrl, '核验链接')}
+                  className="w-full btn-secondary flex items-center justify-center gap-2 text-sm"
+                >
+                  <ClipboardDocumentIcon className="w-4 h-4" />
+                  复制核验链接
+                </button>
+              </div>
+              <div className="mt-3 p-3 rounded-lg bg-surface-2">
+                <p className="text-xs text-dark-500">
+                  🔐 分享的链接仅用于核验证书真伪，不包含敏感个人信息。
+                  核验方可通过链接或扫描二维码在区块链上验证证书有效性。
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* R-STU: 上链进度感知 */}
+          {certificate.status === 'PENDING' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="glass-card p-6"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 rounded-xl bg-amber-500/10">
+                  <CubeIcon className="w-6 h-6 text-amber-400" />
+                </div>
+                <h2 className="card-title">上链进度</h2>
+              </div>
+
+              <div className="space-y-4">
+                {/* 进度条步骤 */}
+                {[
+                  { label: '证书已创建', done: true, icon: '📝' },
+                  { label: '高校审批通过', done: !!certificate.universityAddr || certificate.status !== 'PENDING', icon: '🏫' },
+                  { label: '高校链上确认', done: !!certificate.universityAddr, icon: '🔗' },
+                  { label: '企业链上确认', done: !!certificate.companyAddr, icon: '🏢' },
+                  { label: '证书正式生效', done: (certificate.status as string) === 'ACTIVE', icon: '✅' },
+                ].map((step, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                      step.done
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : 'bg-dark-800/50 text-dark-500'
+                    }`}>
+                      {step.done ? '✓' : step.icon}
+                    </div>
+                    <div className="flex-1">
+                      <p className={`text-sm ${step.done ? 'text-emerald-400 font-medium' : 'text-dark-500'}`}>
+                        {step.label}
+                      </p>
+                    </div>
+                    {!step.done && i === [true, !!certificate.universityAddr || certificate.status !== 'PENDING', !!certificate.universityAddr, !!certificate.companyAddr, certificate.status === 'ACTIVE'].indexOf(false) && (
+                      <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                <p className="text-xs text-dark-500">
+                  ⏳ 您的实习证明正在等待高校和企业双方链上确认。
+                  确认完成后，证书将自动在区块链上正式生效。
+                </p>
+              </div>
+            </motion.div>
+          )}
+
           {/* Status Timeline */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}

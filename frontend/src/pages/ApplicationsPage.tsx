@@ -572,29 +572,62 @@ export default function ApplicationsPage() {
                             )}
                         </div>
 
-                        {/* Company Review Form */}
+                        {/* Company Review Form - 多维评价 (#23) */}
                         {isCompany && ['SUBMITTED', 'COMPANY_REVIEWING'].includes(selectedApp.status) && (
                             <div className="border-t border-dark-700 pt-4 space-y-4">
-                                <h3 className="font-semibold text-dark-100">企业评价</h3>
-                                <div>
-                                    <label className="input-label">评分 (1-100)</label>
-                                    <input
-                                        type="range"
-                                        min="1"
-                                        max="100"
-                                        value={reviewData.score}
-                                        onChange={(e) => setReviewData(r => ({ ...r, score: parseInt(e.target.value) }))}
-                                        className="w-full"
-                                    />
-                                    <div className="text-center text-primary-400 font-bold">{reviewData.score} 分</div>
+                                <h3 className="font-semibold text-dark-100">企业多维评价</h3>
+                                
+                                {/* 多维评分 */}
+                                <div className="grid grid-cols-1 gap-3">
+                                    {[
+                                        { key: 'professional', label: '专业能力', desc: '岗位技能掌握程度' },
+                                        { key: 'teamwork', label: '团队协作', desc: '与团队成员的配合能力' },
+                                        { key: 'attendance', label: '出勤表现', desc: '考勤纪律和工作态度' },
+                                        { key: 'innovation', label: '创新能力', desc: '解决问题的创新思维' },
+                                        { key: 'communication', label: '沟通能力', desc: '与同事和上级的沟通' },
+                                    ].map(dim => (
+                                        <div key={dim.key} className="p-3 bg-dark-800/50 rounded-xl">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-sm text-dark-200">{dim.label}</span>
+                                                <span className="text-sm font-mono text-primary-400">
+                                                    {(reviewData as any)[`score_${dim.key}`] || 7}/10
+                                                </span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="1"
+                                                max="10"
+                                                value={(reviewData as any)[`score_${dim.key}`] || 7}
+                                                onChange={(e) => setReviewData(r => ({ ...r, [`score_${dim.key}`]: parseInt(e.target.value) }))}
+                                                className="w-full h-1.5 accent-primary-500"
+                                            />
+                                            <p className="text-xs text-dark-500 mt-0.5">{dim.desc}</p>
+                                        </div>
+                                    ))}
                                 </div>
+
+                                {/* 综合评分展示 */}
+                                <div className="p-3 rounded-xl bg-primary-500/10 border border-primary-500/20 text-center">
+                                    <span className="text-sm text-dark-300">综合评分：</span>
+                                    <span className="text-2xl font-bold text-primary-400">
+                                        {Math.round(
+                                            (((reviewData as any).score_professional || 7) +
+                                            ((reviewData as any).score_teamwork || 7) +
+                                            ((reviewData as any).score_attendance || 7) +
+                                            ((reviewData as any).score_innovation || 7) +
+                                            ((reviewData as any).score_communication || 7)) * 2
+                                        )}
+                                    </span>
+                                    <span className="text-sm text-dark-400"> / 100</span>
+                                </div>
+
                                 <div>
                                     <label className="input-label">评语 *</label>
                                     <textarea
                                         value={reviewData.evaluation}
                                         onChange={(e) => setReviewData(r => ({ ...r, evaluation: e.target.value }))}
                                         className="input-field w-full min-h-[100px]"
-                                        placeholder="请填写对学生实习表现的评价..."
+                                        placeholder="请填写对学生实习表现的综合评价..."
                                     />
                                 </div>
                                 <div className="flex gap-3">

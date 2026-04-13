@@ -12,7 +12,7 @@ interface User {
   id: string
   email: string
   name: string
-  role: 'ADMIN' | 'UNIVERSITY' | 'COMPANY' | 'STUDENT'
+  role: 'ADMIN' | 'UNIVERSITY' | 'COMPANY' | 'STUDENT' | 'THIRD_PARTY'
   avatar?: string
   phone?: string
   walletAddress?: string

@@ -2,8 +2,10 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { blockchainService } from '../services/blockchain';
 import { optionalAuth } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth';
 
 const router = Router();
+
 
 // ==========================================
 //! 【流程第5步】核验路由（统一架构 v2）
@@ -399,4 +401,148 @@ router.get(
   }
 );
 
+// ==========================================
+//! 【B7: 第三方核验记录 API】
+// GET /api/verify/my-records - 查询当前用户的核验记录
+// ==========================================
+router.get('/my-records',
+  authenticate,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const authReq = req as AuthRequest;
+      const prisma = (req as any).prisma as PrismaClient;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const where = { verifierId: authReq.user!.id };
+
+      const [records, total] = await Promise.all([
+        prisma.verification.findMany({
+          where,
+          include: {
+            certificate: {
+              select: {
+                id: true,
+                certNumber: true,
+                position: true,
+                status: true,
+                certHash: true,
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+          skip: offset,
+        }),
+        prisma.verification.count({ where }),
+      ]);
+
+      res.json({
+        success: true,
+        data: { records, total, limit, offset },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ==========================================
+//! 【R-3P #19: 批量核验 API】
+// POST /api/verify/batch - 批量核验多张证书
+// ==========================================
+router.post('/batch',
+  authenticate,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const authReq = req as AuthRequest;
+      const prisma = (req as any).prisma as PrismaClient;
+      const { codes } = req.body; // 证书编号或核验码数组
+
+      if (!Array.isArray(codes) || codes.length === 0) {
+        return res.status(400).json({ success: false, message: '请提供证书编号列表' });
+      }
+      if (codes.length > 50) {
+        return res.status(400).json({ success: false, message: '单次最多核验50张证书' });
+      }
+
+      const results = [];
+      for (const code of codes) {
+        const trimmed = (code as string).trim();
+        const cert = await prisma.certificate.findFirst({
+          where: {
+            OR: [
+              { certNumber: trimmed },
+              { verifyCode: trimmed },
+            ]
+          },
+          include: {
+            university: { select: { name: true, code: true } },
+            company: { select: { name: true, code: true } },
+            student: { select: { studentId: true, user: { select: { name: true } } } },
+          }
+        });
+
+        if (cert) {
+          // 记录核验
+          await prisma.verification.create({
+            data: {
+              certificateId: cert.id,
+              verifierIp: req.ip,
+              verifierAgent: req.headers['user-agent'],
+              isValid: cert.status === 'ACTIVE',
+              verifySource: 'THIRD_PARTY',
+              verifierName: authReq.user!.email,
+              verifierId: authReq.user!.id,
+            }
+          });
+
+          results.push({
+            code: trimmed,
+            found: true,
+            isValid: cert.status === 'ACTIVE',
+            certNumber: cert.certNumber,
+            status: cert.status,
+            studentName: cert.student?.user?.name,
+            studentId: cert.student?.studentId,
+            university: cert.university?.name,
+            company: cert.company?.name,
+            position: cert.position,
+            startDate: cert.startDate,
+            endDate: cert.endDate,
+            certHash: cert.certHash,
+          });
+        } else {
+          results.push({
+            code: trimmed,
+            found: false,
+            isValid: false,
+          });
+        }
+      }
+
+      const validCount = results.filter(r => r.isValid).length;
+      const invalidCount = results.filter(r => r.found && !r.isValid).length;
+      const notFoundCount = results.filter(r => !r.found).length;
+
+      res.json({
+        success: true,
+        data: {
+          results,
+          summary: {
+            total: codes.length,
+            valid: validCount,
+            invalid: invalidCount,
+            notFound: notFoundCount,
+          }
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;
+
+
