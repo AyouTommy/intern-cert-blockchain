@@ -178,6 +178,24 @@ async function migrateOrgWallets() {
     if (unisMissing.length || compsMissing.length) {
       console.log(`✅ 机构钱包迁移完成: ${unisMissing.length} 所高校, ${compsMissing.length} 家企业`);
     }
+
+    // 检查已有钱包余额，不足则补充
+    const { ethers } = await import('ethers');
+    const allUnis = await prisma.university.findMany({ where: { walletAddress: { not: null } } });
+    const allComps = await prisma.company.findMany({ where: { walletAddress: { not: null } } });
+    const provider = new ethers.JsonRpcProvider(process.env.BLOCKCHAIN_RPC_URL);
+    let funded = 0;
+    for (const org of [...allUnis, ...allComps]) {
+      if (!org.walletAddress) continue;
+      const balance = await provider.getBalance(org.walletAddress);
+      if (balance === 0n) {
+        await blockchain.fundInstitutionWallet(org.walletAddress);
+        funded++;
+      }
+    }
+    if (funded > 0) {
+      console.log(`💰 已为 ${funded} 个余额为零的钱包补充 ETH`);
+    }
   } catch (error) {
     console.warn('⚠️ 机构钱包迁移跳过（可能区块链未连接）:', (error as any).message);
   }
