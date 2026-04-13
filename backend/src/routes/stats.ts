@@ -379,6 +379,33 @@ router.get(
         } catch {}
       }
 
+      // 如果有认证用户，返回其机构的独立钱包地址
+      let orgWallet: { universityAddr?: string; companyAddr?: string } = {};
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        try {
+          const jwt = await import('jsonwebtoken');
+          const token = authHeader.slice(7);
+          const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'default-secret') as any;
+          const prisma = (req as any).prisma;
+
+          if (decoded.universityId) {
+            const uni = await prisma.university.findUnique({
+              where: { id: decoded.universityId },
+              select: { walletAddress: true },
+            });
+            if (uni?.walletAddress) orgWallet.universityAddr = uni.walletAddress;
+          }
+          if (decoded.companyId) {
+            const comp = await prisma.company.findUnique({
+              where: { id: decoded.companyId },
+              select: { walletAddress: true },
+            });
+            if (comp?.walletAddress) orgWallet.companyAddr = comp.walletAddress;
+          }
+        } catch {}
+      }
+
       res.json({
         success: true,
         data: {
@@ -396,8 +423,8 @@ router.get(
           },
           wallets: {
             admin: wallets.adminAddr,
-            university: wallets.universityAddr,
-            company: wallets.companyAddr,
+            university: orgWallet.universityAddr || wallets.universityAddr,
+            company: orgWallet.companyAddr || wallets.companyAddr,
           },
           features: {
             multiPartyConfirmation: true,
