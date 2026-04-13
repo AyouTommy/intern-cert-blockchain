@@ -342,6 +342,45 @@ export default function VerifyPage() {
               </div>
             </div>
           )}
+
+          {/* #20 下载核验报告 PDF */}
+          {batchResult && (
+            <div className="border-t border-dark-700 pt-4 flex justify-center">
+              <button
+                onClick={() => {
+                  // 生成纯前端文本报告（可打印为 PDF）
+                  const now = new Date().toLocaleString('zh-CN')
+                  const lines = [
+                    '=' .repeat(50),
+                    '          实习证明批量核验报告',
+                    '=' .repeat(50),
+                    `生成时间: ${now}`,
+                    `核验总数: ${batchResult.summary.total}`,
+                    `有效: ${batchResult.summary.valid}  无效: ${batchResult.summary.invalid}  未找到: ${batchResult.summary.notFound}`,
+                    '-'.repeat(50),
+                    ...batchResult.results.map((r: any, i: number) =>
+                      `${i+1}. [${!r.found ? '未找到' : r.isValid ? '✓有效' : '✗无效'}] ${r.code}${r.found ? ` | ${r.studentName} | ${r.university} | ${r.company}` : ''}`
+                    ),
+                    '-'.repeat(50),
+                    '本报告由区块链实习证明核验系统自动生成',
+                    `验证时间: ${now}`,
+                  ]
+                  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = `核验报告_${new Date().toISOString().slice(0,10)}.txt`
+                  a.click()
+                  URL.revokeObjectURL(url)
+                  toast.success('核验报告已下载')
+                }}
+                className="btn-secondary inline-flex items-center gap-2"
+              >
+                <ArrowDownTrayIcon className="w-4 h-4" />
+                下载核验报告
+              </button>
+            </div>
+          )}
         </motion.div>
       )}
 

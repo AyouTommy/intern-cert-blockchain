@@ -134,6 +134,7 @@ model Company {
   users        User[]
   certificates Certificate[]
   applications InternshipApplication[]
+  positions    Position[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -493,4 +494,19 @@ model PasswordResetRequest {
   
   @@index([userId])
   @@index([status])
+}
+
+// #24 R-COM 企业预设岗位
+model Position {
+  id          String   @id @default(uuid())
+  title       String                       // 岗位名称
+  department  String   @default("")        // 所属部门
+  description String   @default("") @db.Text // 岗位描述
+  isActive    Boolean  @default(true)      // 是否启用
+  companyId   String?                      // 所属企业
+  company     Company? @relation(fields: [companyId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
 }

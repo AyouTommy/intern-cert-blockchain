@@ -18,6 +18,7 @@ import applicationRoutes from './routes/applications';
 import notificationRoutes from './routes/notifications';
 import thirdPartyOrgRoutes from './routes/thirdPartyOrgs';
 import orgAdminRoutes from './routes/orgAdmins';
+import positionRoutes from './routes/positions';
 
 // 中间件导入
 import { errorHandler } from './middleware/errorHandler';
@@ -74,6 +75,7 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/third-party-orgs', thirdPartyOrgRoutes);
 app.use('/api/org-admins', orgAdminRoutes);
+app.use('/api/positions', positionRoutes);
 
 // 404处理
 app.use((req, res) => {

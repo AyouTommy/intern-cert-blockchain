@@ -25,6 +25,8 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ThirdPartyOrgsPage from './pages/ThirdPartyOrgsPage'
 import TermsPage from './pages/TermsPage'
 import PrivacyPage from './pages/PrivacyPage'
+import PortfolioPage from './pages/PortfolioPage'
+import PositionsPage from './pages/PositionsPage'
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -90,6 +92,8 @@ function App() {
         <Route path="/companies" element={<CompaniesPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/applications" element={<ApplicationsPage />} />
+        <Route path="/portfolio" element={<PortfolioPage />} />
+        <Route path="/positions" element={<PositionsPage />} />
 
         {/* Admin Only Routes */}
         <Route path="/users" element={

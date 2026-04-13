@@ -16,6 +16,8 @@ import {
   PlusIcon,
   ClipboardDocumentListIcon,
   UserGroupIcon,
+  AcademicCapIcon,
+  BriefcaseIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../stores/authStore'
 import NotificationBell from '../components/NotificationBell'
@@ -27,7 +29,9 @@ const navigation = [
   { name: '申请评价', href: '/applications', icon: ClipboardDocumentListIcon, roles: ['COMPANY'] },
   { name: '申请审核', href: '/applications', icon: ClipboardDocumentListIcon, roles: ['UNIVERSITY', 'ADMIN'] },
   { name: '实习证明', href: '/certificates', icon: DocumentTextIcon, roles: ['ADMIN', 'UNIVERSITY', 'COMPANY', 'STUDENT'] },
+  { name: '实习履历', href: '/portfolio', icon: AcademicCapIcon, roles: ['STUDENT'] },
   { name: '证明核验', href: '/verify', icon: ShieldCheckIcon, roles: ['ADMIN', 'UNIVERSITY', 'COMPANY', 'STUDENT', 'THIRD_PARTY'] },
+  { name: '岗位管理', href: '/positions', icon: BriefcaseIcon, roles: ['COMPANY'] },
   { name: '高校管理', href: '/universities', icon: BuildingOfficeIcon, roles: ['ADMIN'] },
   { name: '企业管理', href: '/companies', icon: BuildingOffice2Icon, roles: ['ADMIN'] },
   { name: '第三方机构', href: '/third-party-orgs', icon: BuildingOffice2Icon, roles: ['ADMIN'] },
