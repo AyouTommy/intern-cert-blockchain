@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import { createServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 
@@ -30,6 +32,11 @@ import { startReconciliationJob } from './services/reconciliation';
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
+const io = new SocketIOServer(httpServer, {
+  cors: { origin: '*' },
+  transports: ['websocket', 'polling'],
+});
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
 
@@ -100,8 +107,20 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
+// Socket.IO 连接处理
+io.on('connection', (socket) => {
+  console.log(`🔗 WebSocket 客户端连接: ${socket.id}`);
+  socket.on('disconnect', () => {
+    console.log(`🔌 WebSocket 客户端断开: ${socket.id}`);
+  });
+});
+
+// 将 Socket.IO 绑定到 BlockchainService（链上事件 → 前端推送）
+import { BlockchainService } from './services/blockchain';
+BlockchainService.setSocketIO(io);
+
 // 启动服务器
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║

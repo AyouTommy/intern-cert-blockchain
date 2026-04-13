@@ -13,6 +13,7 @@ import {
   QrCodeIcon,
   ArrowDownTrayIcon,
   LockClosedIcon,
+  DocumentCheckIcon,
 } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -343,43 +344,99 @@ export default function VerifyPage() {
             </div>
           )}
 
-          {/* #20 下载核验报告 PDF */}
+          {/* #20 核验报告卡片预览 */}
           {batchResult && (
-            <div className="border-t border-dark-700 pt-4 flex justify-center">
-              <button
-                onClick={() => {
-                  // 生成纯前端文本报告（可打印为 PDF）
-                  const now = new Date().toLocaleString('zh-CN')
-                  const lines = [
-                    '=' .repeat(50),
-                    '          实习证明批量核验报告',
-                    '=' .repeat(50),
-                    `生成时间: ${now}`,
-                    `核验总数: ${batchResult.summary.total}`,
-                    `有效: ${batchResult.summary.valid}  无效: ${batchResult.summary.invalid}  未找到: ${batchResult.summary.notFound}`,
-                    '-'.repeat(50),
-                    ...batchResult.results.map((r: any, i: number) =>
-                      `${i+1}. [${!r.found ? '未找到' : r.isValid ? '✓有效' : '✗无效'}] ${r.code}${r.found ? ` | ${r.studentName} | ${r.university} | ${r.company}` : ''}`
-                    ),
-                    '-'.repeat(50),
-                    '本报告由区块链实习证明核验系统自动生成',
-                    `验证时间: ${now}`,
-                  ]
-                  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
-                  const url = URL.createObjectURL(blob)
-                  const a = document.createElement('a')
-                  a.href = url
-                  a.download = `核验报告_${new Date().toISOString().slice(0,10)}.txt`
-                  a.click()
-                  URL.revokeObjectURL(url)
-                  toast.success('核验报告已下载')
-                }}
-                className="btn-secondary inline-flex items-center gap-2"
-              >
-                <ArrowDownTrayIcon className="w-4 h-4" />
-                下载核验报告
-              </button>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="border-t border-dark-700 pt-6 space-y-4"
+            >
+              {/* 报告标题 */}
+              <div className="text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-500/10 border border-primary-500/20 mb-3">
+                  <DocumentCheckIcon className="w-4 h-4 text-primary-400" />
+                  <span className="text-sm font-medium text-primary-400">核验报告</span>
+                </div>
+                <h3 className="text-lg font-bold text-dark-100">实习证明批量核验报告</h3>
+                <p className="text-xs text-dark-500 mt-1">
+                  生成时间: {new Date().toLocaleString('zh-CN')} | 核验机构: 区块链实习证明系统
+                </p>
+              </div>
+
+              {/* 统计摘要卡 */}
+              <div className="glass-card p-4">
+                <div className="grid grid-cols-4 gap-3 text-center">
+                  <div>
+                    <p className="text-2xl font-bold text-dark-100">{batchResult.summary.total}</p>
+                    <p className="text-xs text-dark-400">核验总数</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-emerald-400">{batchResult.summary.valid}</p>
+                    <p className="text-xs text-dark-400">链上有效</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-red-400">{batchResult.summary.invalid}</p>
+                    <p className="text-xs text-dark-400">无效/异常</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-amber-400">{batchResult.summary.notFound}</p>
+                    <p className="text-xs text-dark-400">未查到</p>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-dark-800/50">
+                  <div className="w-full bg-dark-800 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all"
+                      style={{ width: `${batchResult.summary.total > 0 ? (batchResult.summary.valid / batchResult.summary.total * 100) : 0}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-dark-500 mt-1 text-center">
+                    通过率 {batchResult.summary.total > 0 ? Math.round(batchResult.summary.valid / batchResult.summary.total * 100) : 0}%
+                  </p>
+                </div>
+              </div>
+
+              {/* 逐条明细 */}
+              <div className="glass-card p-4">
+                <h4 className="text-sm font-semibold text-dark-200 mb-3">核验明细</h4>
+                <div className="space-y-2 max-h-[320px] overflow-y-auto">
+                  {batchResult.results.map((r: any, i: number) => (
+                    <div key={i} className={`p-3 rounded-xl flex items-center justify-between ${
+                      !r.found ? 'bg-dark-800/30' : r.isValid ? 'bg-emerald-500/5 border border-emerald-500/20' : 'bg-red-500/5 border border-red-500/20'
+                    }`}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">{!r.found ? '❓' : r.isValid ? '✅' : '❌'}</span>
+                        <div>
+                          <p className="text-sm font-mono text-dark-200">{r.code}</p>
+                          {r.found && (
+                            <p className="text-xs text-dark-400">{r.studentName} · {r.university} · {r.company}</p>
+                          )}
+                        </div>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        !r.found ? 'bg-dark-600 text-dark-400' : r.isValid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        {!r.found ? '未找到' : r.isValid ? '链上有效' : r.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 报告页脚 + 打印按钮 */}
+              <div className="text-center space-y-2">
+                <p className="text-xs text-dark-600">
+                  本报告由区块链实习证明核验系统自动生成 · 基于 Sepolia 测试网链上数据
+                </p>
+                <button
+                  onClick={() => window.print()}
+                  className="btn-secondary inline-flex items-center gap-2 text-sm"
+                >
+                  <ArrowDownTrayIcon className="w-4 h-4" />
+                  打印 / 导出报告
+                </button>
+              </div>
+            </motion.div>
           )}
         </motion.div>
       )}

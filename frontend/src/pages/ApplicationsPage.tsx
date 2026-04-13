@@ -40,6 +40,12 @@ interface Company {
     name: string
 }
 
+interface PositionOption {
+    id: string
+    title: string
+    department: string
+}
+
 const statusConfig: Record<string, { label: string; color: string; icon: React.ComponentType<any> }> = {
     DRAFT: { label: '草稿', color: 'text-gray-400 bg-gray-500/20', icon: DocumentTextIcon },
     SUBMITTED: { label: '待企业评价', color: 'text-yellow-400 bg-yellow-500/20', icon: ClockIcon },
@@ -64,6 +70,7 @@ export default function ApplicationsPage() {
     const [deletingApp, setDeletingApp] = useState<Application | null>(null)
     const [deleteLoading, setDeleteLoading] = useState(false)
     const [selectedApp, setSelectedApp] = useState<Application | null>(null)
+    const [positions, setPositions] = useState<PositionOption[]>([])
 
     // 创建表单状态
     const [formData, setFormData] = useState({
@@ -100,6 +107,7 @@ export default function ApplicationsPage() {
         fetchApplications()
         if (user?.role === 'STUDENT') {
             fetchCompanies()
+            fetchPositions()
         }
     }, [page, statusFilter])
 
@@ -132,6 +140,15 @@ export default function ApplicationsPage() {
         } catch (error) {
             console.error('加载企业列表失败')
         }
+    }
+
+    const fetchPositions = async () => {
+        try {
+            const response = await api.get('/positions')
+            if (response.data.success) {
+                setPositions(response.data.data || [])
+            }
+        } catch { /* ignore */ }
     }
 
     const handleCreate = async () => {
@@ -504,13 +521,27 @@ export default function ApplicationsPage() {
                             </div>
                             <div>
                                 <label className="input-label">实习岗位 *</label>
-                                <input
-                                    type="text"
+                                <select
                                     value={formData.position}
-                                    onChange={(e) => setFormData(f => ({ ...f, position: e.target.value }))}
+                                    onChange={(e) => {
+                                        if (e.target.value === '__custom__') {
+                                            const custom = prompt('请输入自定义岗位名称：')
+                                            if (custom) setFormData(f => ({ ...f, position: custom }))
+                                        } else {
+                                            setFormData(f => ({ ...f, position: e.target.value }))
+                                        }
+                                    }}
                                     className="input-field w-full"
-                                    placeholder="如：软件开发实习生"
-                                />
+                                >
+                                    <option value="">请选择岗位</option>
+                                    {positions.map(p => (
+                                        <option key={p.id} value={p.title}>{p.title}{p.department ? ` (${p.department})` : ''}</option>
+                                    ))}
+                                    <option value="__custom__">✏️ 自定义岗位...</option>
+                                </select>
+                                {formData.position && !positions.find(p => p.title === formData.position) && (
+                                    <p className="text-xs text-primary-400 mt-1">自定义: {formData.position}</p>
+                                )}
                             </div>
                             <div>
                                 <label className="input-label">实习部门</label>

@@ -11,6 +11,7 @@ interface ContractConfig {
 
 class BlockchainService {
   private provider: ethers.JsonRpcProvider;
+  private wsProvider: ethers.WebSocketProvider | null = null;
   private signer: ethers.Wallet;
   private universityWallet: ethers.Wallet;
   private companyWallet: ethers.Wallet;
@@ -30,6 +31,18 @@ class BlockchainService {
   constructor() {
     const rpcUrl = process.env.BLOCKCHAIN_RPC_URL || 'http://127.0.0.1:8545';
     this.provider = new ethers.JsonRpcProvider(rpcUrl);
+
+    // Alchemy WebSocket Provider（用于实时事件监听）
+    const wsUrl = rpcUrl.replace('https://', 'wss://').replace('/v2/', '/v2/');
+    if (wsUrl.startsWith('wss://')) {
+      try {
+        this.wsProvider = new ethers.WebSocketProvider(wsUrl);
+        console.log('🔌 WebSocket Provider 已连接:', wsUrl.slice(0, 40) + '...');
+      } catch (err) {
+        console.warn('⚠️ WebSocket 连接失败，回退到 HTTP 轮询');
+        this.wsProvider = null;
+      }
+    }
     
     // 管理员钱包
     let privateKey = process.env.SIGNER_PRIVATE_KEY || BlockchainService.DEFAULT_KEYS.admin;
@@ -112,10 +125,17 @@ class BlockchainService {
   // 当链上有证书创建、撤销等操作时自动检查并修正数据库状态
   // ==========================================
   private listenForEvents() {
-    if (!this.contract) return;
+    if (!this.contract || !this.contractConfig) return;
+
+    // 优先用 WebSocket Provider 监听（实时性更好）
+    const eventContract = this.wsProvider
+      ? new ethers.Contract(this.contractConfig.address, this.contractConfig.abi, this.wsProvider)
+      : this.contract;
+    const providerType = this.wsProvider ? 'WebSocket' : 'HTTP';
+    console.log(`📡 事件监听使用 ${providerType} 模式`);
 
     try {
-      this.contract.on('CertificateCreated',
+      eventContract.on('CertificateCreated',
         async (certHash: string, issuer: string, student: string, studentId: string, timestamp: bigint) => {
           console.log(`📢 链上事件 [证书创建] Hash: ${certHash}, 学号: ${studentId}`);
           // DB 补偿：确保链上已创建的证书在数据库中也是 ACTIVE
@@ -131,16 +151,17 @@ class BlockchainService {
               console.log(`🔄 [事件补偿] 证书 ${certHash.slice(0, 10)}... 状态同步为 ACTIVE`);
             }
             await prisma.$disconnect();
+            // WebSocket 实时推送前端
+            BlockchainService.emitSocketEvent('certificate:created', { certHash, studentId, status: 'ACTIVE' });
           } catch (err) {
             console.error('[事件补偿-创建] 失败:', err);
           }
         }
       );
 
-      this.contract.on('CertificateRevoked',
+      eventContract.on('CertificateRevoked',
         async (certHash: string, revoker: string, reason: string, timestamp: bigint) => {
           console.log(`📢 链上事件 [证书撤销] Hash: ${certHash}, 原因: ${reason}`);
-          // DB 补偿：确保撤销状态同步
           try {
             const { PrismaClient } = require('@prisma/client');
             const prisma = new PrismaClient();
@@ -153,16 +174,16 @@ class BlockchainService {
               console.log(`🔄 [事件补偿] 证书 ${certHash.slice(0, 10)}... 状态同步为 REVOKED`);
             }
             await prisma.$disconnect();
+            BlockchainService.emitSocketEvent('certificate:revoked', { certHash, reason });
           } catch (err) {
             console.error('[事件补偿-撤销] 失败:', err);
           }
         }
       );
 
-      this.contract.on('CertificateFinalized',
+      eventContract.on('CertificateFinalized',
         async (certHash: string, universityAddr: string, companyAddr: string, timestamp: bigint) => {
           console.log(`📢 链上事件 [多方确认完成] Hash: ${certHash}`);
-          // DB 补偿：确保双方确认信息写入数据库
           try {
             const { PrismaClient } = require('@prisma/client');
             const prisma = new PrismaClient();
@@ -179,21 +200,40 @@ class BlockchainService {
               console.log(`🔄 [事件补偿] 证书 ${certHash.slice(0, 10)}... 多方确认信息已同步`);
             }
             await prisma.$disconnect();
+            BlockchainService.emitSocketEvent('certificate:finalized', { certHash, universityAddr, companyAddr });
           } catch (err) {
             console.error('[事件补偿-确认] 失败:', err);
           }
         }
       );
 
-      this.contract.on('ConfirmationReceived',
+      eventContract.on('ConfirmationReceived',
         (certHash: string, confirmer: string, role: string, timestamp: bigint) => {
           console.log(`📢 链上事件 [确认收到] ${role} - ${confirmer}`);
+          BlockchainService.emitSocketEvent('certificate:confirmed', { certHash, confirmer, role });
         }
       );
 
-      console.log('👂 区块链事件监听已启动（含 DB 补偿）');
+      console.log('👂 区块链事件监听已启动（含 DB 补偿 + WebSocket 推送）');
     } catch (error) {
       console.warn('⚠️ 事件监听启动失败（不影响核心功能）:', error);
+    }
+  }
+
+  // ==========================================
+  //! 【Socket.IO 实时推送】链上事件 -> 前端
+  // ==========================================
+  private static socketIO: any = null;
+
+  static setSocketIO(io: any) {
+    BlockchainService.socketIO = io;
+    console.log('🔗 Socket.IO 已绑定到 BlockchainService');
+  }
+
+  private static emitSocketEvent(event: string, data: any) {
+    if (BlockchainService.socketIO) {
+      BlockchainService.socketIO.emit(event, data);
+      console.log(`📤 WebSocket 推送: ${event}`);
     }
   }
 
@@ -791,4 +831,5 @@ class BlockchainService {
   }
 }
 
+export { BlockchainService };
 export const blockchainService = new BlockchainService();

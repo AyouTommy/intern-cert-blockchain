@@ -21,6 +21,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../stores/authStore'
 import NotificationBell from '../components/NotificationBell'
+import { useBlockchainSocket } from '../hooks/useBlockchainSocket'
 import clsx from 'clsx'
 
 const navigation = [
@@ -45,6 +46,7 @@ export default function MainLayout() {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
+  useBlockchainSocket() // #4 WebSocket 实时链上通知
 
   const filteredNavigation = navigation.filter(
     (item) => item.roles.includes(user?.role || '')
