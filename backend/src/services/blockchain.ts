@@ -584,17 +584,30 @@ class BlockchainService {
     startDate: number;
     endDate: number;
     contentHash: string;
+    encryptedPrivKey?: string;
   }): Promise<{
     success: boolean;
     txHash?: string;
     universityAddr?: string;
     error?: string;
   }> {
-    if (!this.universityContract) {
+    // 优先使用机构独立密钥
+    let contract = this.universityContract;
+    let walletAddr = this.universityWallet?.address;
+    if (params.encryptedPrivKey) {
+      const orgContract = this.getInstitutionContract(params.encryptedPrivKey);
+      if (orgContract) {
+        contract = orgContract;
+        const privKey = BlockchainService.decryptPrivateKey(params.encryptedPrivKey);
+        walletAddr = new ethers.Wallet(privKey).address;
+        console.log(`🔑 使用高校独立密钥签名: ${walletAddr}`);
+      }
+    }
+    if (!contract) {
       return { success: false, error: '高校合约实例未加载' };
     }
     try {
-      const tx = await this.universityContract.submitCertificateRequest(
+      const tx = await contract.submitCertificateRequest(
         params.certHash,
         params.studentId,
         params.universityId,
@@ -608,7 +621,7 @@ class BlockchainService {
       return {
         success: true,
         txHash: tx.hash,
-        universityAddr: this.universityWallet.address,
+        universityAddr: walletAddr,
       };
     } catch (error: any) {
       console.error('高校提交请求失败:', error);
@@ -621,24 +634,36 @@ class BlockchainService {
   // 用企业的独立钱包地址调用合约，链上记录企业地址
   // 双方都确认后合约自动 finalize
   // ==========================================
-  async companyConfirmCertificate(certHash: string): Promise<{
+  async companyConfirmCertificate(certHash: string, encryptedPrivKey?: string): Promise<{
     success: boolean;
     txHash?: string;
     blockNumber?: number;
     companyAddr?: string;
     error?: string;
   }> {
-    if (!this.companyContract) {
+    // 优先使用机构独立密钥
+    let contract = this.companyContract;
+    let walletAddr = this.companyWallet?.address;
+    if (encryptedPrivKey) {
+      const orgContract = this.getInstitutionContract(encryptedPrivKey);
+      if (orgContract) {
+        contract = orgContract;
+        const privKey = BlockchainService.decryptPrivateKey(encryptedPrivKey);
+        walletAddr = new ethers.Wallet(privKey).address;
+        console.log(`🔑 使用企业独立密钥签名: ${walletAddr}`);
+      }
+    }
+    if (!contract) {
       return { success: false, error: '企业合约实例未加载' };
     }
     try {
-      const tx = await this.companyContract.companyConfirm(certHash, { gasLimit: 500000 });
+      const tx = await contract.companyConfirm(certHash, { gasLimit: 500000 });
       const receipt = await tx.wait(1);
       return {
         success: true,
         txHash: receipt.hash,
         blockNumber: receipt.blockNumber,
-        companyAddr: this.companyWallet.address,
+        companyAddr: walletAddr,
       };
     } catch (error: any) {
       console.error('企业确认失败:', error);

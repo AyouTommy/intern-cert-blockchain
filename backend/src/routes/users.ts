@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
+import { BlockchainService } from '../services/blockchain';
 
 const router = Router();
 
@@ -765,6 +766,18 @@ router.patch(
                 },
               });
             }
+            // 生成独立钱包（如果还没有）
+            if (!university.walletAddress) {
+              const blockchain = new BlockchainService();
+              const { address, encryptedPrivKey } = blockchain.generateInstitutionWallet();
+              await prisma.university.update({
+                where: { id: university.id },
+                data: { walletAddress: address, encryptedPrivKey, keyCreatedAt: new Date() },
+              });
+              // 授予链上角色
+              await blockchain.grantInstitutionRole(address, 'university', university.id);
+              console.log(`🔑 高校 ${university.name} 独立钱包已生成: ${address}`);
+            }
             universityId = university.id;
           } else if (user.role === 'COMPANY') {
             let company = await prisma.company.findUnique({
@@ -778,6 +791,17 @@ router.patch(
                   isVerified: true,
                 },
               });
+            }
+            // 生成独立钱包（如果还没有）
+            if (!company.walletAddress) {
+              const blockchain = new BlockchainService();
+              const { address, encryptedPrivKey } = blockchain.generateInstitutionWallet();
+              await prisma.company.update({
+                where: { id: company.id },
+                data: { walletAddress: address, encryptedPrivKey, keyCreatedAt: new Date() },
+              });
+              await blockchain.grantInstitutionRole(address, 'company', company.id);
+              console.log(`🔑 企业 ${company.name} 独立钱包已生成: ${address}`);
             }
             companyId = company.id;
           } else if (user.role === 'THIRD_PARTY') {
@@ -898,6 +922,16 @@ router.post(
                 },
               });
             }
+            if (!university.walletAddress) {
+              const blockchain = new BlockchainService();
+              const { address, encryptedPrivKey } = blockchain.generateInstitutionWallet();
+              await prisma.university.update({
+                where: { id: university.id },
+                data: { walletAddress: address, encryptedPrivKey, keyCreatedAt: new Date() },
+              });
+              await blockchain.grantInstitutionRole(address, 'university', university.id);
+              console.log(`🔑 高校 ${university.name} 独立钱包已生成: ${address}`);
+            }
             universityId = university.id;
           } else if (user.applyOrgType === 'COMPANY') {
             // 检查企业是否已存在
@@ -914,6 +948,16 @@ router.post(
                   isVerified: true,
                 },
               });
+            }
+            if (!company.walletAddress) {
+              const blockchain = new BlockchainService();
+              const { address, encryptedPrivKey } = blockchain.generateInstitutionWallet();
+              await prisma.company.update({
+                where: { id: company.id },
+                data: { walletAddress: address, encryptedPrivKey, keyCreatedAt: new Date() },
+              });
+              await blockchain.grantInstitutionRole(address, 'company', company.id);
+              console.log(`🔑 企业 ${company.name} 独立钱包已生成: ${address}`);
             }
             companyId = company.id;
           }

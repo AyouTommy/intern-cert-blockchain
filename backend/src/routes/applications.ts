@@ -863,6 +863,7 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
                     startDate: Math.floor(certificate.startDate.getTime() / 1000),
                     endDate: Math.floor(certificate.endDate.getTime() / 1000),
                     contentHash,
+                    encryptedPrivKey: certificate.university.encryptedPrivKey || undefined,
                 });
 
                 if (!submitResult.success) {
@@ -870,7 +871,10 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
                 }
 
                 // 第2步：企业钱包确认（双方确认后自动 finalize）
-                const confirmResult = await blockchainService.companyConfirmCertificate(certHash);
+                const confirmResult = await blockchainService.companyConfirmCertificate(
+                    certHash,
+                    certificate.company.encryptedPrivKey || undefined
+                );
 
                 if (!confirmResult.success) {
                     throw new Error(confirmResult.error || '企业确认失败');
