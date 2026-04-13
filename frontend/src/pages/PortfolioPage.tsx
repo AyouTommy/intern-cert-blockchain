@@ -44,9 +44,10 @@ export default function PortfolioPage() {
   const fetchPortfolio = async () => {
     try {
       const res = await api.get('/certificates?limit=100')
-      setCerts(res.data.data || [])
+      const data = res.data.data
+      setCerts(Array.isArray(data) ? data : data?.certificates || [])
     } catch {
-      // ignore
+      setCerts([])
     } finally {
       setLoading(false)
     }

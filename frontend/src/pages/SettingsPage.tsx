@@ -339,42 +339,56 @@ export default function SettingsPage() {
                     )}
                   </div>
 
-                  {/* 多方确认钱包 */}
+                  {/* 多方确认钱包 - 角色差异化展示 */}
                   <div className="glass-card p-6">
-                    <h3 className="card-title mb-4">🔑 多方确认钱包</h3>
+                    <h3 className="card-title mb-4">🔑 链上钱包</h3>
                     <div className="space-y-3">
-                      {[
-                        { label: '管理员', addr: blockchainInfo.wallets.admin, icon: '🛡️', role: 'ADMIN' },
-                        { label: '高校', addr: blockchainInfo.wallets.university, icon: '🏫', role: 'UNIVERSITY' },
-                        { label: '企业', addr: blockchainInfo.wallets.company, icon: '🏢', role: 'COMPANY' },
-                      ].map(w => {
-                        const isMyRole = user?.role === w.role;
-                        const showFull = isMyRole || user?.role === 'ADMIN';
-                        return (
-                          <div key={w.role} className={`p-4 rounded-xl ${
-                            isMyRole ? 'bg-primary-500/10 border border-primary-500/30' : 'bg-dark-800/50'
-                          }`}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm text-dark-300">{w.icon} {w.label}钱包</span>
-                              {isMyRole && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-primary-500/20 text-primary-400">
-                                  当前角色
-                                </span>
-                              )}
-                            </div>
-                            <p className="font-mono text-xs text-dark-200">
-                              {showFull ? w.addr : `${w.addr.slice(0, 8)}...${w.addr.slice(-6)}`}
-                            </p>
-                            {isMyRole && (
-                              <p className="text-xs text-primary-400/70 mt-1">
-                                {w.role === 'UNIVERSITY' ? '每次审核通过时将使用该地址进行链上签名确认'
-                                  : w.role === 'COMPANY' ? '证书的企业确认步骤将使用该地址进行签名'
-                                  : '作为管理员，您可以查看和管理所有链上操作'}
-                              </p>
-                            )}
+                      {/* 管理员：显示管理员钱包 */}
+                      {user?.role === 'ADMIN' && (
+                        <div className="p-4 rounded-xl bg-primary-500/10 border border-primary-500/30">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm text-dark-300">🛡️ 管理员钱包</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-primary-500/20 text-primary-400">系统签名</span>
                           </div>
-                        );
-                      })}
+                          <p className="font-mono text-xs text-dark-200">{blockchainInfo.wallets.admin}</p>
+                          <p className="text-xs text-primary-400/70 mt-1">用于合约部署、角色授权等系统级操作</p>
+                        </div>
+                      )}
+
+                      {/* 高校用户：显示自己的专属钱包 */}
+                      {user?.role === 'UNIVERSITY' && (
+                        <div className="p-4 rounded-xl bg-primary-500/10 border border-primary-500/30">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-dark-200">🏛️ {user.university?.name || '高校'} 专属钱包</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">✅ 已授权</span>
+                          </div>
+                          <p className="font-mono text-sm text-primary-400 break-all">{blockchainInfo.wallets.university}</p>
+                          <p className="text-xs text-dark-400 mt-2">您将使用该地址进行链上签名确认，每次审核通过实习证明时自动签名</p>
+                        </div>
+                      )}
+
+                      {/* 企业用户：显示自己的专属钱包 */}
+                      {user?.role === 'COMPANY' && (
+                        <div className="p-4 rounded-xl bg-primary-500/10 border border-primary-500/30">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-dark-200">🏢 {user.company?.name || '企业'} 专属钱包</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">✅ 已授权</span>
+                          </div>
+                          <p className="font-mono text-sm text-primary-400 break-all">{blockchainInfo.wallets.company}</p>
+                          <p className="text-xs text-dark-400 mt-2">您将使用该地址进行链上签名确认，证书的企业评价确认步骤将使用该地址签名</p>
+                        </div>
+                      )}
+
+                      {/* 学生/第三方：无钱包，仅说明 */}
+                      {(user?.role === 'STUDENT' || user?.role === 'THIRD_PARTY') && (
+                        <div className="p-4 rounded-xl bg-dark-800/50">
+                          <p className="text-sm text-dark-400">
+                            {user.role === 'STUDENT'
+                              ? '学生角色无需链上钱包，您的实习证明由高校和企业进行多方签名后上链存储'
+                              : '第三方核验机构通过证书编号或二维码进行去中心化核验，无需链上钱包'}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {/* 签名架构说明 */}
