@@ -431,6 +431,17 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
         }
       })();
 
+        // 通知学生上链成功
+        await prisma.notification.create({
+          data: {
+            userId: certificate.student.user.id,
+            title: '🎉 实习证明上链成功',
+            content: `您的实习证明（${certificate.certNumber}）已成功上链，可前往证书详情查看链上凭证。`,
+            type: 'APPLICATION_STATUS',
+            link: `/certificates/${certificateId}`,
+          },
+        });
+
         // 上链成功，跳出重试循环
         return;
       } catch (retryError: any) {

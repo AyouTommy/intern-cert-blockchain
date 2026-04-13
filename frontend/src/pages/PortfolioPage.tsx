@@ -186,42 +186,48 @@ export default function PortfolioPage() {
         </div>
       )}
 
-      {/* 分享整个 Portfolio */}
+      {/* 分享证明 */}
       {activeCerts.length > 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="glass-card p-4 text-center"
+          className="glass-card p-5"
         >
-          <button
-            onClick={() => {
-              const url = `${window.location.origin}/portfolio`
-              const copyText = (text: string) => {
-                // 优先用 Clipboard API
-                if (navigator.clipboard?.writeText) {
-                  return navigator.clipboard.writeText(text)
-                }
-                // 降级方案
-                const ta = document.createElement('textarea')
-                ta.value = text
-                ta.style.position = 'fixed'
-                ta.style.opacity = '0'
-                document.body.appendChild(ta)
-                ta.select()
-                document.execCommand('copy')
-                document.body.removeChild(ta)
-                return Promise.resolve()
-              }
-              copyText(url)
-                .then(() => toast.success('履历链接已复制到剪贴板'))
-                .catch(() => toast.error('复制失败，请手动复制'))
-            }}
-            className="btn-secondary inline-flex items-center gap-2"
-          >
-            <ShareIcon className="w-4 h-4" />
-            分享我的实习履历
-          </button>
+          <p className="text-sm text-dark-400 text-center mb-3">
+            💡 您可以将证书核验链接分享给任何人，无需登录即可查看和核验
+          </p>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {activeCerts.map((cert) => (
+              <button
+                key={cert.id}
+                onClick={() => {
+                  const url = `${window.location.origin}/verify/${cert.certNumber}`
+                  const copyText = (text: string) => {
+                    if (navigator.clipboard?.writeText) {
+                      return navigator.clipboard.writeText(text)
+                    }
+                    const ta = document.createElement('textarea')
+                    ta.value = text
+                    ta.style.position = 'fixed'
+                    ta.style.opacity = '0'
+                    document.body.appendChild(ta)
+                    ta.select()
+                    document.execCommand('copy')
+                    document.body.removeChild(ta)
+                    return Promise.resolve()
+                  }
+                  copyText(url)
+                    .then(() => toast.success(`证书 ${cert.certNumber} 核验链接已复制`))
+                    .catch(() => toast.error('复制失败'))
+                }}
+                className="btn-secondary text-xs inline-flex items-center gap-1.5"
+              >
+                <ShareIcon className="w-3.5 h-3.5" />
+                分享 {cert.certNumber.slice(-6)}
+              </button>
+            ))}
+          </div>
         </motion.div>
       )}
     </div>
