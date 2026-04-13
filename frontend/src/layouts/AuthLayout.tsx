@@ -132,15 +132,17 @@ export default function AuthLayout() {
       </div>
 
       {/* Right side - Form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-12">
+      <div className="flex-1 overflow-y-auto px-6 py-12 lg:px-12">
+        <div className="min-h-full flex items-start justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
-          className="w-full max-w-md"
+          className="w-full max-w-lg py-4"
         >
           <Outlet />
         </motion.div>
+        </div>
       </div>
     </div>
   )

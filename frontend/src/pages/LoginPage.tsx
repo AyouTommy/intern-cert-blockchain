@@ -144,6 +144,27 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
+
+        {/* 角色说明 */}
+        <div className="mt-6 pt-5 border-t border-dark-800/50">
+          <p className="text-xs text-dark-500 text-center mb-3">本系统支持以下角色</p>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { icon: '🎓', label: '学生', desc: '发起申请' },
+              { icon: '🏛️', label: '高校', desc: '审核签名' },
+              { icon: '🏢', label: '企业', desc: '评价确认' },
+              { icon: '🔍', label: '第三方', desc: '核验真伪' },
+            ].map((r) => (
+              <div key={r.label} className="flex items-center gap-2 p-2 rounded-lg bg-dark-800/30">
+                <span className="text-base">{r.icon}</span>
+                <div>
+                  <p className="text-xs font-medium text-dark-300">{r.label}</p>
+                  <p className="text-xs text-dark-500">{r.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )
