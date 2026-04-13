@@ -156,6 +156,7 @@ async function migrateOrgWallets() {
         data: { walletAddress: address, encryptedPrivKey, keyCreatedAt: new Date() },
       });
       await blockchain.grantInstitutionRole(address, 'university', uni.id);
+      await blockchain.fundInstitutionWallet(address);
       console.log(`🔑 [迁移] 高校 ${uni.name} 独立钱包已补生成: ${address}`);
     }
 
@@ -170,6 +171,7 @@ async function migrateOrgWallets() {
         data: { walletAddress: address, encryptedPrivKey, keyCreatedAt: new Date() },
       });
       await blockchain.grantInstitutionRole(address, 'company', comp.id);
+      await blockchain.fundInstitutionWallet(address);
       console.log(`🔑 [迁移] 企业 ${comp.name} 独立钱包已补生成: ${address}`);
     }
 

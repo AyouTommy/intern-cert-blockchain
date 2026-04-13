@@ -708,6 +708,23 @@ class BlockchainService {
     return { address: wallet.address, encryptedPrivKey };
   }
 
+  // 从管理员钱包向机构钱包转入少量 ETH（用于支付 gas 费）
+  async fundInstitutionWallet(address: string): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    try {
+      const amount = ethers.parseEther('0.01'); // 0.01 ETH 足够签几百笔
+      const tx = await this.signer.sendTransaction({
+        to: address,
+        value: amount,
+      });
+      await tx.wait(1);
+      console.log(`💰 已向机构钱包 ${address} 转入 0.01 ETH, tx: ${tx.hash}`);
+      return { success: true, txHash: tx.hash };
+    } catch (error: any) {
+      console.error(`💸 转账失败 (${address}):`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
   // AES-256-GCM 加密私钥
   static encryptPrivateKey(privateKey: string): string {
     const secret = process.env.KEY_ENCRYPTION_SECRET || 'default-dev-secret-key-32-bytes!';

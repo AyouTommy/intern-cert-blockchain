@@ -776,6 +776,7 @@ router.patch(
               });
               // 授予链上角色
               await blockchain.grantInstitutionRole(address, 'university', university.id);
+              await blockchain.fundInstitutionWallet(address);
               console.log(`🔑 高校 ${university.name} 独立钱包已生成: ${address}`);
             }
             universityId = university.id;
@@ -801,6 +802,7 @@ router.patch(
                 data: { walletAddress: address, encryptedPrivKey, keyCreatedAt: new Date() },
               });
               await blockchain.grantInstitutionRole(address, 'company', company.id);
+              await blockchain.fundInstitutionWallet(address);
               console.log(`🔑 企业 ${company.name} 独立钱包已生成: ${address}`);
             }
             companyId = company.id;
@@ -930,6 +932,7 @@ router.post(
                 data: { walletAddress: address, encryptedPrivKey, keyCreatedAt: new Date() },
               });
               await blockchain.grantInstitutionRole(address, 'university', university.id);
+              await blockchain.fundInstitutionWallet(address);
               console.log(`🔑 高校 ${university.name} 独立钱包已生成: ${address}`);
             }
             universityId = university.id;
@@ -957,6 +960,7 @@ router.post(
                 data: { walletAddress: address, encryptedPrivKey, keyCreatedAt: new Date() },
               });
               await blockchain.grantInstitutionRole(address, 'company', company.id);
+              await blockchain.fundInstitutionWallet(address);
               console.log(`🔑 企业 ${company.name} 独立钱包已生成: ${address}`);
             }
             companyId = company.id;
