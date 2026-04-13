@@ -71,7 +71,12 @@ export default function VerifyPage() {
   const [certNumber, setCertNumber] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<VerifyResult | null>(null)
-  const [activeTab, setActiveTab] = useState<'code' | 'number'>('code')
+  const [activeTab, setActiveTab] = useState<'code' | 'number' | 'batch'>('code')
+
+  // #19 批量核验状态
+  const [batchInput, setBatchInput] = useState('')
+  const [batchLoading, setBatchLoading] = useState(false)
+  const [batchResult, setBatchResult] = useState<any>(null)
 
   const handleVerify = async () => {
     const value = activeTab === 'code' ? verifyCode : certNumber
@@ -126,6 +131,29 @@ export default function VerifyPage() {
     }
   }
 
+  // #19 批量核验
+  const handleBatchVerify = async () => {
+    const codes = batchInput.split('\n').map(s => s.trim()).filter(Boolean)
+    if (codes.length === 0) {
+      toast.error('请输入至少一个证书编号或验证码')
+      return
+    }
+    if (codes.length > 50) {
+      toast.error('单次最多核验50张')
+      return
+    }
+    setBatchLoading(true)
+    setBatchResult(null)
+    try {
+      const response = await api.post('/verify/batch', { codes })
+      setBatchResult(response.data.data)
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || '批量核验失败')
+    } finally {
+      setBatchLoading(false)
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -170,6 +198,17 @@ export default function VerifyPage() {
           >
             <DocumentTextIcon className="w-5 h-5 inline mr-2" />
             证明编号核验
+          </button>
+          <button
+            onClick={() => setActiveTab('batch')}
+            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
+              activeTab === 'batch'
+                ? 'bg-primary-500 text-dark-100'
+                : 'text-dark-400 hover:text-dark-200'
+            }`}
+          >
+            <DocumentTextIcon className="w-5 h-5 inline mr-2" />
+            批量核验
           </button>
         </div>
 
@@ -217,9 +256,94 @@ export default function VerifyPage() {
         <p className="text-sm text-dark-500 mt-3 text-center">
           {activeTab === 'code' 
             ? '验证码可在证明二维码或证明详情页中获取' 
-            : '证明编号格式为 CERT + 年月 + 随机字符'}
+            : activeTab === 'number'
+            ? '证明编号格式为 CERT + 年月 + 随机字符'
+            : '每行输入一个证书编号或验证码，最多50个'}
         </p>
       </motion.div>
+
+      {/* #19 批量核验输入区 */}
+      {activeTab === 'batch' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-6 space-y-4"
+        >
+          <h3 className="card-title">批量核验</h3>
+          <p className="text-sm text-dark-400">每行输入一个证书编号或核验码，支持同时核验最多 50 张证书。</p>
+          <textarea
+            value={batchInput}
+            onChange={(e) => setBatchInput(e.target.value)}
+            placeholder={'CERT202401XXXXXX\nCERT202401YYYYYY\nABCD1234EFGH5678'}
+            className="input-field w-full min-h-[150px] font-mono text-sm"
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-dark-500">
+              已输入 {batchInput.split('\n').filter(s => s.trim()).length} 条
+            </span>
+            <button
+              onClick={handleBatchVerify}
+              disabled={batchLoading}
+              className="btn-primary px-6"
+            >
+              {batchLoading ? '核验中...' : '开始批量核验'}
+            </button>
+          </div>
+
+          {/* 批量核验结果 */}
+          {batchResult && (
+            <div className="space-y-4 border-t border-dark-700 pt-4">
+              {/* 统计卡片 */}
+              <div className="grid grid-cols-4 gap-3">
+                <div className="p-3 rounded-xl bg-dark-800/50 text-center">
+                  <p className="text-2xl font-bold text-dark-100">{batchResult.summary.total}</p>
+                  <p className="text-xs text-dark-400">总计</p>
+                </div>
+                <div className="p-3 rounded-xl bg-emerald-500/10 text-center">
+                  <p className="text-2xl font-bold text-emerald-400">{batchResult.summary.valid}</p>
+                  <p className="text-xs text-dark-400">有效</p>
+                </div>
+                <div className="p-3 rounded-xl bg-red-500/10 text-center">
+                  <p className="text-2xl font-bold text-red-400">{batchResult.summary.invalid}</p>
+                  <p className="text-xs text-dark-400">无效</p>
+                </div>
+                <div className="p-3 rounded-xl bg-amber-500/10 text-center">
+                  <p className="text-2xl font-bold text-amber-400">{batchResult.summary.notFound}</p>
+                  <p className="text-xs text-dark-400">未找到</p>
+                </div>
+              </div>
+
+              {/* 逐条结果 */}
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {batchResult.results.map((r: any, i: number) => (
+                  <div key={i} className={`p-3 rounded-xl flex items-center justify-between ${
+                    !r.found ? 'bg-dark-800/30' : r.isValid ? 'bg-emerald-500/5 border border-emerald-500/20' : 'bg-red-500/5 border border-red-500/20'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-lg ${!r.found ? '⚫' : r.isValid ? '' : ''}`}>
+                        {!r.found ? '❓' : r.isValid ? '✅' : '❌'}
+                      </span>
+                      <div>
+                        <p className="text-sm font-mono text-dark-200">{r.code}</p>
+                        {r.found && (
+                          <p className="text-xs text-dark-400">
+                            {r.studentName} · {r.university} · {r.company}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      !r.found ? 'bg-dark-600 text-dark-400' : r.isValid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      {!r.found ? '未找到' : r.isValid ? '有效' : r.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </motion.div>
+      )}
 
       {/* Result */}
       {result && (

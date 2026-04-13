@@ -15,6 +15,7 @@ import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useAuthStore } from '../stores/authStore'
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
+import SignatureConfirmModal from '../components/SignatureConfirmModal'
 
 interface Application {
     id: string
@@ -89,6 +90,11 @@ export default function ApplicationsPage() {
         rejectReason: '',
         autoUpchain: true,
     })
+
+    // EIP-712 签名弹窗状态
+    const [signModalOpen, setSignModalOpen] = useState(false)
+    const [signAction, setSignAction] = useState<'COMPANY_CONFIRM' | 'UNIVERSITY_CONFIRM'>('COMPANY_CONFIRM')
+    const [signLoading, setSignLoading] = useState(false)
 
     useEffect(() => {
         fetchApplications()
@@ -173,24 +179,37 @@ export default function ApplicationsPage() {
     }
 
     //! 【前端 → 后端】企业评价签章: 发请求到后端 /applications/申请ID/company-review
-    // 参数: 评分, 评语, 是否通过
-    // 后端收到后: 生成签章 → 更新状态 → 通知高校和学生
+    // 通过时弹出 EIP-712 签名确认弹窗，拒绝直接提交
     const handleCompanyReview = async (isApproved: boolean) => {
         if (!selectedApp) return
         if (isApproved && !reviewData.evaluation) {
             toast.error('请填写评语')
             return
         }
+        if (isApproved) {
+            // 弹出签名确认
+            setSignAction('COMPANY_CONFIRM')
+            setSignModalOpen(true)
+            return
+        }
+        // 拒绝直接提交
+        await submitCompanyReview(false, '')
+    }
+
+    const submitCompanyReview = async (isApproved: boolean, signature: string) => {
+        if (!selectedApp) return
         try {
             const response = await api.post(`/applications/${selectedApp.id}/company-review`, {
                 score: reviewData.score,
                 evaluation: reviewData.evaluation,
                 approved: isApproved,
                 rejectReason: reviewData.rejectReason,
+                signature,
             })
             if (response.data.success) {
-                toast.success(isApproved ? '评价已完成' : '已拒绝申请')
+                toast.success(isApproved ? '评价已完成（已签章）' : '已拒绝申请')
                 setShowDetailModal(false)
+                setSignModalOpen(false)
                 fetchApplications()
             }
         } catch (error: any) {
@@ -198,23 +217,47 @@ export default function ApplicationsPage() {
         }
     }
 
-    //! 【前端 → 后端】高校审核: 发请求到后端 /applications/申请ID/university-review
-    // 参数: 是否通过, 是否自动上链
-    // 后端收到后: 生成证书 → 生成二维码 → 写入数据库 → 异步上链
+    //! 【前端 → 后端】高校审核: 通过时弹出签名确认
     const handleUniversityReview = async (isApproved: boolean) => {
+        if (!selectedApp) return
+        if (isApproved) {
+            setSignAction('UNIVERSITY_CONFIRM')
+            setSignModalOpen(true)
+            return
+        }
+        await submitUniversityReview(false, '')
+    }
+
+    const submitUniversityReview = async (isApproved: boolean, signature: string) => {
         if (!selectedApp) return
         try {
             const response = await api.post(`/applications/${selectedApp.id}/university-review`, {
                 ...approvalData,
                 approved: isApproved,
+                signature,
             })
             if (response.data.success) {
-                toast.success(isApproved ? '审核通过，证书已创建并发起链上确认' : '已拒绝申请')
+                toast.success(isApproved ? '审核通过，证书已创建并发起链上确认（已签章）' : '已拒绝申请')
                 setShowDetailModal(false)
+                setSignModalOpen(false)
                 fetchApplications()
             }
         } catch (error: any) {
             toast.error(error.response?.data?.message || '操作失败')
+        }
+    }
+
+    // EIP-712 签名回调
+    const handleSignatureConfirm = async (signature: string) => {
+        setSignLoading(true)
+        try {
+            if (signAction === 'COMPANY_CONFIRM') {
+                await submitCompanyReview(true, signature)
+            } else {
+                await submitUniversityReview(true, signature)
+            }
+        } finally {
+            setSignLoading(false)
         }
     }
 
@@ -723,6 +766,22 @@ export default function ApplicationsPage() {
                 onConfirm={confirmDeleteApp}
                 onCancel={() => setDeletingApp(null)}
                 isLoading={deleteLoading}
+            />
+
+            {/* EIP-712 签名确认弹窗 (#9) */}
+            <SignatureConfirmModal
+                isOpen={signModalOpen}
+                onClose={() => setSignModalOpen(false)}
+                onConfirm={handleSignatureConfirm}
+                action={signAction}
+                actionLabel={signAction === 'COMPANY_CONFIRM' ? '企业评价签章' : '高校审核签章'}
+                certHash={selectedApp?.certificate?.id || selectedApp?.id || ''}
+                certNumber={selectedApp?.applicationNo}
+                details={{
+                    studentName: selectedApp?.student?.user?.name,
+                    position: selectedApp?.position,
+                }}
+                loading={signLoading}
             />
         </div>
     )

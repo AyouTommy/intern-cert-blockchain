@@ -205,8 +205,19 @@ export default function CertificateDetailPage() {
               className="btn-danger flex items-center gap-2"
             >
               <XCircleIcon className="w-5 h-5" />
-              撤销
+              申请撤销
             </button>
+          )}
+          {/* #22 撤销工作流状态展示 */}
+          {(certificate as any).revokeApproval === 'PENDING' && (
+            <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/20 text-amber-400 font-medium">
+              ⏳ 撤销审批中
+            </span>
+          )}
+          {(certificate as any).revokeApproval === 'REJECTED' && (
+            <span className="text-xs px-3 py-1.5 rounded-full bg-red-500/20 text-red-400 font-medium">
+              ❌ 撤销被拒绝
+            </span>
           )}
         </div>
       </div>

@@ -1,5 +1,5 @@
 {
-  "address": "0xF6fbCcfc8dC79984Ea4b04FAe805432A56eE4701",
+  "address": "0xF8475e9DF59C29413246Eb28AD2a7A06c99E7278",
   "abi": [
     {
       "inputs": [],
@@ -460,25 +460,6 @@
     {
       "inputs": [
         {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "name": "allCertificateIds",
-      "outputs": [
-        {
-          "internalType": "bytes32",
-          "name": "",
-          "type": "bytes32"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "bytes32[]",
           "name": "_certHashes",
           "type": "bytes32[]"
@@ -540,9 +521,39 @@
           "type": "address"
         },
         {
+          "internalType": "enum InternshipCertificationV2.CertificateStatus",
+          "name": "status",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint64",
+          "name": "issueDate",
+          "type": "uint64"
+        },
+        {
           "internalType": "address",
           "name": "student",
           "type": "address"
+        },
+        {
+          "internalType": "uint64",
+          "name": "startDate",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint64",
+          "name": "endDate",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint64",
+          "name": "createdAt",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint64",
+          "name": "updatedAt",
+          "type": "uint64"
         },
         {
           "internalType": "string",
@@ -560,63 +571,9 @@
           "type": "string"
         },
         {
-          "internalType": "uint256",
-          "name": "issueDate",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "startDate",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "endDate",
-          "type": "uint256"
-        },
-        {
-          "internalType": "enum InternshipCertification.CertificateStatus",
-          "name": "status",
-          "type": "uint8"
-        },
-        {
           "internalType": "string",
           "name": "contentHash",
           "type": "string"
-        },
-        {
-          "internalType": "uint256",
-          "name": "createdAt",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "updatedAt",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "string",
-          "name": "",
-          "type": "string"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "name": "companyCertificates",
-      "outputs": [
-        {
-          "internalType": "bytes32",
-          "name": "",
-          "type": "bytes32"
         }
       ],
       "stateMutability": "view",
@@ -692,221 +649,6 @@
     {
       "inputs": [
         {
-          "internalType": "uint256",
-          "name": "_offset",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_limit",
-          "type": "uint256"
-        }
-      ],
-      "name": "getAllCertificateIds",
-      "outputs": [
-        {
-          "internalType": "bytes32[]",
-          "name": "",
-          "type": "bytes32[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "_certHash",
-          "type": "bytes32"
-        }
-      ],
-      "name": "getCertificate",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "bytes32",
-              "name": "certHash",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "address",
-              "name": "issuer",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "student",
-              "type": "address"
-            },
-            {
-              "internalType": "string",
-              "name": "studentId",
-              "type": "string"
-            },
-            {
-              "internalType": "string",
-              "name": "universityId",
-              "type": "string"
-            },
-            {
-              "internalType": "string",
-              "name": "companyId",
-              "type": "string"
-            },
-            {
-              "internalType": "uint256",
-              "name": "issueDate",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "startDate",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "endDate",
-              "type": "uint256"
-            },
-            {
-              "internalType": "enum InternshipCertification.CertificateStatus",
-              "name": "status",
-              "type": "uint8"
-            },
-            {
-              "internalType": "string",
-              "name": "contentHash",
-              "type": "string"
-            },
-            {
-              "internalType": "uint256",
-              "name": "createdAt",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "updatedAt",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct InternshipCertification.Certificate",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "string",
-          "name": "_companyId",
-          "type": "string"
-        }
-      ],
-      "name": "getCompanyCertificates",
-      "outputs": [
-        {
-          "internalType": "bytes32[]",
-          "name": "",
-          "type": "bytes32[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "_certHash",
-          "type": "bytes32"
-        }
-      ],
-      "name": "getRequestStatus",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "bytes32",
-              "name": "certHash",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "string",
-              "name": "studentId",
-              "type": "string"
-            },
-            {
-              "internalType": "string",
-              "name": "universityId",
-              "type": "string"
-            },
-            {
-              "internalType": "string",
-              "name": "companyId",
-              "type": "string"
-            },
-            {
-              "internalType": "uint256",
-              "name": "startDate",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "endDate",
-              "type": "uint256"
-            },
-            {
-              "internalType": "string",
-              "name": "contentHash",
-              "type": "string"
-            },
-            {
-              "internalType": "bool",
-              "name": "universityConfirmed",
-              "type": "bool"
-            },
-            {
-              "internalType": "bool",
-              "name": "companyConfirmed",
-              "type": "bool"
-            },
-            {
-              "internalType": "address",
-              "name": "universityAddr",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "companyAddr",
-              "type": "address"
-            },
-            {
-              "internalType": "bool",
-              "name": "finalized",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint256",
-              "name": "createdAt",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct InternshipCertification.CertificateRequest",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "bytes32",
           "name": "role",
           "type": "bytes32"
@@ -950,50 +692,12 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_student",
-          "type": "address"
-        }
-      ],
-      "name": "getStudentCertificates",
-      "outputs": [
-        {
-          "internalType": "bytes32[]",
-          "name": "",
-          "type": "bytes32[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "string",
-          "name": "_universityId",
-          "type": "string"
-        }
-      ],
-      "name": "getUniversityCertificates",
-      "outputs": [
-        {
-          "internalType": "bytes32[]",
-          "name": "",
-          "type": "bytes32[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_account",
+          "name": "_addr",
           "type": "address"
         },
         {
           "internalType": "string",
-          "name": "_companyId",
+          "name": "_entityId",
           "type": "string"
         }
       ],
@@ -1024,12 +728,12 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_account",
+          "name": "_addr",
           "type": "address"
         },
         {
           "internalType": "string",
-          "name": "_universityId",
+          "name": "_entityId",
           "type": "string"
         }
       ],
@@ -1060,57 +764,6 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "_certHash",
-          "type": "bytes32"
-        }
-      ],
-      "name": "isCertificateExpired",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "_certHash",
-          "type": "bytes32"
-        }
-      ],
-      "name": "isValidCertificate",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "_certHash",
-          "type": "bytes32"
-        }
-      ],
-      "name": "logVerification",
-      "outputs": [],
-      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -1164,14 +817,14 @@
           "type": "string"
         },
         {
-          "internalType": "uint256",
+          "internalType": "uint64",
           "name": "startDate",
-          "type": "uint256"
+          "type": "uint64"
         },
         {
-          "internalType": "uint256",
+          "internalType": "uint64",
           "name": "endDate",
-          "type": "uint256"
+          "type": "uint64"
         },
         {
           "internalType": "string",
@@ -1204,9 +857,9 @@
           "type": "bool"
         },
         {
-          "internalType": "uint256",
+          "internalType": "uint64",
           "name": "createdAt",
-          "type": "uint256"
+          "type": "uint64"
         }
       ],
       "stateMutability": "view",
@@ -1274,30 +927,6 @@
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "name": "studentCertificates",
-      "outputs": [
-        {
-          "internalType": "bytes32",
-          "name": "",
-          "type": "bytes32"
         }
       ],
       "stateMutability": "view",
@@ -1379,63 +1008,8 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "string",
-          "name": "",
-          "type": "string"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "name": "universityCertificates",
-      "outputs": [
-        {
-          "internalType": "bytes32",
-          "name": "",
-          "type": "bytes32"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "_certHash",
-          "type": "bytes32"
-        }
-      ],
-      "name": "universityConfirm",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
       "inputs": [],
       "name": "unpause",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "_certHash",
-          "type": "bytes32"
-        },
-        {
-          "internalType": "string",
-          "name": "_contentHash",
-          "type": "string"
-        }
-      ],
-      "name": "updateContentHash",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -1468,9 +1042,39 @@
               "type": "address"
             },
             {
+              "internalType": "enum InternshipCertificationV2.CertificateStatus",
+              "name": "status",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint64",
+              "name": "issueDate",
+              "type": "uint64"
+            },
+            {
               "internalType": "address",
               "name": "student",
               "type": "address"
+            },
+            {
+              "internalType": "uint64",
+              "name": "startDate",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "endDate",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "createdAt",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "updatedAt",
+              "type": "uint64"
             },
             {
               "internalType": "string",
@@ -1488,43 +1092,13 @@
               "type": "string"
             },
             {
-              "internalType": "uint256",
-              "name": "issueDate",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "startDate",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "endDate",
-              "type": "uint256"
-            },
-            {
-              "internalType": "enum InternshipCertification.CertificateStatus",
-              "name": "status",
-              "type": "uint8"
-            },
-            {
               "internalType": "string",
               "name": "contentHash",
               "type": "string"
-            },
-            {
-              "internalType": "uint256",
-              "name": "createdAt",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "updatedAt",
-              "type": "uint256"
             }
           ],
-          "internalType": "struct InternshipCertification.Certificate",
-          "name": "certificate",
+          "internalType": "struct InternshipCertificationV2.Certificate",
+          "name": "cert",
           "type": "tuple"
         },
         {
@@ -1561,5 +1135,6 @@
       "type": "function"
     }
   ],
-  "chainId": 11155111
+  "chainId": 11155111,
+  "version": "V2"
 }
