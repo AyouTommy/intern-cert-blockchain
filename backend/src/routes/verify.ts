@@ -243,10 +243,19 @@ router.get(
       const prisma = (req as any).prisma as PrismaClient;
       const { code } = req.params;
 
-      const certificate = await prisma.certificate.findUnique({
+      // 支持 verifyCode 和 certNumber 两种方式查询
+      let certificate = await prisma.certificate.findUnique({
         where: { verifyCode: code },
         include: certificateInclude,
       });
+
+      // 如果 verifyCode 查不到，尝试用 certNumber 查询
+      if (!certificate) {
+        certificate = await prisma.certificate.findUnique({
+          where: { certNumber: code },
+          include: certificateInclude,
+        });
+      }
 
       if (!certificate) {
         return res.status(404).json({

@@ -4,7 +4,6 @@ import { useForm } from 'react-hook-form'
 import {
   UserCircleIcon,
   KeyIcon,
-  BellIcon,
   CubeIcon,
   CheckIcon,
   LinkIcon,
@@ -29,7 +28,6 @@ interface PasswordForm {
 const allTabs = [
   { id: 'profile', name: '个人信息', icon: UserCircleIcon },
   { id: 'security', name: '安全设置', icon: KeyIcon },
-  { id: 'notifications', name: '通知设置', icon: BellIcon },
   { id: 'blockchain', name: '区块链', icon: CubeIcon },
 ]
 
@@ -169,21 +167,6 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                {/* 钱包地址 - 仅对学生用户显示 */}
-                {user?.role === 'STUDENT' && (
-                  <div>
-                    <label className="input-label">钱包地址</label>
-                    <input
-                      type="text"
-                      {...profileForm.register('walletAddress')}
-                      className="input-field font-mono text-sm"
-                      placeholder="0x..."
-                    />
-                    <p className="text-xs text-dark-500 mt-1">
-                      您的以太坊钱包地址，证书上链时将记录此地址作为证书归属标识
-                    </p>
-                  </div>
-                )}
 
                 <div className="pt-4">
                   <button type="submit" disabled={loading} className="btn-primary">
@@ -239,38 +222,6 @@ export default function SettingsPage() {
             </motion.div>
           )}
 
-          {activeTab === 'notifications' && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass-card p-6"
-            >
-              <h2 className="card-title mb-6">通知设置</h2>
-
-              <div className="space-y-4">
-                {[
-                  { id: 'email', name: '邮件通知', desc: '证明状态变更时发送邮件通知' },
-                  { id: 'upchain', name: '上链通知', desc: '证明成功上链时通知' },
-                  { id: 'verify', name: '核验通知', desc: '有人核验您的证明时通知' },
-                ].map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-4 rounded-xl bg-dark-800/50">
-                    <div>
-                      <p className="text-dark-100 font-medium">{item.name}</p>
-                      <p className="text-sm text-dark-400">{item.desc}</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked />
-                      <div className="w-11 h-6 bg-dark-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
-                    </label>
-                  </div>
-                ))}
-              </div>
-
-              <div className="pt-6">
-                <button className="btn-primary">保存设置</button>
-              </div>
-            </motion.div>
-          )}
 
           {activeTab === 'blockchain' && (
             <motion.div
