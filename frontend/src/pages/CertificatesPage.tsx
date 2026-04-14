@@ -188,9 +188,9 @@ export default function CertificatesPage() {
     }
   }
 
-  const canCreate = user?.role === 'ADMIN' || user?.role === 'UNIVERSITY' || user?.role === 'COMPANY'
-  const canDelete = user?.role === 'ADMIN' || user?.role === 'UNIVERSITY'
-  const isAdmin = user?.role === 'ADMIN'
+  const canCreate = user?.role === 'UNIVERSITY'
+  const canDelete = user?.role === 'UNIVERSITY'
+  const isUniversity = user?.role === 'UNIVERSITY'
 
   return (
     <div className="space-y-6">
@@ -272,7 +272,7 @@ export default function CertificatesPage() {
               )}
               批量上链
             </button>
-            {isAdmin && (
+            {isUniversity && (
               <button
                 onClick={handleBatchDelete}
                 disabled={batchDeleteLoading}

@@ -30,7 +30,7 @@ function generateVerifyCode(): string {
 router.post(
   '/',
   authenticate,
-  authorize('ADMIN', 'UNIVERSITY', 'COMPANY'),
+  authorize('UNIVERSITY'),
   [
     body('studentProfileId').notEmpty().withMessage('请选择学生'),
     body('universityId').notEmpty().withMessage('请选择高校'),
@@ -481,7 +481,7 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
 router.post(
   '/:id/upchain',
   authenticate,
-  authorize('ADMIN', 'UNIVERSITY', 'COMPANY'),
+  authorize('UNIVERSITY', 'COMPANY'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authReq = req as AuthRequest;
@@ -521,7 +521,7 @@ router.post(
 router.post(
   '/batch-upchain',
   authenticate,
-  authorize('ADMIN', 'UNIVERSITY'),
+  authorize('UNIVERSITY'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authReq = req as AuthRequest;
@@ -645,7 +645,7 @@ router.post(
 router.post(
   '/:id/evaluation',
   authenticate,
-  authorize('ADMIN', 'UNIVERSITY', 'COMPANY'),
+  authorize('UNIVERSITY', 'COMPANY'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authReq = req as AuthRequest;
@@ -705,7 +705,7 @@ router.post(
 router.post(
   '/:id/approve',
   authenticate,
-  authorize('ADMIN', 'UNIVERSITY'),
+  authorize('UNIVERSITY'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authReq = req as AuthRequest;
@@ -783,7 +783,7 @@ router.post(
 router.post(
   '/:id/revoke',
   authenticate,
-  authorize('ADMIN', 'UNIVERSITY'),
+  authorize('UNIVERSITY'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authReq = req as AuthRequest;
@@ -851,7 +851,7 @@ router.post(
 router.delete(
   '/:id',
   authenticate,
-  authorize('ADMIN', 'UNIVERSITY'),
+  authorize('UNIVERSITY'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authReq = req as AuthRequest;
@@ -866,9 +866,9 @@ router.delete(
         throw new AppError('证明不存在', 404);
       }
 
-      // 非管理员不能删除已上链的证明
-      if (certificate.status === 'ACTIVE' && authReq.user!.role !== 'ADMIN') {
-        throw new AppError('已上链的证明不能删除，只能撤销', 400);
+      // 已上链的证明不能直接删除，需先撤销
+      if (certificate.status === 'ACTIVE') {
+        throw new AppError('已上链的证明不能删除，请先撤销后再删除', 400);
       }
 
       // 删除关联的核验记录
@@ -912,7 +912,7 @@ router.delete(
 router.post(
   '/batch-delete',
   authenticate,
-  authorize('ADMIN'),
+  authorize('UNIVERSITY'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authReq = req as AuthRequest;
