@@ -2,6 +2,8 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { blockchainService } from '../services/blockchain';
+import { ethers } from 'ethers';
+import * as ipfsService from '../services/ipfsService';
 
 const router = Router();
 
@@ -86,34 +88,6 @@ router.get(
         .map(([date, stats]) => ({ date, ...stats }))
         .reverse();
 
-      // 区块链统计（增强版）
-      let blockchainStats: any = null;
-      if (blockchainService.isContractAvailable()) {
-        const result = await blockchainService.getStatistics();
-        if (result.success) {
-          // 获取网络信息
-          let networkInfo = { chainId: 0, name: 'unknown', blockNumber: 0 };
-          try { networkInfo = await blockchainService.getNetworkInfo(); } catch {}
-          // 获取多方地址
-          const multiParty = blockchainService.getMultiPartyInfo();
-          blockchainStats = {
-            ...result.stats,
-            contractAddress: blockchainService.getContractAddress(),
-            network: {
-              chainId: networkInfo.chainId,
-              name: networkInfo.chainId === 11155111 ? 'Sepolia Testnet' : networkInfo.chainId === 31337 ? 'Hardhat Local' : networkInfo.name,
-              blockNumber: networkInfo.blockNumber,
-            },
-            wallets: {
-              admin: multiParty.adminAddr,
-              university: multiParty.universityAddr,
-              company: multiParty.companyAddr,
-            },
-            deployGasUsed: 3975426, // 部署时记录的 Gas 消耗
-          };
-        }
-      }
-
       res.json({
         success: true,
         data: {
@@ -128,7 +102,6 @@ router.get(
             recentVerifications,
           },
           trend,
-          blockchain: blockchainStats,
         },
       });
     } catch (error) {
@@ -440,6 +413,535 @@ router.get(
       });
     } catch (error) {
       next(error);
+    }
+  }
+);
+
+
+// ==========================================
+//  区块链运维中心 - 仅管理员
+// ==========================================
+
+// 总览概况
+router.get(
+  '/blockchain-admin/overview',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const prisma = (req as AuthRequest).prisma;
+      const isAvailable = blockchainService.isContractAvailable();
+
+      let contractInfo: any = { connected: false };
+      if (isAvailable) {
+        try {
+          const networkInfo = await blockchainService.getNetworkInfo();
+          const stats = await blockchainService.getStatistics();
+          const multiParty = blockchainService.getMultiPartyInfo();
+
+          // 检查合约暂停状态
+          let paused = false;
+          try {
+            const contract = (blockchainService as any).contract;
+            if (contract) paused = await contract.paused();
+          } catch {}
+
+          contractInfo = {
+            connected: true,
+            address: blockchainService.getContractAddress(),
+            network: {
+              name: networkInfo.chainId === 11155111 ? 'Sepolia Testnet' : networkInfo.chainId === 31337 ? 'Hardhat Local' : networkInfo.name,
+              chainId: networkInfo.chainId,
+              blockNumber: networkInfo.blockNumber,
+            },
+            paused,
+            stats: stats.success ? stats.stats : null,
+            adminWallet: multiParty.adminAddr,
+          };
+        } catch (e: any) {
+          contractInfo = { connected: false, error: e.message };
+        }
+      }
+
+      // DB 统计
+      const [totalCerts, activeCerts, revokedCerts, failedCerts, totalVerifications, totalUsers] = await Promise.all([
+        prisma.certificate.count(),
+        prisma.certificate.count({ where: { status: 'ACTIVE' } }),
+        prisma.certificate.count({ where: { status: 'REVOKED' } }),
+        prisma.certificate.count({ where: { status: 'FAILED' } }),
+        prisma.verification.count(),
+        prisma.user.count(),
+      ]);
+
+      const totalTransactions = await prisma.certificate.count({ where: { txHash: { not: null } } });
+
+      res.json({
+        success: true,
+        data: {
+          contract: contractInfo,
+          summary: {
+            totalCerts,
+            activeCerts,
+            revokedCerts,
+            failedCerts,
+            totalTransactions,
+            totalVerifications,
+            totalUsers,
+          },
+          security: [
+            { name: 'AccessControl', desc: '基于角色的链上权限控制' },
+            { name: 'Pausable', desc: '紧急暂停机制' },
+            { name: 'ReentrancyGuard', desc: '防重入攻击保护' },
+          ],
+          architecture: [
+            { name: '多方确认机制', desc: '高校提交签发请求，企业独立确认，双方签名地址链上记录' },
+            { name: '机构独立密钥', desc: 'AES-256-GCM 加密存储机构私钥，EIP-712 类型化签名' },
+            { name: '存储优化', desc: '时间戳和区块号使用 uint64 打包，减少存储槽占用' },
+            { name: '事件同步', desc: 'Alchemy WebSocket 实时监听 + Cron 定时对账 + Socket.IO 推送' },
+            { name: 'IPFS 集成', desc: '上链成功后自动生成PDF上传IPFS，降级策略不影响核心功能' },
+          ],
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 钱包资产
+router.get(
+  '/blockchain-admin/wallets',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const prisma = (req as AuthRequest).prisma;
+      const provider = (blockchainService as any).provider as ethers.JsonRpcProvider;
+      const multiParty = blockchainService.getMultiPartyInfo();
+
+      const wallets: any[] = [];
+      try {
+        const adminBal = await provider.getBalance(multiParty.adminAddr);
+        wallets.push({
+          id: 'admin',
+          label: '管理员钱包 (系统主钱包)',
+          type: 'admin',
+          address: multiParty.adminAddr,
+          balance: ethers.formatEther(adminBal),
+        });
+      } catch {}
+
+      const universities = await prisma.university.findMany({
+        where: { walletAddress: { not: null } },
+        select: { id: true, name: true, walletAddress: true },
+      });
+      for (const uni of universities) {
+        try {
+          const bal = await provider.getBalance(uni.walletAddress!);
+          wallets.push({
+            id: uni.id, label: uni.name, type: 'university',
+            address: uni.walletAddress, balance: ethers.formatEther(bal),
+          });
+        } catch {
+          wallets.push({
+            id: uni.id, label: uni.name, type: 'university',
+            address: uni.walletAddress, balance: '0',
+          });
+        }
+      }
+
+      const companies = await prisma.company.findMany({
+        where: { walletAddress: { not: null } },
+        select: { id: true, name: true, walletAddress: true },
+      });
+      for (const comp of companies) {
+        try {
+          const bal = await provider.getBalance(comp.walletAddress!);
+          wallets.push({
+            id: comp.id, label: comp.name, type: 'company',
+            address: comp.walletAddress, balance: ethers.formatEther(bal),
+          });
+        } catch {
+          wallets.push({
+            id: comp.id, label: comp.name, type: 'company',
+            address: comp.walletAddress, balance: '0',
+          });
+        }
+      }
+
+      res.json({ success: true, data: { wallets } });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 手动充值单个钱包
+router.post(
+  '/blockchain-admin/wallets/:id/fund',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const prisma = (req as AuthRequest).prisma;
+      const { id } = req.params;
+      const { amount = '0.01' } = req.body;
+
+      let targetAddress: string | null = null;
+      let targetName = '';
+
+      const uni = await prisma.university.findUnique({ where: { id }, select: { walletAddress: true, name: true } });
+      if (uni?.walletAddress) { targetAddress = uni.walletAddress; targetName = uni.name; }
+
+      if (!targetAddress) {
+        const comp = await prisma.company.findUnique({ where: { id }, select: { walletAddress: true, name: true } });
+        if (comp?.walletAddress) { targetAddress = comp.walletAddress; targetName = comp.name; }
+      }
+
+      if (!targetAddress) {
+        return res.status(404).json({ success: false, message: '未找到该机构钱包' });
+      }
+
+      const signer = (blockchainService as any).signer as ethers.Wallet;
+      const tx = await signer.sendTransaction({
+        to: targetAddress,
+        value: ethers.parseEther(amount),
+      });
+      await tx.wait(1);
+
+      res.json({
+        success: true,
+        data: { txHash: tx.hash, to: targetAddress, name: targetName, amount },
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message || '充值失败' });
+    }
+  }
+);
+
+// 批量补充低余额钱包
+router.post(
+  '/blockchain-admin/wallets/fund-low',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const prisma = (req as AuthRequest).prisma;
+      const provider = (blockchainService as any).provider as ethers.JsonRpcProvider;
+      const signer = (blockchainService as any).signer as ethers.Wallet;
+      const threshold = ethers.parseEther('0.01');
+      const fundAmount = ethers.parseEther('0.01');
+
+      const institutions = [
+        ...(await prisma.university.findMany({ where: { walletAddress: { not: null } }, select: { name: true, walletAddress: true } })),
+        ...(await prisma.company.findMany({ where: { walletAddress: { not: null } }, select: { name: true, walletAddress: true } })),
+      ];
+
+      const results: any[] = [];
+      for (const inst of institutions) {
+        try {
+          const bal = await provider.getBalance(inst.walletAddress!);
+          if (bal < threshold) {
+            const tx = await signer.sendTransaction({ to: inst.walletAddress!, value: fundAmount });
+            await tx.wait(1);
+            results.push({ name: inst.name, address: inst.walletAddress, txHash: tx.hash, status: 'funded' });
+          }
+        } catch (e: any) {
+          results.push({ name: inst.name, address: inst.walletAddress, status: 'failed', error: e.message });
+        }
+      }
+
+      res.json({ success: true, data: { funded: results.filter(r => r.status === 'funded').length, results } });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 交易记录
+router.get(
+  '/blockchain-admin/transactions',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const prisma = (req as AuthRequest).prisma;
+      const { type, keyword, page = '1', pageSize = '20' } = req.query;
+
+      const where: any = {};
+      if (type === 'failed') {
+        where.status = 'FAILED';
+      } else if (type === 'active') {
+        where.status = 'ACTIVE';
+        where.txHash = { not: null };
+      } else if (type === 'revoked') {
+        where.status = 'REVOKED';
+      } else if (type === 'pending') {
+        where.status = { in: ['PENDING', 'PROCESSING'] };
+      } else {
+        where.OR = [
+          { txHash: { not: null } },
+          { status: 'FAILED' },
+          { status: 'PROCESSING' },
+        ];
+      }
+
+      if (keyword) {
+        where.certNumber = { contains: keyword as string, mode: 'insensitive' };
+      }
+
+      const skip = (Number(page) - 1) * Number(pageSize);
+      const [total, certs] = await Promise.all([
+        prisma.certificate.count({ where }),
+        prisma.certificate.findMany({
+          where,
+          select: {
+            id: true, certNumber: true, certHash: true, txHash: true,
+            blockNumber: true, status: true, failReason: true, retryCount: true,
+            updatedAt: true,
+            student: { select: { user: { select: { name: true } } } },
+            university: { select: { name: true } },
+            company: { select: { name: true } },
+          },
+          orderBy: { updatedAt: 'desc' },
+          skip,
+          take: Number(pageSize),
+        }),
+      ]);
+
+      res.json({
+        success: true,
+        data: {
+          total,
+          page: Number(page),
+          pageSize: Number(pageSize),
+          records: certs.map(c => ({
+            id: c.id, certNumber: c.certNumber, certHash: c.certHash,
+            txHash: c.txHash, blockNumber: c.blockNumber, status: c.status,
+            failReason: c.failReason, retryCount: c.retryCount,
+            studentName: c.student?.user?.name,
+            university: c.university?.name,
+            company: c.company?.name,
+            time: c.updatedAt,
+          })),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 重试失败交易
+router.post(
+  '/blockchain-admin/transactions/:certId/retry',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const prisma = (req as AuthRequest).prisma;
+      const { certId } = req.params;
+
+      const cert = await prisma.certificate.findUnique({ where: { id: certId } });
+      if (!cert) return res.status(404).json({ success: false, message: '证书不存在' });
+      if (cert.status !== 'FAILED') return res.status(400).json({ success: false, message: '仅失败状态的证书可重试' });
+
+      await prisma.certificate.update({
+        where: { id: certId },
+        data: { status: 'PENDING', failReason: null, retryCount: 0 },
+      });
+
+      res.json({ success: true, message: '已重置状态，Cron 任务将自动拾取并重试上链' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 链上/链下对账
+router.post(
+  '/blockchain-admin/reconcile',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const prisma = (req as AuthRequest).prisma;
+      if (!blockchainService.isContractAvailable()) {
+        return res.status(503).json({ success: false, message: '区块链服务未连接' });
+      }
+
+      const activeCerts = await prisma.certificate.findMany({
+        where: { status: 'ACTIVE', certHash: { not: null } },
+        select: { id: true, certNumber: true, certHash: true },
+      });
+
+      const inconsistent: any[] = [];
+      let checkedCount = 0;
+
+      for (const cert of activeCerts) {
+        try {
+          const chainResult = await blockchainService.verifyCertificate(cert.certHash!);
+          checkedCount++;
+          if (!chainResult.isValid) {
+            inconsistent.push({
+              certNumber: cert.certNumber, certHash: cert.certHash,
+              dbStatus: 'ACTIVE', chainStatus: 'INVALID',
+            });
+          }
+        } catch {
+          inconsistent.push({
+            certNumber: cert.certNumber, certHash: cert.certHash,
+            dbStatus: 'ACTIVE', chainStatus: 'ERROR',
+          });
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          checkedCount, totalActive: activeCerts.length,
+          inconsistentCount: inconsistent.length,
+          isConsistent: inconsistent.length === 0,
+          inconsistent,
+          checkedAt: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 服务健康检查
+router.get(
+  '/blockchain-admin/services',
+  authenticate,
+  authorize('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const prisma = (req as AuthRequest).prisma;
+      const services: any[] = [];
+
+      // 1. 区块链 RPC
+      try {
+        const blockNumber = await (blockchainService as any).provider.getBlockNumber();
+        services.push({ name: '区块链 RPC (Alchemy)', status: 'ok', detail: `最新区块 #${blockNumber}` });
+      } catch (e: any) {
+        services.push({ name: '区块链 RPC (Alchemy)', status: 'error', detail: e.message });
+      }
+
+      // 2. 智能合约
+      services.push({
+        name: '智能合约',
+        status: blockchainService.isContractAvailable() ? 'ok' : 'error',
+        detail: blockchainService.isContractAvailable() ? `地址 ${blockchainService.getContractAddress()}` : '未连接',
+      });
+
+      // 3. IPFS
+      services.push({
+        name: 'IPFS (Pinata)',
+        status: ipfsService.isConfigured() ? 'ok' : 'warning',
+        detail: ipfsService.isConfigured() ? '已配置' : '未配置 PINATA_JWT',
+      });
+
+      // 4. 数据库
+      try {
+        await prisma.$queryRaw`SELECT 1`;
+        const [userCount, certCount, verifyCount] = await Promise.all([
+          prisma.user.count(), prisma.certificate.count(), prisma.verification.count(),
+        ]);
+        services.push({
+          name: '数据库 (PostgreSQL)',
+          status: 'ok',
+          detail: `用户 ${userCount} / 证书 ${certCount} / 核验 ${verifyCount}`,
+        });
+      } catch (e: any) {
+        services.push({ name: '数据库 (PostgreSQL)', status: 'error', detail: e.message });
+      }
+
+      // 5. WebSocket
+      const wsProvider = (blockchainService as any).wsProvider;
+      services.push({
+        name: 'Alchemy WebSocket',
+        status: wsProvider ? 'ok' : 'warning',
+        detail: wsProvider ? '事件监听中' : 'HTTP 模式 (无实时事件)',
+      });
+
+      res.json({ success: true, data: { services, checkedAt: new Date().toISOString() } });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 测试 RPC 连接
+router.post(
+  '/blockchain-admin/services/test-rpc',
+  authenticate,
+  authorize('ADMIN'),
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const start = Date.now();
+      const blockNumber = await (blockchainService as any).provider.getBlockNumber();
+      const latency = Date.now() - start;
+      res.json({ success: true, data: { blockNumber, latencyMs: latency } });
+    } catch (error: any) {
+      res.status(503).json({ success: false, message: error.message });
+    }
+  }
+);
+
+// 测试 IPFS 连接
+router.post(
+  '/blockchain-admin/services/test-ipfs',
+  authenticate,
+  authorize('ADMIN'),
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!ipfsService.isConfigured()) {
+        return res.status(503).json({ success: false, message: 'PINATA_JWT 未配置' });
+      }
+      const testBuffer = Buffer.from(`IPFS connection test - ${new Date().toISOString()}`);
+      const cid = await ipfsService.uploadToIPFS(testBuffer, 'test-connection.txt');
+      res.json({ success: true, data: { cid, gatewayUrl: ipfsService.getIPFSUrl(cid) } });
+    } catch (error: any) {
+      res.status(503).json({ success: false, message: error.message });
+    }
+  }
+);
+
+// 暂停合约
+router.post(
+  '/blockchain-admin/contract/pause',
+  authenticate,
+  authorize('ADMIN'),
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const contract = (blockchainService as any).contract;
+      if (!contract) return res.status(503).json({ success: false, message: '合约未连接' });
+      const tx = await contract.pause();
+      await tx.wait(1);
+      res.json({ success: true, data: { txHash: tx.hash } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+);
+
+// 恢复合约
+router.post(
+  '/blockchain-admin/contract/unpause',
+  authenticate,
+  authorize('ADMIN'),
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const contract = (blockchainService as any).contract;
+      if (!contract) return res.status(503).json({ success: false, message: '合约未连接' });
+      const tx = await contract.unpause();
+      await tx.wait(1);
+      res.json({ success: true, data: { txHash: tx.hash } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 );

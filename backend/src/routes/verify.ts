@@ -223,6 +223,8 @@ async function handleVerification(
     // 权限标识
     accessLevel: fullAccess ? 'full' : 'public',
     canDownloadPdf: fullAccess,
+    // IPFS（仅完整权限）
+    ipfsHash: fullAccess ? (certificate as any).ipfsHash : undefined,
   };
 
   res.json({

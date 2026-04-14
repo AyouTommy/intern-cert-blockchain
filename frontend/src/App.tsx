@@ -28,6 +28,7 @@ import PrivacyPage from './pages/PrivacyPage'
 import PortfolioPage from './pages/PortfolioPage'
 import PositionsPage from './pages/PositionsPage'
 import LandingPage from './pages/LandingPage'
+import BlockchainAdminPage from './pages/BlockchainAdminPage'
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -111,6 +112,11 @@ function App() {
         <Route path="/third-party-orgs" element={
           <AdminRoute>
             <ThirdPartyOrgsPage />
+          </AdminRoute>
+        } />
+        <Route path="/blockchain" element={
+          <AdminRoute>
+            <BlockchainAdminPage />
           </AdminRoute>
         } />
       </Route>

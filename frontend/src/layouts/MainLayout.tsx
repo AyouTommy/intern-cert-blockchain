@@ -18,6 +18,7 @@ import {
   UserGroupIcon,
   AcademicCapIcon,
   BriefcaseIcon,
+  CubeIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../stores/authStore'
 import NotificationBell from '../components/NotificationBell'
@@ -28,14 +29,15 @@ const navigation = [
   { name: '控制台', href: '/dashboard', icon: HomeIcon, roles: ['ADMIN', 'UNIVERSITY', 'COMPANY', 'STUDENT', 'THIRD_PARTY'] },
   { name: '我的申请', href: '/applications', icon: ClipboardDocumentListIcon, roles: ['STUDENT'] },
   { name: '申请评价', href: '/applications', icon: ClipboardDocumentListIcon, roles: ['COMPANY'] },
-  { name: '申请审核', href: '/applications', icon: ClipboardDocumentListIcon, roles: ['UNIVERSITY', 'ADMIN'] },
-  { name: '实习证明', href: '/certificates', icon: DocumentTextIcon, roles: ['ADMIN', 'UNIVERSITY', 'COMPANY', 'STUDENT'] },
+  { name: '申请审核', href: '/applications', icon: ClipboardDocumentListIcon, roles: ['UNIVERSITY'] },
+  { name: '实习证明', href: '/certificates', icon: DocumentTextIcon, roles: ['UNIVERSITY', 'COMPANY', 'STUDENT'] },
   { name: '实习履历', href: '/portfolio', icon: AcademicCapIcon, roles: ['STUDENT'] },
   { name: '证明核验', href: '/verify', icon: ShieldCheckIcon, roles: ['ADMIN', 'UNIVERSITY', 'COMPANY', 'STUDENT', 'THIRD_PARTY'] },
   { name: '岗位管理', href: '/positions', icon: BriefcaseIcon, roles: ['COMPANY'] },
   { name: '高校管理', href: '/universities', icon: BuildingOfficeIcon, roles: ['ADMIN'] },
   { name: '企业管理', href: '/companies', icon: BuildingOffice2Icon, roles: ['ADMIN'] },
   { name: '第三方机构', href: '/third-party-orgs', icon: BuildingOffice2Icon, roles: ['ADMIN'] },
+  { name: '区块链运维', href: '/blockchain', icon: CubeIcon, roles: ['ADMIN'] },
   { name: '学生白名单', href: '/whitelist', icon: UserGroupIcon, roles: ['ADMIN', 'UNIVERSITY'] },
   { name: '用户管理', href: '/users', icon: UsersIcon, roles: ['ADMIN'] },
   { name: '系统设置', href: '/settings', icon: Cog6ToothIcon, roles: ['ADMIN', 'UNIVERSITY', 'COMPANY'] },
