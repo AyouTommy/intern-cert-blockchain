@@ -126,7 +126,7 @@ export default function DashboardPage() {
           </h1>
           <p className="page-subtitle">这是您的实习证明管理控制台</p>
         </div>
-        {(user?.role === 'ADMIN' || user?.role === 'UNIVERSITY' || user?.role === 'COMPANY') && (
+        {user?.role === 'UNIVERSITY' && (
           <Link to="/certificates/new" className="btn-primary inline-flex items-center gap-2">
             <DocumentTextIcon className="w-5 h-5" />
             创建新证明

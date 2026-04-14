@@ -657,7 +657,7 @@ router.post(
 router.post(
     '/:id/university-review',
     authenticate,
-    authorize('UNIVERSITY', 'ADMIN'),
+    authorize('UNIVERSITY'),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             const authReq = req as AuthRequest;
@@ -968,11 +968,11 @@ async function processUpchain(prisma: PrismaClient, certificateId: string) {
     }
 }
 
-// 删除申请（管理员可强制删除任何状态的申请，关联证书也会被删除）
+// 删除申请（高校可删除作废的申请，关联证书也会被删除）
 router.delete(
     '/:id',
     authenticate,
-    authorize('ADMIN'),
+    authorize('UNIVERSITY'),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             const authReq = req as AuthRequest;

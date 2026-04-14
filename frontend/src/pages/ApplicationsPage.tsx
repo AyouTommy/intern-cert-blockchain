@@ -326,8 +326,7 @@ export default function ApplicationsPage() {
 
     const isStudent = user?.role === 'STUDENT'
     const isCompany = user?.role === 'COMPANY'
-    const isUniversity = user?.role === 'UNIVERSITY' || user?.role === 'ADMIN'
-    const isAdmin = user?.role === 'ADMIN'
+    const isUniversity = user?.role === 'UNIVERSITY'
 
     return (
         <div className="space-y-6">
@@ -467,7 +466,7 @@ export default function ApplicationsPage() {
                                                 isUniversity && ['COMPANY_APPROVED', 'UNIVERSITY_REVIEWING'].includes(app.status) ? '审核' : '查看'}
                                         </button>
                                     )}
-                                    {isAdmin && (
+                                    {isUniversity && (
                                         <button
                                             onClick={() => handleDeleteApp(app)}
                                             className="p-2 text-dark-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
