@@ -360,20 +360,22 @@ export default function DashboardPage() {
               <p className="text-sm text-dark-500">验证证明真伪</p>
             </div>
           </Link>
-          <Link
-            to="/certificates"
-            className="flex items-center gap-4 p-4 rounded-xl bg-surface-2 hover:bg-surface-2 transition-colors group"
-          >
-            <div className="p-3 rounded-xl bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
-              <ClockIcon className="w-6 h-6 text-amber-600" />
-            </div>
-            <div>
-              <p className="font-medium text-primary-700">实习证明</p>
-              <p className="text-sm text-dark-500">
-                {stats?.overview.pendingCertificates || 0} 条待上链
-              </p>
-            </div>
-          </Link>
+          {user?.role !== 'ADMIN' && (
+            <Link
+              to="/certificates"
+              className="flex items-center gap-4 p-4 rounded-xl bg-surface-2 hover:bg-surface-2 transition-colors group"
+            >
+              <div className="p-3 rounded-xl bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
+                <ClockIcon className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <p className="font-medium text-primary-700">实习证明</p>
+                <p className="text-sm text-dark-500">
+                  {stats?.overview.pendingCertificates || 0} 条待上链
+                </p>
+              </div>
+            </Link>
+          )}
           {(user?.role === 'ADMIN' || user?.role === 'UNIVERSITY' || user?.role === 'COMPANY') && (
             <Link
               to="/settings"
