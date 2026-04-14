@@ -124,7 +124,7 @@ export default function MainLayout() {
         <Navigation items={filteredNavigation} />
 
         {/* Quick Actions */}
-        {(user?.role === 'ADMIN' || user?.role === 'UNIVERSITY' || user?.role === 'COMPANY') && (
+        {user?.role === 'UNIVERSITY' && (
           <div className="px-4 py-4 border-t border-[rgb(var(--border))]">
             <button
               onClick={() => navigate('/certificates/new')}

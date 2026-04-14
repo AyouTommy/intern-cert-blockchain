@@ -43,6 +43,10 @@ export default function BlockchainAdminPage() {
   const [showFundModal, setShowFundModal] = useState(false)
   const [selectedWallet, setSelectedWallet] = useState<any>(null)
   const [actionLoading, setActionLoading] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
+  const [showBatchFundModal, setShowBatchFundModal] = useState(false)
+  const [batchFundTargets, setBatchFundTargets] = useState<any[]>([])
+  const [batchFundSelected, setBatchFundSelected] = useState<string[]>([])
 
   const fetchOverview = useCallback(async () => {
     try {
@@ -51,11 +55,18 @@ export default function BlockchainAdminPage() {
     } catch (e) { console.error(e) }
   }, [])
 
-  const fetchWallets = useCallback(async () => {
+  const fetchWallets = useCallback(async (showToast = false) => {
+    if (showToast) setRefreshing(true)
     try {
       const res = await api.get('/stats/blockchain-admin/wallets')
       setWallets(res.data.data.wallets)
-    } catch (e) { console.error(e) }
+      if (showToast) toast.success('钱包余额已刷新')
+    } catch (e) {
+      console.error(e)
+      if (showToast) toast.error('刷新失败')
+    } finally {
+      if (showToast) setRefreshing(false)
+    }
   }, [])
 
   const fetchTransactions = useCallback(async () => {
@@ -115,16 +126,34 @@ export default function BlockchainAdminPage() {
     } finally { setActionLoading('') }
   }
 
-  const handleFundLow = async () => {
-    if (!confirm('确认批量补充所有余额不足 0.01 ETH 的钱包？')) return
+  const handleFundLow = () => {
+    const lowWallets = wallets.filter(w => w.type !== 'admin' && parseFloat(w.balance) < 0.01)
+    if (lowWallets.length === 0) {
+      toast.success('✅ 所有机构钱包余额充足，无需补充')
+      return
+    }
+    setBatchFundTargets(lowWallets)
+    setBatchFundSelected(lowWallets.map(w => w.id))
+    setShowBatchFundModal(true)
+  }
+
+  const handleBatchFundConfirm = async () => {
+    if (batchFundSelected.length === 0) {
+      toast.error('请至少选择一个钱包')
+      return
+    }
     setActionLoading('fund-low')
-    try {
-      const res = await api.post('/stats/blockchain-admin/wallets/fund-low')
-      toast.success(`已补充 ${res.data.data.funded} 个钱包`)
-      fetchWallets()
-    } catch (e: any) {
-      toast.error(e.response?.data?.message || '批量充值失败')
-    } finally { setActionLoading('') }
+    let funded = 0
+    for (const id of batchFundSelected) {
+      try {
+        await api.post(`/stats/blockchain-admin/wallets/${id}/fund`, { amount: '0.01' })
+        funded++
+      } catch (e) { console.error(e) }
+    }
+    toast.success(`已成功补充 ${funded} 个钱包，每个 0.01 ETH`)
+    setShowBatchFundModal(false)
+    fetchWallets()
+    setActionLoading('')
   }
 
   const handleRetry = async (certId: string) => {
@@ -410,10 +439,11 @@ export default function BlockchainAdminPage() {
                   </h3>
                   <div className="flex gap-2">
                     <button
-                      onClick={fetchWallets}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dark-700 text-dark-300 hover:bg-dark-600 transition-colors text-sm"
+                      onClick={() => fetchWallets(true)}
+                      disabled={refreshing}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dark-700 text-dark-300 hover:bg-dark-600 transition-colors text-sm disabled:opacity-50"
                     >
-                      <ArrowPathIcon className="w-3.5 h-3.5" /> 刷新
+                      <ArrowPathIcon className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} /> {refreshing ? '刷新中...' : '刷新'}
                     </button>
                     <button
                       onClick={handleFundLow}
@@ -744,6 +774,74 @@ export default function BlockchainAdminPage() {
               >
                 {actionLoading === 'fund' ? '转账中...' : '确认充值'}
               </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+      {/* 批量补充弹窗 */}
+      {showBatchFundModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowBatchFundModal(false)}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-card p-6 w-full max-w-lg mx-4 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-dark-100">批量补充不足钱包</h3>
+            <p className="text-sm text-dark-400">
+              以下 {batchFundTargets.length} 个钱包余额不足 0.01 ETH，勾选后每个钱包将补充 0.01 ETH
+            </p>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {batchFundTargets.map((w) => (
+                <label key={w.id} className="flex items-center gap-3 p-3 rounded-xl bg-surface-2 cursor-pointer hover:bg-dark-700/50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={batchFundSelected.includes(w.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setBatchFundSelected(prev => [...prev, w.id])
+                      } else {
+                        setBatchFundSelected(prev => prev.filter(id => id !== w.id))
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-dark-600 bg-dark-800 text-primary-500"
+                  />
+                  <span className="text-lg">{w.type === 'university' ? '🏫' : '🏢'}</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-dark-200">{w.label}</p>
+                    <p className="text-xs font-mono text-dark-500">{w.address?.slice(0, 6)}...{w.address?.slice(-4)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-red-400">{parseFloat(w.balance).toFixed(4)} ETH</p>
+                    <p className="text-xs text-dark-500">→ 补充 0.01 ETH</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <div className="flex items-center justify-between pt-2">
+              <label className="flex items-center gap-2 text-sm text-dark-400 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={batchFundSelected.length === batchFundTargets.length}
+                  onChange={(e) => {
+                    setBatchFundSelected(e.target.checked ? batchFundTargets.map((w: any) => w.id) : [])
+                  }}
+                  className="w-4 h-4 rounded border-dark-600 bg-dark-800 text-primary-500"
+                />
+                全选 ({batchFundSelected.length}/{batchFundTargets.length})
+              </label>
+              <div className="flex gap-3">
+                <button onClick={() => setShowBatchFundModal(false)} className="px-4 py-2 rounded-lg bg-dark-700 text-dark-300 hover:bg-dark-600 text-sm">
+                  取消
+                </button>
+                <button
+                  onClick={handleBatchFundConfirm}
+                  disabled={actionLoading === 'fund-low' || batchFundSelected.length === 0}
+                  className="px-4 py-2 rounded-lg bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 text-sm font-medium disabled:opacity-50"
+                >
+                  {actionLoading === 'fund-low' ? '补充中...' : `确认补充 (${batchFundSelected.length} 个)`}
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>
