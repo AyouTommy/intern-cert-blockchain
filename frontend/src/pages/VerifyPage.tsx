@@ -63,6 +63,7 @@ interface VerifyResult {
     }
     accessLevel: 'full' | 'public'
     canDownloadPdf: boolean
+    ipfsHash?: string
   }
   message?: string
 }
@@ -577,48 +578,72 @@ export default function VerifyPage() {
               </div>
 
               {/* Blockchain Info - 始终完整展示 */}
-              {result.data.blockchain && (
+              {(result.data.blockchain || result.data.ipfsHash) && (
                 <div className="glass-card p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-3 rounded-xl bg-gradient-to-br from-primary-500/20 to-accent-500/20">
                       <CubeIcon className="w-6 h-6 text-primary-400" />
                     </div>
                     <h3 className="card-title">区块链验证</h3>
-                    <div className="flex items-center gap-2 text-sm text-emerald-400 ml-auto">
-                      <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      链上已验证
-                    </div>
+                    {result.data.blockchain && (
+                      <div className="flex items-center gap-2 text-sm text-emerald-400 ml-auto">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        链上已验证
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl bg-dark-800/50">
-                      <span className="text-sm text-dark-400">证明哈希</span>
-                      <p className="blockchain-hash mt-1 text-xs">
-                        {result.data.blockchain.certHash}
-                      </p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-dark-800/50">
-                      <span className="text-sm text-dark-400">交易哈希</span>
-                      <p className="blockchain-hash mt-1 text-xs">
-                        {result.data.blockchain.txHash}
-                      </p>
-                    </div>
-                  </div>
+                  {result.data.blockchain && (
+                    <>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="p-4 rounded-xl bg-dark-800/50">
+                          <span className="text-sm text-dark-400">证明哈希</span>
+                          <p className="blockchain-hash mt-1 text-xs">
+                            {result.data.blockchain.certHash}
+                          </p>
+                        </div>
+                        <div className="p-4 rounded-xl bg-dark-800/50">
+                          <span className="text-sm text-dark-400">交易哈希</span>
+                          <p className="blockchain-hash mt-1 text-xs">
+                            {result.data.blockchain.txHash}
+                          </p>
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    <div className="p-4 rounded-xl bg-dark-800/50 text-center">
-                      <span className="text-sm text-dark-400">区块高度</span>
-                      <p className="text-xl font-mono text-dark-100 mt-1">
-                        #{result.data.blockchain.blockNumber.toLocaleString()}
-                      </p>
+                      <div className="grid grid-cols-2 gap-4 mt-4">
+                        <div className="p-4 rounded-xl bg-dark-800/50 text-center">
+                          <span className="text-sm text-dark-400">区块高度</span>
+                          <p className="text-xl font-mono text-dark-100 mt-1">
+                            #{result.data.blockchain.blockNumber.toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="p-4 rounded-xl bg-dark-800/50 text-center">
+                          <span className="text-sm text-dark-400">链ID</span>
+                          <p className="text-xl font-mono text-dark-100 mt-1">
+                            {result.data.blockchain.chainId}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {result.data.ipfsHash && (
+                    <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border border-emerald-500/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-semibold text-emerald-400">IPFS 去中心化存储</span>
+                      </div>
+                      <span className="text-xs text-dark-400">IPFS CID</span>
+                      <p className="blockchain-hash text-xs mt-1 mb-3">{result.data.ipfsHash}</p>
+                      <a
+                        href={`https://gateway.pinata.cloud/ipfs/${result.data.ipfsHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:text-emerald-300 hover:border-emerald-500/40 transition-all text-sm"
+                      >
+                        <span>在 IPFS 查看完整证书 PDF</span>
+                      </a>
                     </div>
-                    <div className="p-4 rounded-xl bg-dark-800/50 text-center">
-                      <span className="text-sm text-dark-400">链ID</span>
-                      <p className="text-xl font-mono text-dark-100 mt-1">
-                        {result.data.blockchain.chainId}
-                      </p>
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
 

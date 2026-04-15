@@ -323,7 +323,7 @@ export default function CertificateDetailPage() {
           )}
 
           {/* Blockchain Info */}
-          {certificate.certHash && (
+          {(certificate.certHash || certificate.ipfsHash) && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -342,18 +342,20 @@ export default function CertificateDetailPage() {
               </div>
 
               <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-dark-800/50">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-dark-400">证明哈希</span>
-                    <button
-                      onClick={() => copyToClipboard(certificate.certHash!, '哈希')}
-                      className="text-primary-400 hover:text-primary-300"
-                    >
-                      <ClipboardDocumentIcon className="w-4 h-4" />
-                    </button>
+                {certificate.certHash && (
+                  <div className="p-4 rounded-xl bg-dark-800/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-dark-400">证明哈希</span>
+                      <button
+                        onClick={() => copyToClipboard(certificate.certHash!, '哈希')}
+                        className="text-primary-400 hover:text-primary-300"
+                      >
+                        <ClipboardDocumentIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="blockchain-hash">{certificate.certHash}</p>
                   </div>
-                  <p className="blockchain-hash">{certificate.certHash}</p>
-                </div>
+                )}
 
                 {certificate.txHash && (
                   <div className="p-4 rounded-xl bg-dark-800/50">
@@ -370,20 +372,22 @@ export default function CertificateDetailPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-dark-800/50">
-                    <span className="text-sm text-dark-400">区块高度</span>
-                    <p className="text-lg font-mono text-dark-100 mt-1">
-                      #{certificate.blockNumber?.toLocaleString()}
-                    </p>
+                {(certificate.blockNumber || certificate.chainId) && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl bg-dark-800/50">
+                      <span className="text-sm text-dark-400">区块高度</span>
+                      <p className="text-lg font-mono text-dark-100 mt-1">
+                        #{certificate.blockNumber?.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-dark-800/50">
+                      <span className="text-sm text-dark-400">链ID</span>
+                      <p className="text-lg font-mono text-dark-100 mt-1">
+                        {certificate.chainId}
+                      </p>
+                    </div>
                   </div>
-                  <div className="p-4 rounded-xl bg-dark-800/50">
-                    <span className="text-sm text-dark-400">链ID</span>
-                    <p className="text-lg font-mono text-dark-100 mt-1">
-                      {certificate.chainId}
-                    </p>
-                  </div>
-                </div>
+                )}
 
                 {/* 区块链浏览器链接 */}
                 {certificate.txHash && (
