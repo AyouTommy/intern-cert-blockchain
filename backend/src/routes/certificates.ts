@@ -291,6 +291,51 @@ router.get(
         }
       }
 
+      // 兜底补齐 IPFS：历史证书可能因异步上传失败导致缺失
+      if (certificate.status === 'ACTIVE' && !certificate.ipfsHash) {
+        try {
+          const { uploadToIPFS, isConfigured } = require('../services/ipfsService');
+          if (isConfigured()) {
+            const { buffer } = await generateCertificatePdf(certificate as any);
+            const cid = await uploadToIPFS(buffer, `${certificate.certNumber}.pdf`);
+
+            const updated = await prisma.certificate.update({
+              where: { id: certificate.id },
+              data: { ipfsHash: cid },
+              include: {
+                student: {
+                  include: {
+                    user: { select: { name: true, email: true, avatar: true } },
+                  },
+                },
+                university: true,
+                company: true,
+                issuer: { select: { id: true, name: true, email: true } },
+                template: true,
+                verifications: {
+                  take: 10,
+                  orderBy: { createdAt: 'desc' },
+                  select: {
+                    id: true, isValid: true, createdAt: true,
+                    verifySource: true, verifierName: true,
+                  },
+                },
+                attachments: {
+                  orderBy: { createdAt: 'desc' },
+                },
+              },
+            });
+
+            return res.json({
+              success: true,
+              data: updated,
+            });
+          }
+        } catch (ipfsError) {
+          console.warn('详情页 IPFS 自动补齐失败:', ipfsError);
+        }
+      }
+
       res.json({
         success: true,
         data: certificate,

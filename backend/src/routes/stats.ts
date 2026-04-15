@@ -841,7 +841,7 @@ router.get(
       services.push({
         name: 'IPFS (Pinata)',
         status: ipfsService.isConfigured() ? 'ok' : 'warning',
-        detail: ipfsService.isConfigured() ? '已配置' : '未配置 PINATA_JWT',
+        detail: ipfsService.isConfigured() ? '已配置' : '未配置 Pinata 凭据（PINATA_JWT 或 PINATA_API_KEY/PINATA_API_SECRET）',
       });
 
       // 4. 数据库
@@ -899,7 +899,7 @@ router.post(
   async (_req: Request, res: Response, next: NextFunction) => {
     try {
       if (!ipfsService.isConfigured()) {
-        return res.status(503).json({ success: false, message: 'PINATA_JWT 未配置' });
+        return res.status(503).json({ success: false, message: 'Pinata 凭据未配置（PINATA_JWT 或 PINATA_API_KEY/PINATA_API_SECRET）' });
       }
       const testBuffer = Buffer.from(`IPFS connection test - ${new Date().toISOString()}`);
       const cid = await ipfsService.uploadToIPFS(testBuffer, 'test-connection.txt');

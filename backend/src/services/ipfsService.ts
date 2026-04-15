@@ -6,14 +6,32 @@ import https from 'https';
  * 通过 Pinata API 上传文件到 IPFS 网络
  */
 
-const PINATA_API_URL = 'https://api.pinata.cloud/pinning/pinFileToIPFS';
 const PINATA_GATEWAY = 'https://gateway.pinata.cloud/ipfs';
+
+type PinataAuth =
+  | { mode: 'jwt'; jwt: string }
+  | { mode: 'apiKey'; apiKey: string; apiSecret: string };
+
+function getPinataAuth(): PinataAuth | null {
+  const jwt = process.env.PINATA_JWT;
+  if (jwt) {
+    return { mode: 'jwt', jwt };
+  }
+
+  const apiKey = process.env.PINATA_API_KEY;
+  const apiSecret = process.env.PINATA_API_SECRET;
+  if (apiKey && apiSecret) {
+    return { mode: 'apiKey', apiKey, apiSecret };
+  }
+
+  return null;
+}
 
 /**
  * 检查 Pinata 是否已配置
  */
 export function isConfigured(): boolean {
-  return !!process.env.PINATA_JWT;
+  return !!getPinataAuth();
 }
 
 /**
@@ -30,16 +48,16 @@ export function getIPFSUrl(cid: string): string {
  * @returns IPFS CID
  */
 export async function uploadToIPFS(buffer: Buffer, fileName: string): Promise<string> {
-  const jwt = process.env.PINATA_JWT;
-  if (!jwt) {
-    throw new Error('PINATA_JWT 未配置，无法上传 IPFS');
+  const auth = getPinataAuth();
+  if (!auth) {
+    throw new Error('未配置 Pinata 凭据（PINATA_JWT 或 PINATA_API_KEY/PINATA_API_SECRET），无法上传 IPFS');
   }
 
   // 最多重试 2 次
   let lastError: Error | null = null;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      const cid = await _uploadWithFetch(buffer, fileName, jwt);
+      const cid = await _uploadWithFetch(buffer, fileName, auth);
       return cid;
     } catch (err: any) {
       lastError = err;
@@ -56,7 +74,7 @@ export async function uploadToIPFS(buffer: Buffer, fileName: string): Promise<st
 /**
  * 使用 Node.js https 模块上传（兼容性最好）
  */
-function _uploadWithFetch(buffer: Buffer, fileName: string, jwt: string): Promise<string> {
+function _uploadWithFetch(buffer: Buffer, fileName: string, auth: PinataAuth): Promise<string> {
   return new Promise((resolve, reject) => {
     const form = new FormData();
     form.append('file', buffer, {
@@ -81,13 +99,20 @@ function _uploadWithFetch(buffer: Buffer, fileName: string, jwt: string): Promis
     });
     form.append('pinataOptions', options);
 
+    const authHeaders = auth.mode === 'jwt'
+      ? { 'Authorization': `Bearer ${auth.jwt}` }
+      : {
+        pinata_api_key: auth.apiKey,
+        pinata_secret_api_key: auth.apiSecret,
+      };
+
     const reqOptions = {
       hostname: 'api.pinata.cloud',
       path: '/pinning/pinFileToIPFS',
       method: 'POST',
       headers: {
         ...form.getHeaders(),
-        'Authorization': `Bearer ${jwt}`,
+        ...authHeaders,
       },
     };
 
@@ -126,5 +151,5 @@ function _uploadWithFetch(buffer: Buffer, fileName: string, jwt: string): Promis
 if (isConfigured()) {
   console.log('📦 IPFS 服务已就绪（Pinata）');
 } else {
-  console.warn('⚠️ PINATA_JWT 未配置，IPFS 上传功能不可用');
+  console.warn('⚠️ Pinata 凭据未配置（PINATA_JWT 或 PINATA_API_KEY/PINATA_API_SECRET），IPFS 上传功能不可用');
 }
