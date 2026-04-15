@@ -37,6 +37,8 @@ interface VerifyResult {
     issuedAt?: string
     description?: string
     evaluation?: string
+    companyScore?: number
+    companyEvaluation?: string
     blockchain?: {
       certHash: string
       txHash: string
@@ -669,6 +671,37 @@ export default function VerifyPage() {
                     <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center">
                       <p className="text-sm font-medium text-emerald-400">✅ 高校和企业双方已在链上独立确认</p>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 企业评价信息（完整权限可见） */}
+              {(result.data.companyScore !== undefined || result.data.companyEvaluation) && (
+                <div className="glass-card p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-3 rounded-xl bg-amber-500/10">
+                      <DocumentCheckIcon className="w-6 h-6 text-amber-400" />
+                    </div>
+                    <h3 className="card-title">企业评价</h3>
+                  </div>
+
+                  <div className="space-y-3">
+                    {result.data.companyScore !== undefined && (
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-dark-800/50">
+                        <span className="text-dark-400 text-sm">综合评分</span>
+                        <span className="text-amber-400 font-semibold">
+                          {result.data.companyScore} / 100
+                        </span>
+                      </div>
+                    )}
+                    {result.data.companyEvaluation && (
+                      <div className="p-3 rounded-xl bg-dark-800/50">
+                        <p className="text-sm text-dark-400 mb-2">评价内容</p>
+                        <p className="text-sm text-dark-200 leading-relaxed">
+                          {result.data.companyEvaluation}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

@@ -112,9 +112,9 @@ async function handleVerification(
   const user = (req as any).optionalUser || null;
 
   // ==== 1. 权限判断 ====
-  const isOwner = checkOwnership(user, certificate);
-  const isPrivileged = user?.role === 'THIRD_PARTY';
-  const fullAccess = isOwner || isPrivileged;
+  // 高校/企业/学生/第三方机构统一完整核验；管理员保持公开核验
+  const fullAccessRoles = ['STUDENT', 'UNIVERSITY', 'COMPANY', 'THIRD_PARTY'];
+  const fullAccess = !!user && fullAccessRoles.includes(user.role);
 
   // ==== 2. 记录核验日志（含来源） ====
   await prisma.verification.create({
@@ -192,6 +192,8 @@ async function handleVerification(
     issuedAt: certificate.issuedAt,
     description: fullAccess ? certificate.description : undefined,
     evaluation: fullAccess ? certificate.evaluation : undefined,
+    companyScore: fullAccess ? certificate.companyScore : undefined,
+    companyEvaluation: fullAccess ? certificate.companyEvaluation : undefined,
     // 区块链信息：始终完整返回
     blockchain: certificate.certHash ? {
       certHash: certificate.certHash,
